@@ -1,4 +1,5 @@
 import {ObjectSerializer} from '../../../../../../../main/common/extensions/serialization/serializers'
+import {TClass} from '../../../../../../../main/common/helpers/helpers'
 import {ICompare} from '../../../../../../../main/common/lists/contracts/ICompare'
 import {
 	IListChangedEvent,
@@ -7,9 +8,22 @@ import {
 import {IPropertyChangedEvent} from '../../../../../../../main/common/lists/contracts/IPropertyChanged'
 import {compareFast} from '../../../../../../../main/common/lists/helpers/compare'
 import {SortedList} from '../../../../../../../main/common/lists/SortedList'
-import {IOptionsVariant, IOptionsVariants, ITestCase, TestVariants} from '../../../helpers/TestVariants'
+import {Assert} from '../../../../../../../main/common/test/Assert'
+import {DeepCloneEqual} from '../../../../../../../main/common/test/DeepCloneEqual'
+import {IOptionsVariant, IOptionsVariants, ITestCase, TestVariants} from '../../../src/helpers/TestVariants'
 
-declare const assert
+export const assert = new Assert(new DeepCloneEqual({
+	commonOptions: {
+
+	},
+	equalOptions: {
+		// noCrossReferences: true,
+		equalInnerReferences: true,
+		equalTypes: true,
+		equalMapSetOrder: true,
+		strictEqualFunctions: true,
+	},
+}))
 
 export function applyListChangedToArray<T>(event: IListChangedEvent<T>, array: T[], compare: ICompare<T>) {
 	switch (event.type) {
@@ -71,7 +85,7 @@ interface IListOptionsVariant<T> {
 
 interface IListExpected<T> {
 	array?: T[],
-	error?: new () => Error,
+	error?: TClass<Error>|Array<TClass<Error>>
 	returnValue: any,
 	defaultValue: any,
 	listChanged?: Array<IListChangedEvent<T>>,
@@ -100,10 +114,10 @@ function testSerialization<T>(list: SortedList<T>) {
 	const result: SortedList<T> = ObjectSerializer.default.deSerialize(serialized)
 
 	assert.notStrictEqual(result, list)
-	assert.strictEqual(result.autoSort, list.autoSort)
+	assert.strictEqual(!!result.autoSort, !!list.autoSort)
 	assert.strictEqual(result.countSorted, list.countSorted)
 	assert.strictEqual(result.minAllocatedSize, list.minAllocatedSize)
-	assert.strictEqual(result.notAddIfExists, list.notAddIfExists)
+	assert.strictEqual(!!result.notAddIfExists, !!list.notAddIfExists)
 	assert.strictEqual(result.size, list.size)
 	assert.deepStrictEqual(result.toArray(), list.toArray())
 }

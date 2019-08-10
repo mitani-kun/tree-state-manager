@@ -1,5 +1,5 @@
 import {IMergeable, IMergeOptions, IMergeValue} from '../extensions/merge/contracts'
-import {mergeMaps} from '../extensions/merge/merge-maps'
+import {createMergeMapWrapper, mergeMaps} from '../extensions/merge/merge-maps'
 import {registerMergeable} from '../extensions/merge/mergers'
 import {
 	IDeSerializeValue,
@@ -7,8 +7,10 @@ import {
 	ISerializedObject,
 	ISerializeValue,
 } from '../extensions/serialization/contracts'
-import {registerSerializer} from '../extensions/serialization/serializers'
-import {fillMap} from "./helpers/set";
+import {registerSerializable} from '../extensions/serialization/serializers'
+import {isIterable} from '../helpers/helpers'
+import {ThenableSyncIterator} from '../helpers/ThenableSync'
+import {fillMap} from './helpers/set'
 
 export class ObjectMap<V> implements
 	Map<string, V>,
@@ -96,7 +98,7 @@ export class ObjectMap<V> implements
 
 	// region IMergeable
 
-	public canMerge(source: ObjectMap<V>|object): boolean {
+	public _canMerge(source: ObjectMap<V>|object): boolean {
 		if (source.constructor === ObjectMap
 			&& this._object === (source as ObjectMap<V>)._object
 		) {
@@ -106,10 +108,10 @@ export class ObjectMap<V> implements
 		return source.constructor === Object
 			|| source[Symbol.toStringTag] === 'Map'
 			|| Array.isArray(source)
-			|| Symbol.iterator in source
+			|| isIterable(source)
 	}
 
-	public merge(
+	public _merge(
 		merge: IMergeValue,
 		older: ObjectMap<V> | object,
 		newer: ObjectMap<V> | object,
@@ -118,7 +120,10 @@ export class ObjectMap<V> implements
 		options?: IMergeOptions,
 	): boolean {
 		return mergeMaps(
-			arrayOrIterable => fillMap(new ObjectMap(), arrayOrIterable),
+			(target, source) => createMergeMapWrapper(
+				target,
+				source,
+				arrayOrIterable => fillMap(new ObjectMap(), arrayOrIterable)),
 			merge,
 			this,
 			older,
@@ -137,12 +142,15 @@ export class ObjectMap<V> implements
 
 	public serialize(serialize: ISerializeValue): ISerializedObject {
 		return {
-			object: serialize(this._object),
+			object: serialize(this._object, { objectKeepUndefined: true }),
 		}
 	}
 
+	public deSerialize(
+		deSerialize: IDeSerializeValue,
+		serializedValue: ISerializedObject,
 	// tslint:disable-next-line:no-empty
-	public deSerialize(deSerialize: IDeSerializeValue, serializedValue: ISerializedObject) {
+	): void {
 
 	}
 
@@ -151,24 +159,15 @@ export class ObjectMap<V> implements
 
 registerMergeable(ObjectMap)
 
-registerSerializer(ObjectMap, {
-	uuid: ObjectMap.uuid,
+registerSerializable(ObjectMap, {
 	serializer: {
-		serialize(
-			serialize: ISerializeValue,
-			value: ObjectMap<any>,
-		): ISerializedObject {
-			return value.serialize(serialize)
-		},
-		deSerialize<V>(
+		*deSerialize<V>(
 			deSerialize: IDeSerializeValue,
 			serializedValue: ISerializedObject,
-			valueFactory?: (map?: object) => ObjectMap<V>,
-		): ObjectMap<V> {
-			const innerMap = deSerialize<object>(serializedValue.object)
-			const value = valueFactory
-				? valueFactory(innerMap)
-				: new ObjectMap<V>(innerMap)
+			valueFactory: (map?: object) => ObjectMap<V>,
+		): ThenableSyncIterator<ObjectMap<V>> {
+			const innerMap = yield deSerialize<object>(serializedValue.object)
+			const value = valueFactory(innerMap)
 			value.deSerialize(deSerialize, serializedValue)
 			return value
 		},

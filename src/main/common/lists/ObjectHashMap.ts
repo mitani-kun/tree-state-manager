@@ -1,5 +1,5 @@
 import {IMergeable, IMergeOptions, IMergeValue} from '../extensions/merge/contracts'
-import {mergeMaps} from '../extensions/merge/merge-maps'
+import {createMergeMapWrapper, mergeMaps} from '../extensions/merge/merge-maps'
 import {registerMergeable} from '../extensions/merge/mergers'
 import {
 	IDeSerializeValue,
@@ -7,9 +7,11 @@ import {
 	ISerializedObject,
 	ISerializeValue,
 } from '../extensions/serialization/contracts'
-import {registerSerializer} from '../extensions/serialization/serializers'
+import {registerSerializable} from '../extensions/serialization/serializers'
+import {isIterable} from '../helpers/helpers'
+import {ThenableSyncIterator} from '../helpers/ThenableSync'
 import {getObjectUniqueId} from './helpers/object-unique-id'
-import {fillMap} from "./helpers/set";
+import {fillMap} from './helpers/set'
 
 interface TNumberObject<K, V> {
 	[id: number]: [K, V],
@@ -120,7 +122,7 @@ export class ObjectHashMap<K, V> implements
 
 	// region IMergeable
 
-	public canMerge(source: ObjectHashMap<K, V>): boolean {
+	public _canMerge(source: ObjectHashMap<K, V>): boolean {
 		if (source.constructor === ObjectHashMap
 			&& this._object === (source as ObjectHashMap<K, V>)._object
 		) {
@@ -129,10 +131,10 @@ export class ObjectHashMap<K, V> implements
 
 		return source[Symbol.toStringTag] === 'Map'
 			|| Array.isArray(source)
-			|| Symbol.iterator in source
+			|| isIterable(source)
 	}
 
-	public merge(
+	public _merge(
 		merge: IMergeValue,
 		older: ObjectHashMap<K, V> | TNumberObject<K, V>,
 		newer: ObjectHashMap<K, V> | TNumberObject<K, V>,
@@ -141,7 +143,10 @@ export class ObjectHashMap<K, V> implements
 		options?: IMergeOptions,
 	): boolean {
 		return mergeMaps(
-			arrayOrIterable => fillMap(new ObjectHashMap(), arrayOrIterable),
+			(target, source) => createMergeMapWrapper(
+				target,
+				source,
+				arrayOrIterable => fillMap(new ObjectHashMap(), arrayOrIterable)),
 			merge,
 			this,
 			older,
@@ -160,12 +165,15 @@ export class ObjectHashMap<K, V> implements
 
 	public serialize(serialize: ISerializeValue): ISerializedObject {
 		return {
-			object: serialize(this._object),
+			object: serialize(this._object, { objectKeepUndefined: true }),
 		}
 	}
 
+	public deSerialize(
+		deSerialize: IDeSerializeValue,
+		serializedValue: ISerializedObject,
 	// tslint:disable-next-line:no-empty
-	public deSerialize(deSerialize: IDeSerializeValue, serializedValue: ISerializedObject) {
+	): void {
 
 	}
 
@@ -174,24 +182,15 @@ export class ObjectHashMap<K, V> implements
 
 registerMergeable(ObjectHashMap)
 
-registerSerializer(ObjectHashMap, {
-	uuid: ObjectHashMap.uuid,
+registerSerializable(ObjectHashMap, {
 	serializer: {
-		serialize(
-			serialize: ISerializeValue,
-			value: ObjectHashMap<any, any>,
-		): ISerializedObject {
-			return value.serialize(serialize)
-		},
-		deSerialize<K, V>(
+		*deSerialize<K, V>(
 			deSerialize: IDeSerializeValue,
 			serializedValue: ISerializedObject,
-			valueFactory?: (map?: { [id: number]: [K, V] }) => ObjectHashMap<K, V>,
-		): ObjectHashMap<K, V> {
-			const innerMap = deSerialize<{ [id: number]: [K, V] }>(serializedValue.object)
-			const value = valueFactory
-				? valueFactory(innerMap)
-				: new ObjectHashMap<K, V>(innerMap)
+			valueFactory: (map?: { [id: number]: [K, V] }) => ObjectHashMap<K, V>,
+		): ThenableSyncIterator<ObjectHashMap<K, V>> {
+			const innerMap = yield deSerialize<{ [id: number]: [K, V] }>(serializedValue.object)
+			const value = valueFactory(innerMap)
 			value.deSerialize(deSerialize, serializedValue)
 			return value
 		},

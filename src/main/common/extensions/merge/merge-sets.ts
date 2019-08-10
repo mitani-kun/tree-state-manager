@@ -1,5 +1,5 @@
-import {IMergeOptions, IMergeValue} from './contracts'
-import {IMergeMapWrapper, mergeMapWrappers, MergeObjectWrapper} from './merge-maps'
+import {isIterable} from '../../helpers/helpers'
+import {IMergeMapWrapper, MergeObjectWrapper} from './merge-maps'
 
 export class MergeSetWrapper<V> implements IMergeMapWrapper<V, V> {
 	private readonly _set: Set<V>
@@ -34,13 +34,13 @@ export class MergeSetWrapper<V> implements IMergeMapWrapper<V, V> {
 export function createMergeSetWrapper<V>(
 	target: object | Set<V> | V[] | Iterable<V>,
 	source: object | Set<V> | V[] | Iterable<V>,
-	arrayOrIterableToSet: (array) => object | Set<V>,
+	arrayOrIterableToSet?: (array) => object | Set<V>,
 ) {
 	if (source[Symbol.toStringTag] === 'Set') {
 		return new MergeSetWrapper(source as Set<V>)
 	}
 
-	if (arrayOrIterableToSet && (Array.isArray(source) || Symbol.iterator in source)) {
+	if (arrayOrIterableToSet && (Array.isArray(source) || isIterable(source))) {
 		return createMergeSetWrapper(target, arrayOrIterableToSet(source), null)
 	}
 
@@ -49,31 +49,4 @@ export function createMergeSetWrapper<V>(
 	}
 
 	throw new Error(`${target.constructor.name} cannot be merge with ${source.constructor.name}`)
-}
-
-export function mergeSets<TObject extends object>(
-	arrayOrIterableToSet: (arrayOrIterable) => object | Set<any>,
-	merge: IMergeValue,
-	base: TObject,
-	older: TObject,
-	newer: TObject,
-	preferCloneOlder?: boolean,
-	preferCloneNewer?: boolean,
-	options?: IMergeOptions,
-): boolean {
-	const baseWrapper = createMergeSetWrapper(base, base, arrayOrIterableToSet)
-	const olderWrapper = older === base ? baseWrapper : createMergeSetWrapper(base, older, arrayOrIterableToSet)
-	const newerWrapper = newer === base
-		? baseWrapper
-		: (newer === older ? olderWrapper : createMergeSetWrapper(base, newer, arrayOrIterableToSet))
-
-	return mergeMapWrappers(
-		merge,
-		baseWrapper,
-		olderWrapper,
-		newerWrapper,
-		preferCloneOlder,
-		preferCloneNewer,
-		options,
-	)
 }

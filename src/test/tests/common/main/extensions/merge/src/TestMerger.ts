@@ -1,61 +1,91 @@
-// @ts-ignore
-// noinspection ES6UnusedImports
-import fastCopy from 'fast-copy'
 /* tslint:disable:no-construct use-primitive-type */
+// import clone from 'clone'
 import {IMergeOptions, ITypeMetaMerger} from '../../../../../../../main/common/extensions/merge/contracts'
 import {ObjectMerger, TypeMetaMergerCollection} from '../../../../../../../main/common/extensions/merge/mergers'
-import {TClass} from '../../../../../../../main/common/extensions/TypeMeta'
-import {IOptionsVariant, IOptionsVariants, ITestCase, TestVariants} from '../../../helpers/TestVariants'
-import {fillMap} from "../../../../../../../main/common/lists/helpers/set";
+import {TClass} from '../../../../../../../main/common/helpers/helpers'
+import {isFrozenWithoutUniqueId} from '../../../../../../../main/common/lists/helpers/object-unique-id'
+import {SortedList} from '../../../../../../../main/common/lists/SortedList'
+import {Assert} from '../../../../../../../main/common/test/Assert'
+import {DeepCloneEqual, isPrimitiveDefault} from '../../../../../../../main/common/test/DeepCloneEqual'
+import {IOptionsVariant, IOptionsVariants, ITestCase, TestVariants} from '../../../src/helpers/TestVariants'
 
-declare const assert
-// declare function fastCopy<T extends any>(o: T): T
+export const deepCloneEqual = new DeepCloneEqual({
+	commonOptions: {
+		circular: true,
+		customIsPrimitive: o => {
+			if (isPrimitiveDefault(o)) {
+				return true
+			}
 
-function deepClone<T extends any>(o: T): T {
-	if (o == null
-		|| o.constructor === String
-		|| o.constructor === Number
-		|| o.constructor === Boolean
-	) {
-		return o
-	}
+			if (o.constructor === Number
+				|| o.constructor === Boolean
+				|| o.constructor === String && Object.isFrozen(o)
+				|| isFrozenWithoutUniqueId(o)
+			) {
+				return true
+			}
 
-	if (o[Symbol.toStringTag] === 'Map') {
-		const map = new (o.constructor)();
-		(o as unknown as Map<any, any>).forEach((value, key) => {
-			map.set(key, deepClone(value))
-		})
-		return map
-	}
+			return null
+		},
+	},
+	cloneOptions: {
+		customClone: (o, clone) => {
+			if (o.constructor === SortedList) {
+				const list = new SortedList({
+					autoSort: (o as any).autoSort,
+					notAddIfExists: (o as any).notAddIfExists,
+					compare: (o as any).compare,
+				})
+				for (const item of (o as unknown as SortedList<any>)) {
+					list.add(clone(item))
+				}
+				return list as any
+			}
 
-	if (o[Symbol.toStringTag] === 'Set') {
-		const set = new (o.constructor)();
-		(o as unknown as Set<any>).forEach(value => {
-			set.add(deepClone(value))
-		})
-		return set
-	}
+			return null
+		},
+	},
+	equalOptions: {
+		equalInnerReferences: true,
+		strictEqualFunctions: true,
+		customEqual: (o1, o2, equal) => {
+			if (o1.constructor === SortedList) {
+				// tslint:disable-next-line:no-collapsible-if
+				if (o1.constructor === o2.constructor) {
+					if (!equal((o1 as SortedList<any>).autoSort, o2.autoSort)) {
+						return false
+					}
+					if (!equal((o1 as SortedList<any>).notAddIfExists, o2.notAddIfExists)) {
+						return false
+					}
+					if (!equal((o1 as SortedList<any>).compare, o2.compare)) {
+						return false
+					}
+				}
+				// let count = 0
+				// for (const item of o2) {
+				// 	if (!o1.contains(item)) {
+				// 		return false
+				// 	}
+				// 	count++
+				// }
+				// if (!equal(o1.size, count)) {
+				// 	return false
+				// }
+			}
 
-	return fastCopy(o)
-}
+			return null
+		},
+	},
+})
 
-// export enum EqualsType {
-// 	Not,
-// 	Deep,
-// 	Strict,
-// }
+const assert = new Assert(deepCloneEqual)
 
 export interface IMergerOptionsVariant {
 	base?: any
 	older?: any
 	newer?: any
-	// canMerger?: Map<any, any[]>
-	// baseEqualsOlder?: EqualsType
-	// baseEqualsNewer?: EqualsType
-	// olderEqualsNewer?: EqualsType
-	// baseCanMergerOlder?: boolean
-	// baseCanMergerNewer?: boolean
-	// olderCanMergerNewer?: boolean
+
 	preferCloneOlderParam?: boolean
 	preferCloneNewerParam?: boolean
 	preferCloneMeta?: boolean
@@ -68,15 +98,18 @@ export interface IMergerOptionsVariant {
 	preferCloneBase?: boolean
 	preferCloneOlder?: boolean
 	preferCloneNewer?: boolean
+	baseIsFrozen?: boolean
+	olderIsFrozen?: boolean
+	newerIsFrozen?: boolean
 }
 
-export const NONE = new String('NONE')
-export const BASE = new String('BASE')
-export const OLDER = new String('OLDER')
-export const NEWER = new String('NEWER')
+export const NONE = Object.freeze(new String('NONE'))
+export const BASE = Object.freeze(new String('BASE'))
+export const OLDER = Object.freeze(new String('OLDER'))
+export const NEWER = Object.freeze(new String('NEWER'))
 
 interface IMergerExpected {
-	error?: (new () => Error)|((variant: IMergerOptionsVariant) => new () => Error)
+	error?: (TClass<Error>|Array<TClass<Error>>)|((variant: IMergerOptionsVariant) => TClass<Error>|Array<TClass<Error>>)
 	returnValue?: any|((variant: IMergerOptionsVariant) => any)
 	setValue?: any|((variant: IMergerOptionsVariant) => any)
 	base?: any|((variant: IMergerOptionsVariant) => any)
@@ -108,7 +141,7 @@ export class TypeMetaMergerCollectionMock extends TypeMetaMergerCollection {
 
 	public getMeta(type: TClass<any>): ITypeMetaMerger<any, any> {
 		const meta = super.getMeta(type)
-		// assert.ok(meta, `Meta not found for type: ${type}`)
+		// assert.ok(meta, `Meta not found for type: ${typeToDebugString(type)}`)
 		if (meta && this.changeMetaFunc) {
 			const resetFunc = this.changeMetaFunc(meta)
 			if (resetFunc) {
@@ -206,13 +239,13 @@ function resolveOptions(
 
 	if (clone) {
 		if (!Object.isFrozen(resolvedOptions.base) && !isRefer(resolvedOptions.base)) {
-			resolvedOptions.base = deepClone(resolvedOptions.base)
+			resolvedOptions.base = deepCloneEqual.clone(resolvedOptions.base)
 		}
 		if (!Object.isFrozen(resolvedOptions.older) && !isRefer(resolvedOptions.older)) {
-			resolvedOptions.older = deepClone(resolvedOptions.older)
+			resolvedOptions.older = deepCloneEqual.clone(resolvedOptions.older)
 		}
 		if (!Object.isFrozen(resolvedOptions.newer) && !isRefer(resolvedOptions.newer)) {
-			resolvedOptions.newer = deepClone(resolvedOptions.newer)
+			resolvedOptions.newer = deepCloneEqual.clone(resolvedOptions.newer)
 		}
 	}
 
@@ -273,12 +306,18 @@ export class TestMerger extends TestVariants<
 	) {
 		let error
 		for (let debugIteration = 0; debugIteration < 3; debugIteration++) {
+			// if (TestMerger.totalTests >= 457) {
+			// 	new Date().getTime()
+			// }
 			let initialOptions = inputOptions
-			const inputOptionsClone = deepClone(inputOptions)
+			const inputOptionsClone = deepCloneEqual.clone(inputOptions)
 			try {
-				let options = resolveOptions(initialOptions, null, false, true, true)
-				options = resolveOptions(options, options, true, true, false)
+				const options = resolveOptions(initialOptions, null, true, true, true)
+				// options = resolveOptions(options, options, true, true, false)
 				initialOptions = resolveOptions(initialOptions, options, true, false, true)
+				initialOptions.baseIsFrozen = Object.isFrozen(options.base)
+				initialOptions.olderIsFrozen = Object.isFrozen(options.older)
+				initialOptions.newerIsFrozen = Object.isFrozen(options.newer)
 
 				if (options.preferCloneMeta == null) {
 					TypeMetaMergerCollectionMock.default.changeMetaFunc = null
@@ -316,15 +355,15 @@ export class TestMerger extends TestVariants<
 				let returnValue: any = NONE
 
 				const initialBase = isPreferClone(initialOptions, initialOptions.expected.base)
-					? deepClone(options.expected.base)
+					? deepCloneEqual.clone(options.expected.base)
 					: options.expected.base
 				const initialOlder = isPreferClone(initialOptions, initialOptions.expected.older)
 					&& !(options.older === options.base && !isPreferClone(initialOptions, initialOptions.expected.base))
-					? deepClone(options.expected.older)
+					? deepCloneEqual.clone(options.expected.older)
 					: options.expected.older
 				const initialNewer = isPreferClone(initialOptions, initialOptions.expected.newer)
 					&& !(options.newer === options.base && !isPreferClone(initialOptions, initialOptions.expected.base))
-					? deepClone(options.expected.newer)
+					? deepCloneEqual.clone(options.expected.newer)
 					: options.expected.newer
 
 				const action = () => {
@@ -345,11 +384,19 @@ export class TestMerger extends TestVariants<
 				}
 
 				if (options.expected.error) {
-					assert.throws(action, options.expected.error)
+					assert.throws(action, options.expected.error as TClass<Error>|Array<TClass<Error>>)
 				} else {
 					action()
 
 					const assertValue = (actual, expected, strict) => {
+						if (expected && expected !== NONE && expected.constructor === String) {
+							expected = expected.valueOf()
+						}
+
+						if (actual && actual !== NONE && actual.constructor === String) {
+							actual = actual.valueOf()
+						}
+
 						if (strict) {
 							assert.strictEqual(actual, expected)
 						} else {
@@ -357,13 +404,14 @@ export class TestMerger extends TestVariants<
 								&& actual.constructor !== String
 								&& actual.constructor !== Number
 								&& actual.constructor !== Boolean
+								&& !isFrozenWithoutUniqueId(actual)
 								|| typeof actual === 'function') {
 								assert.notStrictEqual(actual, expected)
 								assert.notStrictEqual(actual, options.base)
 								assert.notStrictEqual(actual, options.older)
 								assert.notStrictEqual(actual, options.newer)
 							}
-							assert.deepStrictEqual(actual, expected)
+							deepCloneEqual.equal(actual, expected)
 						}
 					}
 
@@ -377,16 +425,16 @@ export class TestMerger extends TestVariants<
 					assert.strictEqual(setCount,
 						options.expected.setValue !== NONE ? 1 : 0)
 
-					assert.deepStrictEqual(options.base, initialBase)
-					assert.deepStrictEqual(options.older, initialOlder)
-					assert.deepStrictEqual(options.newer, initialNewer)
+					deepCloneEqual.equal(options.base, initialBase)
+					deepCloneEqual.equal(options.older, initialOlder)
+					deepCloneEqual.equal(options.newer, initialNewer)
 
 					// assertValue(options.base, options.expected.base, isRefer(initialOptions.expected.base))
 					// assertValue(options.older, options.expected.older, isRefer(initialOptions.expected.older))
 					// assertValue(options.newer, options.expected.newer, isRefer(initialOptions.expected.newer))
 				}
 
-				assert.deepStrictEqual(inputOptions, inputOptionsClone)
+				assert.circularDeepStrictEqual(inputOptions, inputOptionsClone)
 
 				break
 			} catch (ex) {

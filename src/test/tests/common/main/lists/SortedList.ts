@@ -3,23 +3,26 @@ import {
 } from '../../../../../main/common/lists/contracts/IListChanged'
 import {compareFast} from '../../../../../main/common/lists/helpers/compare'
 import {getDefaultValue, SortedList} from '../../../../../main/common/lists/SortedList'
-import {ITestActionsWithDescription} from '../helpers/TestVariants'
-import {allValues, generateArray, shuffle, toIterable} from './src/helpers/common'
+import {Assert, AssertionError} from '../../../../../main/common/test/Assert'
+import {DeepCloneEqual} from '../../../../../main/common/test/DeepCloneEqual'
+import {createIterable} from '../src/helpers/helpers'
+import {ITestActionsWithDescription} from '../src/helpers/TestVariants'
+import {allValues, generateArray, shuffle} from './src/helpers/common'
 import {
+	assert,
 	IListAction,
 	TestList,
 } from './src/helpers/TestList'
 
-declare const assert
 declare const after
 
-describe('common > main > lists > List', function() {
+describe('common > main > lists > SortedList', function() {
 	this.timeout(20000)
 
 	const testList = TestList.test
 
 	after(function() {
-		console.log('Total List tests >= ' + TestList.totalListTests)
+		console.log('Total Sorted tests >= ' + TestList.totalListTests)
 	})
 
 	it('constructor', function() {
@@ -461,9 +464,9 @@ describe('common > main > lists > List', function() {
 					list => list.set(list.size, item),
 					list => list.insert(list.size, item),
 					list => list.addArray([item]),
-					list => list.addIterable(toIterable([item]), 1),
+					list => list.addIterable(createIterable([item]), 1),
 					list => list.insertArray(list.size, [item]),
-					list => list.insertIterable(list.size, toIterable([item]), 1),
+					list => list.insertIterable(list.size, createIterable([item]), 1),
 				],
 				description: `add(${JSON.stringify(item)})\n`,
 			}
@@ -561,9 +564,9 @@ describe('common > main > lists > List', function() {
 					list => list.insertArray(list.size, sourceItems, sourceStart, sourceEnd),
 					[
 						list => list.addIterable(sourceItems.slice(start, end), end - start),
-						list => list.addIterable(toIterable(sourceItems.slice(start, end)), end - start),
+						list => list.addIterable(createIterable(sourceItems.slice(start, end)), end - start),
 						list => list.insertIterable(list.size, sourceItems.slice(start, end), end - start),
-						list => list.insertIterable(list.size, toIterable(sourceItems.slice(start, end)), end - start),
+						list => list.insertIterable(list.size, createIterable(sourceItems.slice(start, end)), end - start),
 					],
 				],
 				description: `arrArray(${JSON.stringify(sourceItems)}, ${sourceStart}, ${sourceEnd})\n`,
@@ -702,7 +705,7 @@ describe('common > main > lists > List', function() {
 				actions: [
 					list => list.insert(index, item),
 					list => list.insertArray(index, [item]),
-					list => list.insertIterable(index, toIterable([item]), 1),
+					list => list.insertIterable(index, createIterable([item]), 1),
 				],
 				description: `insert(${index}, ${JSON.stringify(item)})\n`,
 			}
@@ -815,7 +818,7 @@ describe('common > main > lists > List', function() {
 					list => list.insertArray(index, sourceItems, sourceStart, sourceEnd),
 					[
 						list => list.insertIterable(index, sourceItems.slice(start, end), end - start),
-						list => list.insertIterable(index, toIterable(sourceItems.slice(start, end)), end - start),
+						list => list.insertIterable(index, createIterable(sourceItems.slice(start, end)), end - start),
 					],
 				],
 				description: `insertArray(${index}, ${JSON.stringify(sourceItems)}, ${sourceStart}, ${sourceEnd})\n`,
@@ -1449,7 +1452,7 @@ describe('common > main > lists > List', function() {
 					list => list.removeArray(sourceItems, sourceStart, sourceEnd),
 					[
 						list => list.removeIterable(sourceItems.slice(start, end), end - start),
-						list => list.removeIterable(toIterable(sourceItems.slice(start, end)), end - start),
+						list => list.removeIterable(createIterable(sourceItems.slice(start, end)), end - start),
 					],
 				],
 				description: `removeArray(${JSON.stringify(sourceItems)}, ${sourceStart}, ${sourceEnd})\n`,
@@ -1752,7 +1755,7 @@ describe('common > main > lists > List', function() {
 		testList({
 			array: [[]],
 			expected: {
-				error: Error,
+				error: [Error, AssertionError],
 				returnValue: null,
 				defaultValue: null,
 			},
@@ -1778,7 +1781,7 @@ describe('common > main > lists > List', function() {
 		testList({
 			array: [['0', '1', '2']],
 			expected: {
-				error: Error,
+				error: [Error, AssertionError],
 				returnValue: ['0', '1'],
 				defaultValue: null,
 			},
@@ -1793,7 +1796,7 @@ describe('common > main > lists > List', function() {
 		testList({
 			array: [['0', '1', '2']],
 			expected: {
-				error: Error,
+				error: [Error, AssertionError],
 				returnValue: ['1', '2'],
 				defaultValue: null,
 			},
@@ -1808,7 +1811,7 @@ describe('common > main > lists > List', function() {
 		testList({
 			array: [['0', '1', '2']],
 			expected: {
-				error: Error,
+				error: [Error, AssertionError],
 				returnValue: ['0', '1', '2', '1', '2'],
 				defaultValue: null,
 			},

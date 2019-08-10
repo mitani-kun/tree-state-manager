@@ -13,8 +13,7 @@ import {
 import {IRule, RuleType} from '../../../../../../main/common/rx/deep-subscribe/contracts/rules'
 import {RuleBuilder} from '../../../../../../main/common/rx/deep-subscribe/RuleBuilder'
 import {ObservableObjectBuilder} from '../../../../../../main/common/rx/object/ObservableObjectBuilder'
-
-declare const assert
+import {assert, AssertionError} from '../../../../../../main/common/test/Assert'
 
 describe('common > main > rx > deep-subscribe > RuleBuilder', function() {
 	interface IObject {
@@ -523,6 +522,9 @@ describe('common > main > rx > deep-subscribe > RuleBuilder', function() {
 	function assertRuleParams(rule: IRule | any, expected: any) {
 		rule = {...rule}
 		expected = {...expected}
+		if ('unsubscribePropertyName' in rule) {
+			expected.unsubscribePropertyName = rule.unsubscribePropertyName
+		}
 
 		delete rule.subscribe
 		delete rule.next
@@ -1203,8 +1205,8 @@ describe('common > main > rx > deep-subscribe > RuleBuilder', function() {
 		const builder = new RuleBuilder<IObject>()
 		assert.strictEqual(builder.rule, undefined)
 
-		assert.throws(() => builder.repeat(1, 1, b => null), Error)
-		assert.throws(() => builder.repeat(1, 1, b => ({rule: null} as any)), Error)
+		assert.throws(() => builder.repeat(1, 1, b => null), [Error, TypeError])
+		assert.throws(() => builder.repeat(1, 1, b => ({rule: null} as any)), [Error, TypeError])
 
 		const builder1 = builder
 			.repeat(
@@ -1287,10 +1289,10 @@ describe('common > main > rx > deep-subscribe > RuleBuilder', function() {
 		const builder = new RuleBuilder<IObject>()
 		assert.strictEqual(builder.rule, undefined)
 
-		assert.throws(() => builder.any(), Error)
-		assert.throws(() => builder.any(null), Error)
-		assert.throws(() => builder.any(b => null), Error)
-		assert.throws(() => builder.any(b => ({rule: null} as any)), Error)
+		assert.throws(() => builder.any(), [Error, TypeError])
+		assert.throws(() => builder.any(null), [Error, TypeError])
+		assert.throws(() => builder.any(b => null), [Error, TypeError])
+		assert.throws(() => builder.any(b => ({rule: null} as any)), [Error, TypeError])
 
 		const builder1 = builder
 			.any(b => b.path(o => o.prop1))

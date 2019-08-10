@@ -2,14 +2,14 @@ import {
 	MapChangedType,
 } from '../../../../../main/common/lists/contracts/IMapChanged'
 import {ObservableMap} from '../../../../../main/common/lists/ObservableMap'
-import {ITestActionsWithDescription, THIS} from '../helpers/TestVariants'
+import {ITestActionsWithDescription, THIS} from '../src/helpers/TestVariants'
 import {allValues, shuffle} from './src/helpers/common'
 import {
+	assert,
 	IMapAction,
 	TestMap,
 } from './src/helpers/TestMap'
 
-declare const assert
 declare const after
 
 describe('common > main > lists > ObservableMap', function() {

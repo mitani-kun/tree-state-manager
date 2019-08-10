@@ -1,6 +1,7 @@
 /* tslint:disable:ban-types */
 import {IMergeable, IMergeOptions, IMergeValue} from '../extensions/merge/contracts'
-import {mergeSets} from '../extensions/merge/merge-sets'
+import {mergeMaps} from '../extensions/merge/merge-maps'
+import {createMergeSetWrapper} from '../extensions/merge/merge-sets'
 import {registerMergeable} from '../extensions/merge/mergers'
 import {
 	IDeSerializeValue,
@@ -8,7 +9,9 @@ import {
 	ISerializedObject,
 	ISerializeValue,
 } from '../extensions/serialization/contracts'
-import {registerSerializer} from '../extensions/serialization/serializers'
+import {registerSerializable, registerSerializer} from '../extensions/serialization/serializers'
+import {isIterable} from '../helpers/helpers'
+import {ThenableSyncIterator} from '../helpers/ThenableSync'
 import {getObjectUniqueId} from './helpers/object-unique-id'
 import {fillSet} from './helpers/set'
 
@@ -123,7 +126,7 @@ export class ArraySet<T extends Object> implements
 
 	// region IMergeable
 
-	public canMerge(source: ArraySet<T>): boolean {
+	public _canMerge(source: ArraySet<T>): boolean {
 		if (source.constructor === ArraySet
 			&& this._array === (source as ArraySet<T>)._array
 		) {
@@ -132,10 +135,10 @@ export class ArraySet<T extends Object> implements
 
 		return source[Symbol.toStringTag] === 'Set'
 			|| Array.isArray(source)
-			|| Symbol.iterator in source
+			|| isIterable(source)
 	}
 
-	public merge(
+	public _merge(
 		merge: IMergeValue,
 		older: ArraySet<T> | T[] | Iterable<T>,
 		newer: ArraySet<T> | T[] | Iterable<T>,
@@ -143,8 +146,11 @@ export class ArraySet<T extends Object> implements
 		preferCloneNewer?: boolean,
 		options?: IMergeOptions,
 	): boolean {
-		return mergeSets(
-			arrayOrIterable => ArraySet.from(arrayOrIterable),
+		return mergeMaps(
+			(target, source) => createMergeSetWrapper(
+				target,
+				source,
+				arrayOrIterable => ArraySet.from(arrayOrIterable)),
 			merge,
 			this,
 			older,
@@ -163,12 +169,15 @@ export class ArraySet<T extends Object> implements
 
 	public serialize(serialize: ISerializeValue): ISerializedObject {
 		return {
-			array: serialize(this._array, Object),
+			array: serialize(this._array, { arrayAsObject: true, objectKeepUndefined: true }),
 		}
 	}
 
+	public deSerialize(
+		deSerialize: IDeSerializeValue,
+		serializedValue: ISerializedObject,
 	// tslint:disable-next-line:no-empty
-	public deSerialize(deSerialize: IDeSerializeValue, serializedValue: ISerializedObject) {
+	): void {
 
 	}
 
@@ -177,25 +186,15 @@ export class ArraySet<T extends Object> implements
 
 registerMergeable(ArraySet)
 
-registerSerializer(ArraySet, {
-	uuid: ArraySet.uuid,
+registerSerializable(ArraySet, {
 	serializer: {
-		serialize(
-			serialize: ISerializeValue,
-			value: ArraySet<any>,
-		): ISerializedObject {
-			return value.serialize(serialize)
-		},
-		deSerialize<T>(
+		*deSerialize<T>(
 			deSerialize: IDeSerializeValue,
 			serializedValue: ISerializedObject,
-			valueFactory?: (set?: T[]) => ArraySet<T>,
-		): ArraySet<T> {
-			// @ts-ignore
-			const innerSet = deSerialize<T[]>(serializedValue.array, Object, () => [])
-			const value = valueFactory
-				? valueFactory(innerSet)
-				: new ArraySet<T>(innerSet)
+			valueFactory: (set?: T[]) => ArraySet<T>,
+		): ThenableSyncIterator<ArraySet<T>> {
+			const innerSet = yield deSerialize(serializedValue.array, null, { arrayAsObject: true })
+			const value = valueFactory(innerSet)
 			value.deSerialize(deSerialize, serializedValue)
 			return value
 		},

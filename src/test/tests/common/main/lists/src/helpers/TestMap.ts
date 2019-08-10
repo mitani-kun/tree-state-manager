@@ -4,9 +4,10 @@ import {
 	ISerializeValue,
 } from '../../../../../../../main/common/extensions/serialization/contracts'
 import {
-	ObjectSerializer,
+	ObjectSerializer, registerSerializable,
 	registerSerializer,
 } from '../../../../../../../main/common/extensions/serialization/serializers'
+import {ThenableSyncIterator} from '../../../../../../../main/common/helpers/ThenableSync'
 import {ArrayMap} from '../../../../../../../main/common/lists/ArrayMap'
 import {IMapChangedEvent, MapChangedType} from '../../../../../../../main/common/lists/contracts/IMapChanged'
 import {IPropertyChangedEvent} from '../../../../../../../main/common/lists/contracts/IPropertyChanged'
@@ -14,10 +15,23 @@ import {compareFast} from '../../../../../../../main/common/lists/helpers/compar
 import {ObjectHashMap} from '../../../../../../../main/common/lists/ObjectHashMap'
 import {ObjectMap} from '../../../../../../../main/common/lists/ObjectMap'
 import {ObservableMap} from '../../../../../../../main/common/lists/ObservableMap'
-import {IOptionsVariant, IOptionsVariants, ITestCase, TestVariants, THIS} from '../../../helpers/TestVariants'
+import {Assert} from '../../../../../../../main/common/test/Assert'
+import {DeepCloneEqual} from '../../../../../../../main/common/test/DeepCloneEqual'
+import {IOptionsVariant, IOptionsVariants, ITestCase, TestVariants, THIS} from '../../../src/helpers/TestVariants'
 import {convertToObject} from './common'
 
-declare const assert
+export const assert = new Assert(new DeepCloneEqual({
+	commonOptions: {
+
+	},
+	equalOptions: {
+		// noCrossReferences: true,
+		equalInnerReferences: true,
+		equalTypes: true,
+		equalMapSetOrder: true,
+		strictEqualFunctions: true,
+	},
+}))
 
 function compareEntries<K, V>(o1: [K, V], o2: [K, V]) {
 	return compareFast(o1[0], o2[0])
@@ -218,24 +232,15 @@ class MapWrapper<K, V> implements Map<K, V>, ISerializable {
 	// endregion
 }
 
-registerSerializer(MapWrapper, {
-	uuid: MapWrapper.uuid,
+registerSerializable(MapWrapper, {
 	serializer: {
-		serialize(
-			serialize: ISerializeValue,
-			value: MapWrapper<any, any>,
-		): ISerializedObject {
-			return value.serialize(serialize)
-		},
-		deSerialize<K, V>(
+		*deSerialize<K, V>(
 			deSerialize: IDeSerializeValue,
 			serializedValue: ISerializedObject,
-			valueFactory?: (map?: Map<K, V>) => MapWrapper<K, V>,
-		): MapWrapper<K, V> {
-			const innerMap = deSerialize<Map<K, V>>(serializedValue.map)
-			const value = valueFactory
-				? valueFactory(innerMap)
-				: new MapWrapper<K, V>(innerMap)
+			valueFactory: (map?: Map<K, V>) => MapWrapper<K, V>,
+		): ThenableSyncIterator<MapWrapper<K, V>> {
+			const innerMap = yield deSerialize<Map<K, V>>(serializedValue.map)
+			const value = valueFactory(innerMap)
 			value.deSerialize(deSerialize, serializedValue)
 			return value
 		},

@@ -1,20 +1,22 @@
+import {IMergeable, IMergeOptions, IMergeValue} from '../extensions/merge/contracts'
+import {IMergeMapWrapper, mergeMaps} from '../extensions/merge/merge-maps'
+import {createMergeSetWrapper} from '../extensions/merge/merge-sets'
+import {registerMergeable} from '../extensions/merge/mergers'
 import {
 	IDeSerializeValue,
 	ISerializable,
 	ISerializedObject,
-	ISerializedValueArray,
 	ISerializeValue,
 } from '../extensions/serialization/contracts'
-import {deSerializeArray, registerSerializable, serializeArray} from '../extensions/serialization/serializers'
+import {registerSerializable} from '../extensions/serialization/serializers'
+import {isIterable} from '../helpers/helpers'
+import {ThenableSyncIterator} from '../helpers/ThenableSync'
 import {ListChangedObject} from './base/ListChangedObject'
 import {ICompare} from './contracts/ICompare'
 import {IListChangedObject, ListChangedType} from './contracts/IListChanged'
 import {binarySearch, move} from './helpers/array'
 import {compareFast} from './helpers/compare'
-import {IMergeable, IMergeOptions, IMergeValue} from "../extensions/merge/contracts";
-import {mergeSets} from "../extensions/merge/merge-sets";
-import {fillCollection, fillSet} from "./helpers/set";
-import {registerMergeable} from "../extensions/merge/mergers";
+import {fillCollection} from './helpers/set'
 
 function calcOptimalArraySize(desiredSize: number) {
 	let optimalSize = 4
@@ -45,7 +47,7 @@ export class SortedList<T>
 {
 	// region constructor
 
-	private _array: T[]
+	private readonly _array: T[]
 
 	constructor({
 		array,
@@ -1148,7 +1150,7 @@ export class SortedList<T>
 
 	// region IMergeable
 
-	public canMerge(source: SortedList<T>): boolean {
+	public _canMerge(source: SortedList<T>): boolean {
 		if (source.constructor === SortedList
 			&& this._array === (source as SortedList<T>)._array
 			&& this._autoSort === (source as SortedList<T>)._autoSort
@@ -1159,12 +1161,13 @@ export class SortedList<T>
 
 		return this._autoSort
 			&& this._notAddIfExists
-			&& (source[Symbol.toStringTag] === 'Set'
+			&& (source.constructor === Object
+				|| source[Symbol.toStringTag] === 'Set'
 				|| Array.isArray(source)
-				|| Symbol.iterator in source)
+				|| isIterable(source))
 	}
 
-	public merge(
+	public _merge(
 		merge: IMergeValue,
 		older: SortedList<T> | T[] | Iterable<T>,
 		newer: SortedList<T> | T[] | Iterable<T>,
@@ -1172,12 +1175,15 @@ export class SortedList<T>
 		preferCloneNewer?: boolean,
 		options?: IMergeOptions,
 	): boolean {
-		return mergeSets(
-			arrayOrIterable => fillCollection(new SortedList<T>({
-				autoSort: true,
-				notAddIfExists: true,
-				compare: this.compare,
-			}), arrayOrIterable, (c, o: T) => c.add(o)),
+		return mergeMaps(
+			(target, source) => createMergeSortedListWrapper(
+				target,
+				source,
+				arrayOrIterable => fillCollection(new SortedList<T>({
+					autoSort: true,
+					notAddIfExists: true,
+					compare: this.compare,
+				}), arrayOrIterable, (c, o: T) => c.add(o))),
 			merge,
 			this,
 			older,
@@ -1196,27 +1202,81 @@ export class SortedList<T>
 
 	public serialize(serialize: ISerializeValue): ISerializedObject {
 		return {
-			array: (this._array as any) && serializeArray(serialize, this._array, this._size),
-			autoSort: serialize(this._autoSort),
-			countSorted: serialize(this._countSorted),
-			minAllocatedSize: serialize(this._minAllocatedSize),
-			notAddIfExists: serialize(this._notAddIfExists),
+			array: serialize(this._array, { arrayLength: this._size }),
+			options: serialize({
+				autoSort: this._autoSort,
+				countSorted: this._countSorted,
+				minAllocatedSize: this._minAllocatedSize,
+				notAddIfExists: this._notAddIfExists,
+			}),
 		}
 	}
 
-	public deSerialize(deSerialize: IDeSerializeValue, serializedValue: ISerializedObject) {
-		this._array = (serializedValue.array as any)
-			&& deSerializeArray(deSerialize, serializedValue.array as ISerializedValueArray)
-			|| []
-		this._size = this._array.length
-		this._autoSort = deSerialize(serializedValue.autoSort)
-		this._countSorted = deSerialize(serializedValue.countSorted)
-		this._minAllocatedSize = deSerialize(serializedValue.minAllocatedSize)
-		this._notAddIfExists = deSerialize(serializedValue.notAddIfExists)
+	public deSerialize(
+		deSerialize: IDeSerializeValue,
+		serializedValue: ISerializedObject,
+	// tslint:disable-next-line:no-empty
+	): void {
+
 	}
 
 	// endregion
 }
+
+// region Merge helpers
+
+export class MergeSortedListWrapper<V> implements IMergeMapWrapper<V, V> {
+	private readonly _list: SortedList<V>
+
+	constructor(list: SortedList<V>) {
+		if (!list.autoSort || !list.notAddIfExists) {
+			throw new Error('Cannot create IMergeMapWrapper with ' +
+				`SortedList(autoSort = ${list.autoSort} (must be true), ` +
+				`notAddIfExists = ${list.notAddIfExists} (must be true))`)
+		}
+		this._list = list
+	}
+
+	public delete(key: V): void {
+		this._list.remove(key)
+	}
+
+	public forEachKeys(callbackfn: (key: V) => void): void {
+		for (const key of this._list) {
+			callbackfn(key)
+		}
+	}
+
+	public get(key: V): V {
+		return key
+	}
+
+	public has(key: V): boolean {
+		return this._list.contains(key)
+	}
+
+	public set(key: V, value: V): void {
+		this._list.add(value)
+	}
+}
+
+export function createMergeSortedListWrapper<V>(
+	target: object | Set<V> | SortedList<V> | V[] | Iterable<V>,
+	source: object | Set<V> | SortedList<V> | V[] | Iterable<V>,
+	arrayOrIterableToSortedList: (array) => object | SortedList<V>,
+) {
+	if (source.constructor === SortedList) {
+		return new MergeSortedListWrapper(source as SortedList<V>)
+	}
+
+	if (arrayOrIterableToSortedList && (Array.isArray(source) || isIterable(source))) {
+		return createMergeSortedListWrapper(target, arrayOrIterableToSortedList(source), null)
+	}
+
+	return createMergeSetWrapper(target, source)
+}
+
+// endregion
 
 registerMergeable(SortedList, {
 	valueFactory: <T>(source: SortedList<T>) => new SortedList<T>({
@@ -1227,4 +1287,18 @@ registerMergeable(SortedList, {
 	}),
 })
 
-registerSerializable(SortedList)
+registerSerializable(SortedList, {
+	serializer: {
+		*deSerialize<T>(
+			deSerialize: IDeSerializeValue,
+			serializedValue: ISerializedObject,
+			valueFactory: (...args) => SortedList<T>,
+		): ThenableSyncIterator<SortedList<T>> {
+			const options = yield deSerialize(serializedValue.options)
+			options.array = yield deSerialize(serializedValue.array)
+			const value = valueFactory(options)
+			value.deSerialize(deSerialize, serializedValue)
+			return value
+		},
+	},
+})

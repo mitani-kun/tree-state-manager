@@ -5,9 +5,9 @@ import {
 	ISerializeValue,
 } from '../../../../../../../main/common/extensions/serialization/contracts'
 import {
-	ObjectSerializer,
-	registerSerializer,
+	ObjectSerializer, registerSerializable,
 } from '../../../../../../../main/common/extensions/serialization/serializers'
+import {ThenableSyncIterator} from '../../../../../../../main/common/helpers/ThenableSync'
 import {ArraySet} from '../../../../../../../main/common/lists/ArraySet'
 import {IPropertyChangedEvent} from '../../../../../../../main/common/lists/contracts/IPropertyChanged'
 import {
@@ -17,10 +17,23 @@ import {
 import {compareFast} from '../../../../../../../main/common/lists/helpers/compare'
 import {ObjectSet} from '../../../../../../../main/common/lists/ObjectSet'
 import {ObservableSet} from '../../../../../../../main/common/lists/ObservableSet'
-import {IOptionsVariant, IOptionsVariants, ITestCase, TestVariants, THIS} from '../../../helpers/TestVariants'
+import {Assert} from '../../../../../../../main/common/test/Assert'
+import {DeepCloneEqual} from '../../../../../../../main/common/test/DeepCloneEqual'
+import {IOptionsVariant, IOptionsVariants, ITestCase, TestVariants, THIS} from '../../../src/helpers/TestVariants'
 import {convertToObject, indexOfNaN} from './common'
 
-declare const assert
+export const assert = new Assert(new DeepCloneEqual({
+	commonOptions: {
+
+	},
+	equalOptions: {
+		// noCrossReferences: true,
+		equalInnerReferences: true,
+		equalTypes: true,
+		equalMapSetOrder: true,
+		strictEqualFunctions: true,
+	},
+}))
 
 export function applySetChangedToArray<T>(event: ISetChangedEvent<T>, array: T[]) {
 	switch (event.type) {
@@ -183,24 +196,15 @@ class SetWrapper<T> implements Set<T>, ISerializable {
 	// endregion
 }
 
-registerSerializer(SetWrapper, {
-	uuid: SetWrapper.uuid,
+registerSerializable(SetWrapper, {
 	serializer: {
-		serialize(
-			serialize: ISerializeValue,
-			value: SetWrapper<any>,
-		): ISerializedObject {
-			return value.serialize(serialize)
-		},
-		deSerialize<T>(
+		*deSerialize<T>(
 			deSerialize: IDeSerializeValue,
 			serializedValue: ISerializedObject,
-			valueFactory?: (set?: Set<T>) => SetWrapper<T>,
-		): SetWrapper<T> {
-			const innerSet = deSerialize<Set<T>>(serializedValue.set)
-			const value = valueFactory
-				? valueFactory(innerSet)
-				: new SetWrapper<T>(innerSet)
+			valueFactory: (set?: Set<T>) => SetWrapper<T>,
+		): ThenableSyncIterator<SetWrapper<T>> {
+			const innerSet = yield deSerialize<Set<T>>(serializedValue.set)
+			const value = valueFactory(innerSet)
 			value.deSerialize(deSerialize, serializedValue)
 			return value
 		},

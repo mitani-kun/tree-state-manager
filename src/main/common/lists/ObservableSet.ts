@@ -1,5 +1,6 @@
 import {IMergeable, IMergeOptions, IMergeValue} from '../extensions/merge/contracts'
-import {mergeSets} from '../extensions/merge/merge-sets'
+import {mergeMaps} from '../extensions/merge/merge-maps'
+import {createMergeSetWrapper} from '../extensions/merge/merge-sets'
 import {registerMergeable} from '../extensions/merge/mergers'
 import {
 	IDeSerializeValue,
@@ -7,11 +8,12 @@ import {
 	ISerializedObject,
 	ISerializeValue,
 } from '../extensions/serialization/contracts'
-import {registerSerializer} from '../extensions/serialization/serializers'
-import {ArraySet} from './ArraySet'
+import {registerSerializable, registerSerializer} from '../extensions/serialization/serializers'
+import {isIterable} from '../helpers/helpers'
+import {ThenableSyncIterator} from '../helpers/ThenableSync'
 import {SetChangedObject} from './base/SetChangedObject'
 import {IObservableSet, SetChangedType} from './contracts/ISetChanged'
-import {fillSet} from "./helpers/set";
+import {fillSet} from './helpers/set'
 
 export class ObservableSet<T> extends SetChangedObject<T> implements
 	IObservableSet<T>,
@@ -142,7 +144,7 @@ export class ObservableSet<T> extends SetChangedObject<T> implements
 
 	// region IMergeable
 
-	public canMerge(source: ObservableSet<T>): boolean {
+	public _canMerge(source: ObservableSet<T>): boolean {
 		const {_set} = this
 		if ((_set as any).canMerge) {
 			return (_set as any).canMerge(source)
@@ -157,10 +159,10 @@ export class ObservableSet<T> extends SetChangedObject<T> implements
 		return source.constructor === Object
 			|| source[Symbol.toStringTag] === 'Set'
 			|| Array.isArray(source)
-			|| Symbol.iterator in source
+			|| isIterable(source)
 	}
 
-	public merge(
+	public _merge(
 		merge: IMergeValue,
 		older: ObservableSet<T> | T[] | Iterable<T>,
 		newer: ObservableSet<T> | T[] | Iterable<T>,
@@ -168,8 +170,11 @@ export class ObservableSet<T> extends SetChangedObject<T> implements
 		preferCloneNewer?: boolean,
 		options?: IMergeOptions,
 	): boolean {
-		return mergeSets(
-			arrayOrIterable => fillSet(new (this._set.constructor as any)(), arrayOrIterable),
+		return mergeMaps(
+			(target, source) => createMergeSetWrapper(
+				target,
+				source,
+				arrayOrIterable => fillSet(new (this._set.constructor as any)(), arrayOrIterable)),
 			merge,
 			this,
 			older,
@@ -192,8 +197,11 @@ export class ObservableSet<T> extends SetChangedObject<T> implements
 		}
 	}
 
+	public deSerialize(
+		deSerialize: IDeSerializeValue,
+		serializedValue: ISerializedObject,
 	// tslint:disable-next-line:no-empty
-	public deSerialize(deSerialize: IDeSerializeValue, serializedValue: ISerializedObject) {
+	): void {
 
 	}
 
@@ -202,24 +210,15 @@ export class ObservableSet<T> extends SetChangedObject<T> implements
 
 registerMergeable(ObservableSet)
 
-registerSerializer(ObservableSet, {
-	uuid: ObservableSet.uuid,
+registerSerializable(ObservableSet, {
 	serializer: {
-		serialize(
-			serialize: ISerializeValue,
-			value: ObservableSet<any>,
-		): ISerializedObject {
-			return value.serialize(serialize)
-		},
-		deSerialize<T>(
+		*deSerialize<T>(
 			deSerialize: IDeSerializeValue,
 			serializedValue: ISerializedObject,
-			valueFactory?: (set?: Set<T>) => ObservableSet<T>,
-		): ObservableSet<T> {
-			const innerSet = deSerialize<Set<T>>(serializedValue.set)
-			const value = valueFactory
-				? valueFactory(innerSet)
-				: new ObservableSet<T>(innerSet)
+			valueFactory: (set?: Set<T>) => ObservableSet<T>,
+		): ThenableSyncIterator<ObservableSet<T>> {
+			const innerSet = yield deSerialize<Set<T>>(serializedValue.set)
+			const value = valueFactory(innerSet)
 			value.deSerialize(deSerialize, serializedValue)
 			return value
 		},

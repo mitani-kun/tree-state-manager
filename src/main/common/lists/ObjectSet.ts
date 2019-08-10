@@ -1,5 +1,6 @@
 import {IMergeable, IMergeOptions, IMergeValue} from '../extensions/merge/contracts'
-import {mergeSets} from '../extensions/merge/merge-sets'
+import {mergeMaps} from '../extensions/merge/merge-maps'
+import {createMergeSetWrapper} from '../extensions/merge/merge-sets'
 import {registerMergeable} from '../extensions/merge/mergers'
 import {
 	IDeSerializeValue,
@@ -7,8 +8,10 @@ import {
 	ISerializedObject,
 	ISerializeValue,
 } from '../extensions/serialization/contracts'
-import {registerSerializer} from '../extensions/serialization/serializers'
-import {fillObjectKeys, fillSet} from "./helpers/set";
+import {registerSerializable} from '../extensions/serialization/serializers'
+import {isIterable} from '../helpers/helpers'
+import {ThenableSyncIterator} from '../helpers/ThenableSync'
+import {fillObjectKeys} from './helpers/set'
 
 export class ObjectSet implements
 	Set<string>,
@@ -97,7 +100,7 @@ export class ObjectSet implements
 
 	// region IMergeable
 
-	public canMerge(source: ObjectSet): boolean {
+	public _canMerge(source: ObjectSet): boolean {
 		if (source.constructor === ObjectSet
 			&& this._object === (source as ObjectSet)._object
 		) {
@@ -107,10 +110,10 @@ export class ObjectSet implements
 		return source.constructor === Object
 			|| source[Symbol.toStringTag] === 'Set'
 			|| Array.isArray(source)
-			|| Symbol.iterator in source
+			|| isIterable(source)
 	}
 
-	public merge(
+	public _merge(
 		merge: IMergeValue,
 		older: ObjectSet | string[] | Iterable<string>,
 		newer: ObjectSet | string[] | Iterable<string>,
@@ -118,8 +121,11 @@ export class ObjectSet implements
 		preferCloneNewer?: boolean,
 		options?: IMergeOptions,
 	): boolean {
-		return mergeSets(
-			array => ObjectSet.from(array),
+		return mergeMaps(
+			(target, source) => createMergeSetWrapper(
+				target,
+				source,
+				arrayOrIterable => ObjectSet.from(arrayOrIterable)),
 			merge,
 			this,
 			older,
@@ -138,12 +144,15 @@ export class ObjectSet implements
 
 	public serialize(serialize: ISerializeValue): ISerializedObject {
 		return {
-			object: serialize(this._object),
+			object: serialize(this._object, { objectKeepUndefined: true }),
 		}
 	}
 
+	public deSerialize(
+		deSerialize: IDeSerializeValue,
+		serializedValue: ISerializedObject,
 	// tslint:disable-next-line:no-empty
-	public deSerialize(deSerialize: IDeSerializeValue, serializedValue: ISerializedObject) {
+	): void {
 
 	}
 
@@ -152,24 +161,15 @@ export class ObjectSet implements
 
 registerMergeable(ObjectSet)
 
-registerSerializer(ObjectSet, {
-	uuid: ObjectSet.uuid,
+registerSerializable(ObjectSet, {
 	serializer: {
-		serialize(
-			serialize: ISerializeValue,
-			value: ObjectSet,
-		): ISerializedObject {
-			return value.serialize(serialize)
-		},
-		deSerialize<T>(
+		*deSerialize<T>(
 			deSerialize: IDeSerializeValue,
 			serializedValue: ISerializedObject,
-			valueFactory?: (object?: object) => ObjectSet,
-		): ObjectSet {
-			const innerSet = deSerialize<object>(serializedValue.object)
-			const value = valueFactory
-				? valueFactory(innerSet)
-				: new ObjectSet(innerSet)
+			valueFactory: (object?: object) => ObjectSet,
+		): ThenableSyncIterator<ObjectSet> {
+			const innerSet = yield deSerialize<object>(serializedValue.object)
+			const value = valueFactory(innerSet)
 			value.deSerialize(deSerialize, serializedValue)
 			return value
 		},

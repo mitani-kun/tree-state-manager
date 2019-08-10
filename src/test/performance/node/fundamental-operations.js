@@ -1,12 +1,14 @@
-/* eslint-disable no-new-func,no-array-constructor,object-property-newline,no-undef,no-empty,no-shadow,no-prototype-builtins */
+/* eslint-disable no-new-func,no-array-constructor,object-property-newline,no-undef,no-empty,no-shadow,no-prototype-builtins,prefer-destructuring,prefer-rest-params,arrow-body-style */
 
 import {calcPerformance} from 'rdtsc'
 import {binarySearch} from '../../../main/common/lists/helpers/array'
-import {getObjectUniqueId} from '../../../main/common/lists/helpers/object-unique-id'
+import {getObjectUniqueId, freezeWithUniqueId} from '../../../main/common/lists/helpers/object-unique-id'
 import {SortedList} from '../../../main/common/lists/SortedList'
-import {compareUniqueId} from '../../../main/common/lists/helpers/compare'
 import {ArraySet} from '../../../main/common/lists/ArraySet'
 import {createObject, Tester} from '../../tests/common/main/rx/deep-subscribe/helpers/Tester'
+import {SynchronousPromise} from 'synchronous-promise'
+import {ThenableSync} from '../../../main/common/helpers/ThenableSync'
+import {isIterable} from '../../../main/common/helpers/helpers'
 
 const SetNative = Set
 require('./src/SetPolyfill')
@@ -1081,7 +1083,7 @@ describe('fundamental-operations', function () {
 		console.log(result)
 	})
 
-	it('"out" vs "set func" params', function () {
+	xit('"out" vs "set func" params', function () {
 		this.timeout(300000)
 
 		const funcOut = (a, out) => {
@@ -1118,6 +1120,337 @@ describe('fundamental-operations', function () {
 				funcSet(Math.random(), a => {
 					this.prop = a
 				})
+			}
+		)
+
+		console.log(result)
+	})
+
+	xit('func params as object', function () {
+		this.timeout(300000)
+
+		const funcSimple = (
+			param0,
+			param1,
+			param2,
+			param3
+		) => param0 || param1 || param2 || param3
+
+		const funcObjectParams = ({
+			param0,
+			param1,
+			param2,
+			param3,
+		} = {}) => param0 || param1 || param2 || param3
+
+		const funcObjectParamsBabel = () => {
+			// eslint-disable-next-line one-var
+			const _ref = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
+				param0 = _ref.param0,
+				param1 = _ref.param1,
+				param2 = _ref.param2,
+				param3 = _ref.param3
+
+			return param0 || param1 || param2 || param3
+		}
+
+		const result = calcPerformance(
+			120000,
+			() => {
+				// no operations
+			},
+			() => {
+				funcSimple(
+					Math.random() < 0.5,
+					Math.random() < 0.5,
+					Math.random() < 0.5,
+					Math.random() < 0.5
+				)
+			},
+			() => {
+				funcObjectParams({
+					param0: Math.random() < 0.5,
+					param1: Math.random() < 0.5,
+					param2: Math.random() < 0.5,
+					param3: Math.random() < 0.5
+				})
+			},
+			() => {
+				funcObjectParamsBabel({
+					param0: Math.random() < 0.5,
+					param1: Math.random() < 0.5,
+					param2: Math.random() < 0.5,
+					param3: Math.random() < 0.5
+				})
+			}
+		)
+
+		console.log(result)
+	})
+
+	xit('new Array(size)', function () {
+		this.timeout(300000)
+
+		const size = 1000
+		const arrSimple = []
+		const arrConstructor = new Array(size)
+		const arrConstructorFilled = new Array(size)
+		for (let i = 0; i < size; i++) {
+			arrSimple[i] = undefined
+			arrConstructorFilled[i] = undefined
+		}
+
+
+		let i = (size / 2)|0
+
+		const result = calcPerformance(
+			120000,
+			() => {
+				// no operations
+			},
+			() => {
+				arrSimple[i] = i
+				i = (i + 7) % size
+				return arrSimple[i]
+			},
+			() => {
+				arrConstructorFilled[i] = i
+				i = (i + 7) % size
+				return arrConstructorFilled[i]
+			},
+			() => {
+				arrConstructor[i] = i
+				i = (i + 7) % size
+				return arrConstructor[i]
+			}
+		)
+
+		console.log(result)
+	})
+
+	function defineProperty(obj, propertyName) {
+		obj[propertyName] = 0
+		Object.defineProperty(obj, propertyName, {
+			configurable: true,
+			enumerable  : false,
+			writable    : true,
+			value       : 0,
+		})
+	}
+
+	function definePropertyGetSet(obj, propertyName) {
+		obj[propertyName] = 0
+		Object.defineProperty(obj, propertyName, {
+			configurable: true,
+			enumerable  : false,
+			get         : () => 0,
+			set(o) {	}
+		})
+	}
+
+	xit('delete property', function () {
+		this.timeout(300000)
+
+		const hashTable = {}
+		for (let i = 0; i < 10000; i++) {
+			hashTable[i] = i
+		}
+
+		const obj = {}
+
+		const result = calcPerformance(
+			20000,
+			() => {
+				// no operations
+			},
+			() => {
+				obj.x = 0
+			},
+			() => {
+				obj.x = void 0
+			},
+			() => {
+				delete obj.x
+			},
+			() => {
+				hashTable[(Math.random() * 10000)|0] = void 0
+			},
+			() => {
+				delete hashTable[(Math.random() * 10000)|0]
+			},
+			() => {
+				getObjectUniqueId({})
+			},
+			() => {
+				defineProperty(obj, 'x')
+			},
+			() => {
+				obj.x = void 0
+			},
+			() => {
+				delete obj.x
+			},
+			() => {
+				definePropertyGetSet(obj, 'x')
+			},
+			() => {
+				obj.x = void 0
+			},
+			() => {
+				delete obj.x
+			}
+		)
+
+		console.log(result)
+	})
+
+	xit('Promise sync', function () {
+		this.timeout(300000)
+
+		const result = calcPerformance(
+			20000,
+			() => {
+				// no operations
+			},
+			() => {
+				let resolve
+				new SynchronousPromise(o => {
+					resolve = o
+				})
+					.then(o => true)
+					// .then(o => true)
+
+				resolve(1)
+			},
+			() => {
+				let resolve
+				new ThenableSync(o => {
+					resolve = o
+				})
+					.then(o => true)
+					// .then(o => true)
+
+				resolve(1)
+			},
+			() => {
+				let resolve
+				let result
+				new SynchronousPromise(o => {
+					resolve = o
+				})
+					.then(o => true)
+					.then(o => (result = o))
+
+				resolve(1)
+			},
+			() => {
+				let resolve
+				let result
+				new ThenableSync(o => {
+					resolve = o
+				})
+					.then(o => true)
+					.then(o => (result = o))
+
+				resolve(1)
+			}
+		)
+
+		console.log(result)
+	})
+
+	xit('is iterable', function () {
+		this.timeout(300000)
+
+		const iterable = true
+		const iterable2 = {
+			* [Symbol.iterator]() {
+				for (let i = 0; i < 100; i++) {
+					if (Math.random() > 1) {
+						return 2
+					}
+				}
+				yield 1
+				return 0
+			}
+		}
+
+		const result = calcPerformance(
+			20000,
+			() => {
+				// no operations
+			},
+			// () => {
+			// 	return iterable && Symbol.iterator in iterable
+			// },
+			// () => {
+			// 	return iterable != null && Symbol.iterator in iterable
+			// },
+			() => { // 0
+				return iterable && typeof iterable[Symbol.iterator] === 'function'
+			},
+			() => { // 0
+				return iterable != null && typeof iterable[Symbol.iterator] === 'function'
+			},
+			() => { // 100
+				return iterable && Symbol.iterator in Object(iterable)
+			},
+			() => { // 100
+				return iterable != null && Symbol.iterator in Object(iterable)
+			},
+			() => { // 0
+				return isIterable(iterable)
+			}
+		)
+
+		console.log(result)
+	})
+
+	xit('array is associative', function () {
+		this.timeout(300000)
+
+		const arr = []
+		for (let i = 0; i < 1000; i++) {
+			arr[i] = i
+		}
+
+		const result = calcPerformance(
+			2000,
+			() => {
+				// no operations
+			},
+			() => {
+				return arr.length === Object.keys(arr).length
+			}
+		)
+
+		console.log(result)
+	})
+
+	it('Object.freeze', function () {
+		this.timeout(300000)
+
+		const result = calcPerformance(
+			2000,
+			// () => {
+			// 	// no operations
+			// },
+			() => {
+				const x = {}
+				return x
+			},
+			() => {
+				const x = {}
+				Object.freeze(x)
+			},
+			() => {
+				const x = {}
+				getObjectUniqueId(x)
+				Object.freeze(x)
+			},
+			() => {
+				const x = {}
+				freezeWithUniqueId(x)
 			}
 		)
 

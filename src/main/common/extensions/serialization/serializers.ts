@@ -1,13 +1,18 @@
-import {TClass, TypeMetaCollectionWithId} from '../TypeMeta'
+import {TClass, typeToDebugString} from '../../helpers/helpers'
+import {ThenableSync, ThenableSyncIterator, ThenableSyncOrValue, TOnFulfilled} from '../../helpers/ThenableSync'
+import {getObjectUniqueId} from '../../lists/helpers/object-unique-id'
+import {TypeMetaCollectionWithId} from '../TypeMeta'
 import {
+	IDeSerializeOptions,
 	IDeSerializerVisitor, IDeSerializeValue,
 	IObjectSerializer, ISerializable,
 	ISerializedData,
-	ISerializedDataOrValue, ISerializedObject,
+	ISerializedDataOrValue, ISerializedObject, ISerializedRef,
 	ISerializedTyped, ISerializedTypedValue,
-	ISerializedValue, ISerializedValueArray,
+	ISerializedValue, ISerializedValueArray, ISerializeOptions,
 	ISerializerVisitor, ISerializeValue,
 	ITypeMetaSerializer, ITypeMetaSerializerCollection,
+	ITypeMetaSerializerOverride,
 } from './contracts'
 
 // region SerializerVisitor
@@ -15,6 +20,8 @@ import {
 export class SerializerVisitor implements ISerializerVisitor {
 	public types: string[]
 	public typesMap: { [uuid: string]: number }
+	public objects: ISerializedTyped[]
+	public objectsMap: Array<ISerializedTyped|ISerializedRef>
 	private _typeMeta: ITypeMetaSerializerCollection
 
 	constructor(typeMeta: ITypeMetaSerializerCollection) {
@@ -26,31 +33,51 @@ export class SerializerVisitor implements ISerializerVisitor {
 		// tslint:disable-next-line:prefer-const
 		let {types, typesMap} = this
 		if (!typesMap) {
-			this.typesMap = {}
+			this.typesMap = typesMap = {}
 			this.types = types = []
 		}
 
-		let typeIndex = types[uuid]
+		let typeIndex = typesMap[uuid]
 		if (typeIndex == null) {
 			typeIndex = types.length
 			types[typeIndex] = uuid
+			typesMap[uuid] = typeIndex
 		}
 
 		return typeIndex
 	}
 
-	public serialize<TValue>(value: TValue, valueType?: TClass<TValue>): ISerializedValue {
-		if (typeof value === 'undefined') {
-			return value
+	private addObject(
+		object: object,
+		serialize: (out: ISerializedTyped) => void,
+	): ISerializedTyped|ISerializedRef {
+		// tslint:disable-next-line:prefer-const
+		let {objects, objectsMap} = this
+		if (!objectsMap) {
+			this.objectsMap = objectsMap = []
+			this.objects = objects = []
 		}
 
-		if (value === null
-			|| typeof value === 'number'
-			|| typeof value === 'string'
-			|| typeof value === 'boolean') {
-			return value as any
+		const id = getObjectUniqueId(object)
+		let ref = objectsMap[id]
+		if (ref == null) {
+			const index = objects.length
+			ref = {id: index}
+			objectsMap[id] = ref
+			const data = {} as any
+			objects[index] = data
+			serialize(data as ISerializedTyped)
 		}
 
+		return ref
+	}
+
+	private serializeObject<TValue>(
+		out: ISerializedTyped,
+		value: TValue,
+		options?: ISerializeOptions,
+		valueType?: TClass<TValue>,
+	): void {
 		const meta = this._typeMeta.getMeta(valueType || value.constructor as TClass<TValue>)
 		if (!meta) {
 			throw new Error(`Class (${value.constructor.name}) have no type meta`)
@@ -70,39 +97,178 @@ export class SerializerVisitor implements ISerializerVisitor {
 			throw new Error(`Class (${value.constructor.name}) serializer have no serialize method`)
 		}
 
-		const serializedTyped = {
-			type: this.addType(uuid),
-			data: serializer.serialize(this.serialize, value),
+		out.type = this.addType(uuid)
+		out.data = serializer.serialize(this.getNextSerialize(), value, options)
+	}
+
+	public getNextSerialize(
+		options?: ISerializeOptions,
+	): ISerializeValue {
+		return <TNextValue = any>(
+			next_value: TNextValue,
+			next_options?: ISerializeOptions,
+			next_valueType?: TClass<TNextValue>,
+		) => this.serialize(
+			next_value,
+			next_options == null || next_options === options
+				? options
+				: (options == null ? next_options : {
+					...options,
+					...next_options,
+				}),
+			next_valueType,
+		)
+	}
+
+	public serialize<TValue = any>(
+		value: TValue,
+		options?: ISerializeOptions,
+		valueType?: TClass<TValue>,
+	): ISerializedValue {
+		if (typeof value === 'undefined') {
+			return value
 		}
 
-		return serializedTyped
+		if (value === null
+			|| typeof value === 'number'
+			|| typeof value === 'string'
+			|| typeof value === 'boolean') {
+			return value as any
+		}
+
+		return this.addObject(value as any, out => this.serializeObject(out, value, options, valueType))
 	}
 }
 
+// tslint:disable-next-line:no-shadowed-variable no-empty
+const LOCKED = function LOCKED() {}
+
 export class DeSerializerVisitor implements IDeSerializerVisitor {
 	private readonly _types: string[]
+	private readonly _objects: ISerializedTyped[]
+	private readonly _instances: any[]
+	private _countDeserialized: number = 0
 	private readonly _typeMeta: ITypeMetaSerializerCollection
 
-	constructor(typeMeta: ITypeMetaSerializerCollection, types: string[]) {
+	constructor(
+		typeMeta: ITypeMetaSerializerCollection,
+		types: string[],
+		objects: ISerializedTyped[],
+	) {
 		this._typeMeta = typeMeta
 		this._types = types
+		this._objects = objects
+
+		const len = objects.length
+		const instances = new Array(len)
+		for (let i = 0; i < len; i++) {
+			instances[i] = null
+		}
+		this._instances = instances
+
 		this.deSerialize = this.deSerialize.bind(this)
 	}
 
-	public deSerialize<TValue extends any>(
-		serializedValue: ISerializedValue,
-		valueType?: TClass<TValue>,
-		valueFactory?: () => TValue,
-	): TValue {
-		if (typeof serializedValue === 'undefined') {
-			return serializedValue
+	public assertEnd() {
+		const {_types, _objects, _instances, _typeMeta} = this
+
+		const getDebugObject = (deserialized, id) => {
+			const object = _objects[id]
+			const uuid = _types[object.type]
+			const type = _typeMeta.getType(uuid)
+			return {
+				type: type == null ? `<Type not found: ${uuid}>` : type.name,
+				data: object.data,
+				deserialized: deserialized == null
+					? deserialized
+					: deserialized.constructor.name,
+			}
 		}
 
-		if (serializedValue === null
+		if (this._countDeserialized !== _instances.length) {
+			throw new Error(`${_instances.length - this._countDeserialized} instances is not deserialized\r\n` +
+				JSON.stringify(_instances
+					.map((o, i) => [o, i])
+					.filter(o => !o[0] || o[0] === LOCKED || ThenableSync.isThenableSync(o[0]))
+					.map(o => getDebugObject(o[0], o[1]))))
+		}
+	}
+
+	public getNextDeSerialize(
+		// options?: IDeSerializeOptions,
+	): IDeSerializeValue {
+		return <TNextValue = any>(
+			next_serializedValue: ISerializedValue,
+			next_onfulfilled?: TOnFulfilled<TNextValue>,
+			next_options?: IDeSerializeOptions,
+			next_valueType?: TClass<TNextValue>,
+			next_valueFactory?: (...args) => TNextValue,
+		) => this.deSerialize(
+			next_serializedValue,
+			next_onfulfilled,
+			next_options,
+			// next_options == null || next_options === options
+			// 	? options
+			// 	: (options == null ? next_options : {
+			// 		...options,
+			// 		...next_options,
+			// 	}),
+			next_valueType,
+			next_valueFactory,
+		)
+	}
+
+	public deSerialize<TValue = any>(
+		serializedValue: ISerializedValue,
+		onfulfilled?: TOnFulfilled<TValue>,
+		options?: IDeSerializeOptions,
+		valueType?: TClass<TValue>,
+		valueFactory?: (...args) => TValue,
+	): ThenableSyncOrValue<TValue> {
+		if (onfulfilled) {
+			const input_onfulfilled = onfulfilled
+			onfulfilled = value => {
+				const result = input_onfulfilled(value)
+				onfulfilled = null
+				return result
+			}
+		}
+
+		if (serializedValue == null
 			|| typeof serializedValue === 'number'
 			|| typeof serializedValue === 'string'
-			|| typeof serializedValue === 'boolean') {
+			|| typeof serializedValue === 'boolean'
+		) {
+			if (onfulfilled) {
+				return ThenableSync.resolve(onfulfilled(serializedValue as unknown as TValue))
+			}
 			return serializedValue as unknown as TValue
+		}
+
+		const id = (serializedValue as ISerializedRef).id
+		if (id != null) {
+			let cachedInstance = this._instances[id]
+
+			if (cachedInstance) {
+				if (cachedInstance === LOCKED) {
+					this._instances[id] = cachedInstance = new ThenableSync<TValue>()
+				}
+
+				if (onfulfilled) {
+					if (cachedInstance instanceof ThenableSync) {
+						(cachedInstance as ThenableSync<TValue>)
+							.thenLast(onfulfilled)
+					} else {
+						return ThenableSync.resolve(onfulfilled(cachedInstance))
+					}
+				}
+
+				return cachedInstance
+			}
+
+			this._instances[id] = LOCKED
+
+			serializedValue = this._objects[id]
 		}
 
 		let type = valueType
@@ -126,25 +292,82 @@ export class DeSerializerVisitor implements IDeSerializerVisitor {
 
 		const meta = this._typeMeta.getMeta(type)
 		if (!meta) {
-			throw new Error(`Class (${type}) have no type meta`)
+			throw new Error(`Class (${typeToDebugString(type)}) have no type meta`)
 		}
 
 		const serializer = meta.serializer
 		if (!serializer) {
-			throw new Error(`Class (${type}) type meta have no serializer`)
+			throw new Error(`Class (${typeToDebugString(type)}) type meta have no serializer`)
 		}
 
 		if (!serializer.deSerialize) {
-			throw new Error(`Class (${type}) serializer have no deSerialize method`)
+			throw new Error(`Class (${typeToDebugString(type)}) serializer have no deSerialize method`)
 		}
 
-		const value = serializer.deSerialize(
-			this.deSerialize,
+		let factory = valueFactory || meta.valueFactory || ((...args) => new type(...args))
+		if (id != null && !factory) {
+			throw new Error(`valueFactory not found for ${typeToDebugString(type)}. `
+				+ 'Any object serializers should have valueFactory')
+		}
+
+		let instance
+
+		const iteratorOrValue = serializer.deSerialize(
+			this.getNextDeSerialize(),
 			(serializedValue as ISerializedTyped).data,
-			valueFactory || meta.valueFactory,
+			(...args) => {
+				if (!factory) {
+					throw new Error('Multiple call valueFactory is forbidden')
+				}
+
+				instance = factory(...args)
+				factory = null
+
+				return instance
+			},
+			options,
 		)
 
-		return value
+		const resolveInstance = (value: TValue) => {
+			const cachedInstance = this._instances[id]
+			this._instances[id] = value
+			if (cachedInstance instanceof ThenableSync) {
+				cachedInstance.resolve(value)
+			}
+		}
+
+		const resolveValue = (value: TValue): ThenableSyncOrValue<TValue> => {
+			if (id != null) {
+				if (!factory && instance !== value) {
+					throw new Error(`valueFactory instance !== return value in serializer for ${typeToDebugString(type)}`)
+				}
+
+				resolveInstance(value)
+				this._countDeserialized++
+			}
+
+			if (onfulfilled) {
+				return ThenableSync.resolve(onfulfilled(value))
+			}
+
+			return value
+		}
+
+		const valueOrThenFunc = ThenableSync.resolve(iteratorOrValue, resolveValue)
+
+		if (id != null
+			&& !factory
+			&& ThenableSync.isThenableSync(valueOrThenFunc)
+			// && (!options || !options.waitDeserialize)
+		) {
+			resolveInstance(instance)
+			if (onfulfilled) {
+				return ThenableSync.resolve(onfulfilled(instance))
+			}
+			return instance
+		}
+
+		return valueOrThenFunc
 	}
 }
 
@@ -167,47 +390,51 @@ export class TypeMetaSerializerCollection
 
 	private static makeTypeMetaSerializer<TObject extends ISerializable>(
 		type: TSerializableClass<TObject>,
-		valueFactory?: () => TObject,
+		meta?: ITypeMetaSerializerOverride<TObject>,
 	): ITypeMetaSerializer<TObject> {
 		return {
 			uuid: type.uuid,
+			// valueFactory: (...args) => new (type as new (...args: any[]) => TObject)(...args),
+			...meta,
 			serializer: {
 				serialize(
 					serialize: ISerializeValue,
 					value: ISerializable,
+					options?: ISerializeOptions,
 				): ISerializedTypedValue {
-					return value.serialize(serialize)
+					return value.serialize(serialize, options)
 				},
-				deSerialize(
+				*deSerialize(
 					deSerialize: IDeSerializeValue,
 					serializedValue: ISerializedTypedValue,
-					valueFactory2?: () => TObject,
-				): TObject {
-					const value = valueFactory2()
-					value.deSerialize(deSerialize, serializedValue)
+					valueFactory: (...args) => TObject,
+					options?: IDeSerializeOptions,
+				) {
+					const value = valueFactory()
+					yield value.deSerialize(deSerialize, serializedValue, options)
 					return value
 				},
+				...(meta ? meta.serializer : {}),
 			},
-			valueFactory: valueFactory || (() => new (type as new () => TObject)()),
 		}
 	}
 
 	public putSerializableType<TObject extends ISerializable>(
 		type: TSerializableClass<TObject>,
-		valueFactory?: () => TObject,
+		meta?: ITypeMetaSerializerOverride<TObject>,
 	): ITypeMetaSerializer<TObject> {
-		return this.putType(type, TypeMetaSerializerCollection.makeTypeMetaSerializer(type, valueFactory))
+		return this.putType(type, TypeMetaSerializerCollection.makeTypeMetaSerializer(type, meta))
 	}
 }
 
 export function registerSerializable<TObject extends ISerializable>(
 	type: TSerializableClass<TObject>,
-	valueFactory?: () => TObject,
+	meta?: ITypeMetaSerializerOverride<TObject>,
 ) {
-	TypeMetaSerializerCollection.default.putSerializableType(type, valueFactory)
+	TypeMetaSerializerCollection.default.putSerializableType(type, meta)
 }
 
-export function registerSerializer<TValue extends any>(
+export function registerSerializer<TValue = any>(
 	type: TClass<TValue>,
 	meta: ITypeMetaSerializer<TValue>,
 ) {
@@ -227,9 +454,13 @@ export class ObjectSerializer implements IObjectSerializer {
 
 	public static default: ObjectSerializer = new ObjectSerializer()
 
-	public serialize<TValue>(value: TValue, valueType?: TClass<TValue>): ISerializedDataOrValue {
+	public serialize<TValue>(
+		value: TValue,
+		options?: ISerializeOptions,
+		valueType?: TClass<TValue>,
+	): ISerializedDataOrValue {
 		const serializer = new SerializerVisitor(this.typeMeta)
-		const serializedValue = serializer.serialize(value, valueType)
+		const serializedValue = serializer.serialize(value, options, valueType)
 
 		if (!serializedValue || typeof serializedValue !== 'object') {
 			return serializedValue
@@ -243,27 +474,34 @@ export class ObjectSerializer implements IObjectSerializer {
 			serializedData.types = serializer.types
 		}
 
+		if (serializer.objects) {
+			serializedData.objects = serializer.objects
+		}
+
 		return serializedData
 	}
 
-	public deSerialize<TValue extends any>(
+	public deSerialize<TValue = any>(
 		serializedValue: ISerializedDataOrValue,
+		options?: IDeSerializeOptions,
 		valueType?: TClass<TValue>,
-		valueFactory?: () => TValue,
+		valueFactory?: (...args) => TValue,
 	): TValue {
 		if (!serializedValue || typeof serializedValue !== 'object') {
-			return serializedValue as TValue
+			return serializedValue as any
 		}
 
-		const {types, data} = serializedValue as ISerializedData
+		const {types, objects, data} = serializedValue as ISerializedData
 
 		if (!Array.isArray(types)) {
 			throw new Error(`serialized value types field is not array: ${types}`)
 		}
 
-		const deSerializer = new DeSerializerVisitor(this.typeMeta, types)
+		const deSerializer = new DeSerializerVisitor(this.typeMeta, types, objects)
 
-		const value = deSerializer.deSerialize(data, valueType, valueFactory)
+		const value = deSerializer.deSerialize(data, null, options, valueType, valueFactory) as TValue
+
+		deSerializer.assertEnd()
 
 		return value
 	}
@@ -302,11 +540,15 @@ export function serializeArray(
 export function deSerializeArray<T>(
 	deSerialize: IDeSerializeValue,
 	serializedValue: ISerializedValueArray,
-	valueFactory?: () => T[],
+	value: T[],
 ): T[] {
-	const value = valueFactory ? valueFactory() : []
 	for (let i = 0, len = serializedValue.length; i < len; i++) {
-		value[i] = deSerialize(serializedValue[i])
+		const index = i
+		if (ThenableSync.isThenableSync(
+			deSerialize(serializedValue[index], o => { value[index] = o }),
+		)) {
+			value[index] = null
+		}
 	}
 	return value
 }
@@ -322,6 +564,15 @@ export function serializeIterable(
 	return serializedValue
 }
 
+export function *deSerializeIterableOrdered(
+	serializedValue: ISerializedValueArray,
+	add: (item: any) => void|ThenableSync<any>,
+): ThenableSyncIterator<any> {
+	for (let i = 0, len = serializedValue.length; i < len; i++) {
+		yield add(serializedValue[i])
+	}
+}
+
 export function deSerializeIterable(
 	serializedValue: ISerializedValueArray,
 	add: (item: any) => void,
@@ -335,32 +586,118 @@ export function deSerializeIterable(
 
 // region Object
 
+export function serializeObject(
+	serialize: ISerializeValue,
+	value: object,
+	options?: ISerializeOptions,
+): ISerializedObject {
+	const keepUndefined = options && options.objectKeepUndefined
+	const serializedValue = {}
+	for (const key in value) {
+		if (Object.prototype.hasOwnProperty.call(value, key)) {
+			const item = value[key]
+			if (keepUndefined || typeof item !== 'undefined') {
+				serializedValue[key] = serialize(item)
+			}
+		}
+	}
+	return serializedValue
+}
+
+export function deSerializeObject<T extends object>(
+	deSerialize: IDeSerializeValue,
+	serializedValue: ISerializedObject,
+	value: T,
+): T {
+	for (const key in serializedValue as ISerializedObject) {
+		if (Object.prototype.hasOwnProperty.call(serializedValue, key)) {
+			// tslint:disable-next-line:no-collapsible-if
+			if (ThenableSync.isThenableSync(
+				deSerialize(serializedValue[key], o => { value[key] = o }),
+			)) {
+				value[key] = null
+			}
+		}
+	}
+	return value
+}
+
 registerSerializer<object>(Object, {
 	uuid: '88968a59-178c-4e73-a99f-801e8cdfc37d',
 	serializer: {
-		serialize(serialize: ISerializeValue, value: object): ISerializedObject {
-			const serializedValue = {}
-			for (const key in value) {
-				if (Object.prototype.hasOwnProperty.call(value, key)) {
-					serializedValue[key] = serialize(value[key])
-				}
-			}
-			return serializedValue
+		serialize(
+			serialize: ISerializeValue,
+			value: object,
+			options?: ISerializeOptions,
+		): ISerializedObject {
+			return serializeObject(serialize, value, options)
 		},
 		deSerialize(
 			deSerialize: IDeSerializeValue,
-			serializedValue: ISerializedTypedValue,
-			valueFactory?: () => object,
+			serializedValue: ISerializedObject,
+			valueFactory: (...args) => object,
+			// options?: IDeSerializeOptions,
 		): object {
-			const value = valueFactory ? valueFactory() : {}
-			for (const key in serializedValue as ISerializedObject) {
-				if (Object.prototype.hasOwnProperty.call(serializedValue, key)) {
-					value[key] = deSerialize(serializedValue[key])
-				}
-			}
-			return value
+			const value = valueFactory()
+			return deSerializeObject(deSerialize, serializedValue, value)
 		},
 	},
+	valueFactory: () => ({}),
+})
+
+// endregion
+
+// region Primitive as object
+
+export function serializePrimitiveAsObject<T extends object>(
+	serialize: ISerializeValue,
+	object: T,
+	options?: ISerializeOptions,
+): ISerializedValue {
+	const value = object.valueOf() as any
+	if (value === object) {
+		throw new Error(`value is not primitive as object: ${value && value.constructor.name}`)
+	}
+	return value
+
+	// return {
+	// 	value: serialize(value),
+	// 	object: serializeObject(serialize, object, options) as any,
+	// }
+}
+
+export function deSerializePrimitiveAsObject<T extends object>(
+	deSerialize: IDeSerializeValue,
+	serializedValue: ISerializedObject,
+	valueFactory: (...args) => T,
+	options?: ISerializeOptions,
+): T {
+	const object = valueFactory(serializedValue)
+	// deSerializeObject(deSerialize, serializedValue.object as any, object)
+	return object
+}
+
+const primitiveAsObjectSerializer = {
+	serialize: serializePrimitiveAsObject,
+	deSerialize: deSerializePrimitiveAsObject,
+}
+
+// @ts-ignore
+registerSerializer<string>(String, {
+	uuid: '96104fd7-d6f8-4a32-b8f2-feaa4f3666d8',
+	serializer: primitiveAsObjectSerializer,
+})
+
+// @ts-ignore
+registerSerializer<number>(Number, {
+	uuid: 'dea0de40-1801-4025-b6a4-b6f6c7a4fa11',
+	serializer: primitiveAsObjectSerializer,
+})
+
+// @ts-ignore
+registerSerializer<boolean>(Boolean, {
+	uuid: 'e8d1ac82-a0fa-4431-a23e-3d8f954f736f',
+	serializer: primitiveAsObjectSerializer,
 })
 
 // endregion
@@ -370,17 +707,30 @@ registerSerializer<object>(Object, {
 registerSerializer<any[]>(Array, {
 	uuid: 'f8c84ed0-8463-4f45-b14a-228967dfb0de',
 	serializer: {
-		serialize(serialize: ISerializeValue, value: any[]): ISerializedValueArray {
-			return serializeArray(serialize, value)
+		serialize(
+			serialize: ISerializeValue,
+			value: any[],
+			options?: ISerializeOptions,
+		): ISerializedValueArray|ISerializedObject {
+			if (options && options.arrayAsObject) {
+				return serializeObject(serialize, value, options)
+			}
+			return serializeArray(serialize, value, options && options.arrayLength)
 		},
 		deSerialize(
 			deSerialize: IDeSerializeValue,
 			serializedValue: ISerializedValueArray,
-			valueFactory?: () => any[],
-		): any[] {
-			return deSerializeArray(deSerialize, serializedValue, valueFactory)
+			valueFactory: (...args) => any[],
+			options?: IDeSerializeOptions,
+		): ThenableSyncIterator<any[]>|any[] {
+			const value = valueFactory()
+			if (options && options.arrayAsObject) {
+				return deSerializeObject(deSerialize, serializedValue as any, value)
+			}
+			return deSerializeArray(deSerialize, serializedValue, value)
 		},
 	},
+	valueFactory: () => [],
 })
 
 // endregion
@@ -390,19 +740,25 @@ registerSerializer<any[]>(Array, {
 registerSerializer<Set<any>>(Set, {
 	uuid: '17b11d99-ce03-4349-969e-4f9291d0778c',
 	serializer: {
-		serialize(serialize: ISerializeValue, value: Set<any>): ISerializedValueArray {
+		serialize(
+			serialize: ISerializeValue,
+			value: Set<any>,
+			// options?: ISerializeOptions,
+		): ISerializedValueArray {
 			return serializeIterable(serialize, value)
 		},
-		deSerialize(
+		*deSerialize(
 			deSerialize: IDeSerializeValue,
 			serializedValue: ISerializedValueArray,
-			valueFactory?: () => Set<any>,
-		): Set<any> {
-			const value = valueFactory ? valueFactory() : new Set()
-			deSerializeIterable(serializedValue, o => value.add(deSerialize(o)))
+			valueFactory: (...args) => Set<any>,
+			// options?: IDeSerializeOptions,
+		): ThenableSyncIterator<Set<any>> {
+			const value = valueFactory()
+			yield deSerializeIterableOrdered(serializedValue, o => deSerialize(o, val => { value.add(val) }))
 			return value
 		},
 	},
+	// valueFactory: () => new Set(),
 })
 
 // endregion
@@ -412,27 +768,35 @@ registerSerializer<Set<any>>(Set, {
 registerSerializer<Map<any, any>>(Map, {
 	uuid: 'fdf40f21-59b7-4cb2-804f-3d18ebb19b57',
 	serializer: {
-		serialize(serialize: ISerializeValue, value: Map<any, any>): ISerializedValueArray {
+		serialize(
+			serialize: ISerializeValue,
+			value: Map<any, any>,
+			// options?: ISerializeOptions,
+		): ISerializedValueArray {
 			return serializeIterable(item => [
 				serialize(item[0]),
 				serialize(item[1]),
 			], value)
 		},
-		deSerialize(
+		*deSerialize(
 			deSerialize: IDeSerializeValue,
 			serializedValue: ISerializedValueArray,
-			valueFactory?: () => Map<any, any>,
-		): Map<any, any> {
-			const value = valueFactory ? valueFactory() : new Map()
-			deSerializeIterable(
+			valueFactory: (...args) => Map<any, any>,
+			// options?: IDeSerializeOptions,
+		): ThenableSyncIterator<Map<any, any>> {
+			const value = valueFactory()
+			yield deSerializeIterableOrdered(
 				serializedValue,
-				item => value.set(
-					deSerialize(item[0]),
-					deSerialize(item[1]),
+				item => deSerialize(
+					item[0],
+					key => deSerialize(item[1], val => {
+						value.set(key, val)
+					}),
 				))
 			return value
 		},
 	},
+	// valueFactory: () => new Map(),
 })
 
 // endregion
@@ -442,17 +806,23 @@ registerSerializer<Map<any, any>>(Map, {
 registerSerializer<Date>(Date, {
 	uuid: '7a6c01db-a6b8-4822-a9a5-86e4d3a4460b',
 	serializer: {
-		serialize(serialize: ISerializeValue, value: Date): number {
+		serialize(
+			serialize: ISerializeValue,
+			value: Date,
+			// options?: ISerializeOptions,
+		): number {
 			return value.getTime()
 		},
 		deSerialize(
 			deSerialize: IDeSerializeValue,
 			serializedValue: number,
-			valueFactory?: () => Date,
+			valueFactory: (...args) => Date,
+			// options?: IDeSerializeOptions,
 		): Date {
-			return new Date(serializedValue)
+			return valueFactory(serializedValue)
 		},
 	},
+	// valueFactory: (value: number|string|Date) => new Date(value),
 })
 
 // endregion

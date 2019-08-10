@@ -1,4 +1,5 @@
 /* tslint:disable:no-identical-functions */
+import {isIterable} from '../../helpers/helpers'
 import {IListChanged, ListChangedType} from '../../lists/contracts/IListChanged'
 import {IMapChanged, MapChangedType} from '../../lists/contracts/IMapChanged'
 import {IPropertyChanged} from '../../lists/contracts/IPropertyChanged'
@@ -7,6 +8,7 @@ import {IUnsubscribe} from '../subjects/subject'
 import {ANY, COLLECTION_PREFIX} from './contracts/constants'
 import {IRuleSubscribe, ISubscribeObject} from './contracts/rule-subscribe'
 import {IRule, RuleType} from './contracts/rules'
+import {checkUnsubscribe} from './helpers/common'
 
 // function propertyPredicateAll(propertyName: string, object) {
 // 	return Object.prototype.hasOwnProperty.call(object, propertyName)
@@ -30,7 +32,7 @@ function subscribeObject<TValue>(
 	let unsubscribe
 
 	if (propertyChanged) {
-		unsubscribe = propertyChanged
+		unsubscribe = checkUnsubscribe(propertyChanged
 			.subscribe(({name, oldValue, newValue}) => {
 				if (!propertyPredicate || propertyPredicate(name, object)) {
 					if (typeof oldValue !== 'undefined') {
@@ -40,7 +42,7 @@ function subscribeObject<TValue>(
 						subscribeItem(newValue, name + '')
 					}
 				}
-			})
+			}))
 	}
 
 	const forEach = (callbackfn: (item: TValue, debugPropertyName: string) => void) => {
@@ -64,7 +66,7 @@ function subscribeObject<TValue>(
 	
 	if (immediateSubscribe) {
 		forEach(subscribeItem)
-	} else if (!unsubscribe) {
+	} else if (unsubscribe == null) {
 		return null
 	}
 
@@ -87,7 +89,7 @@ function subscribeIterable<TItem>(
 	subscribeItem: (item: TItem, debugPropertyName: string) => void,
 	unsubscribeItem: (item: TItem, debugPropertyName: string) => void,
 ): IUnsubscribe {
-	if (!object || !(Symbol.iterator in object)) {
+	if (!object || !isIterable(object)) {
 		return null
 	}
 
@@ -125,7 +127,7 @@ function subscribeList<TItem>(
 	const {listChanged} = object
 	let unsubscribe
 	if (listChanged) {
-		unsubscribe = listChanged
+		unsubscribe = checkUnsubscribe(listChanged
 			.subscribe(({type, oldItems, newItems}) => {
 				switch (type) {
 					case ListChangedType.Added:
@@ -147,7 +149,7 @@ function subscribeList<TItem>(
 						}
 						break
 				}
-			})
+			}))
 	}
 
 	const forEach = (callbackfn: (item: TItem, debugPropertyName: string) => void) => {
@@ -158,7 +160,7 @@ function subscribeList<TItem>(
 
 	if (immediateSubscribe) {
 		forEach(subscribeItem)
-	} else if (!unsubscribe) {
+	} else if (unsubscribe == null) {
 		return null
 	}
 
@@ -188,7 +190,7 @@ function subscribeSet<TItem>(
 	const {setChanged} = object
 	let unsubscribe
 	if (setChanged) {
-		unsubscribe = setChanged
+		unsubscribe = checkUnsubscribe(setChanged
 			.subscribe(({type, oldItems, newItems}) => {
 				switch (type) {
 					case SetChangedType.Added:
@@ -204,7 +206,7 @@ function subscribeSet<TItem>(
 						}
 						break
 				}
-			})
+			}))
 	}
 
 	const forEach = (callbackfn: (item: TItem, debugPropertyName: string) => void) => {
@@ -215,7 +217,7 @@ function subscribeSet<TItem>(
 
 	if (immediateSubscribe) {
 		forEach(subscribeItem)
-	} else if (!unsubscribe) {
+	} else if (unsubscribe == null) {
 		return null
 	}
 
@@ -248,7 +250,7 @@ function subscribeMap<K, V>(
 	let unsubscribe
 
 	if (mapChanged) {
-		unsubscribe = mapChanged
+		unsubscribe = checkUnsubscribe(mapChanged
 			.subscribe(({type, key, oldValue, newValue}) => {
 				if (!keyPredicate || keyPredicate(key, object)) {
 					switch (type) {
@@ -268,7 +270,7 @@ function subscribeMap<K, V>(
 							break
 					}
 				}
-			})
+			}))
 	}
 
 	const forEach = (callbackfn: (item: V, debugPropertyName: string) => void) => {
@@ -290,7 +292,7 @@ function subscribeMap<K, V>(
 
 	if (immediateSubscribe) {
 		forEach(subscribeItem)
-	} else if (!unsubscribe) {
+	} else if (unsubscribe == null) {
 		return null
 	}
 

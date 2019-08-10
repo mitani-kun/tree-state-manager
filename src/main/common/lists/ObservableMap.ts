@@ -1,5 +1,5 @@
 import {IMergeable, IMergeOptions, IMergeValue} from '../extensions/merge/contracts'
-import {mergeMaps} from '../extensions/merge/merge-maps'
+import {createMergeMapWrapper, mergeMaps} from '../extensions/merge/merge-maps'
 import {registerMergeable} from '../extensions/merge/mergers'
 import {
 	IDeSerializeValue,
@@ -7,7 +7,9 @@ import {
 	ISerializedObject,
 	ISerializeValue,
 } from '../extensions/serialization/contracts'
-import {registerSerializer} from '../extensions/serialization/serializers'
+import {registerSerializable, registerSerializer} from '../extensions/serialization/serializers'
+import {isIterable} from '../helpers/helpers'
+import {ThenableSyncIterator} from '../helpers/ThenableSync'
 import {MapChangedObject} from './base/MapChangedObject'
 import {IObservableMap, MapChangedType} from './contracts/IMapChanged'
 import {fillMap} from './helpers/set'
@@ -166,7 +168,7 @@ export class ObservableMap<K, V>
 
 	// region IMergeable
 
-	public canMerge(source: ObservableMap<K, V>): boolean {
+	public _canMerge(source: ObservableMap<K, V>): boolean {
 		const {_map} = this
 		if ((_map as any).canMerge) {
 			return (_map as any).canMerge(source)
@@ -181,10 +183,10 @@ export class ObservableMap<K, V>
 		return source.constructor === Object
 			|| source[Symbol.toStringTag] === 'Map'
 			|| Array.isArray(source)
-			|| Symbol.iterator in source
+			|| isIterable(source)
 	}
 
-	public merge(
+	public _merge(
 		merge: IMergeValue,
 		older: ObservableMap<K, V> | object,
 		newer: ObservableMap<K, V> | object,
@@ -193,7 +195,10 @@ export class ObservableMap<K, V>
 		options?: IMergeOptions,
 	): boolean {
 		return mergeMaps(
-			arrayOrIterable => fillMap(new (this._map.constructor as any)(), arrayOrIterable),
+			(target, source) => createMergeMapWrapper(
+				target,
+				source,
+				arrayOrIterable => fillMap(new (this._map.constructor as any)(), arrayOrIterable)),
 			merge,
 			this,
 			older,
@@ -216,8 +221,11 @@ export class ObservableMap<K, V>
 		}
 	}
 
+	public deSerialize(
+		deSerialize: IDeSerializeValue,
+		serializedValue: ISerializedObject,
 	// tslint:disable-next-line:no-empty
-	public deSerialize(deSerialize: IDeSerializeValue, serializedValue: ISerializedObject) {
+	): void {
 
 	}
 
@@ -226,24 +234,15 @@ export class ObservableMap<K, V>
 
 registerMergeable(ObservableMap)
 
-registerSerializer(ObservableMap, {
-	uuid: ObservableMap.uuid,
+registerSerializable(ObservableMap, {
 	serializer: {
-		serialize(
-			serialize: ISerializeValue,
-			value: ObservableMap<any, any>,
-		): ISerializedObject {
-			return value.serialize(serialize)
-		},
-		deSerialize<K, V>(
+		*deSerialize<K, V>(
 			deSerialize: IDeSerializeValue,
 			serializedValue: ISerializedObject,
-			valueFactory?: (map?: Map<K, V>) => ObservableMap<K, V>,
-		): ObservableMap<K, V> {
-			const innerMap = deSerialize<Map<K, V>>(serializedValue.map)
-			const value = valueFactory
-				? valueFactory(innerMap)
-				: new ObservableMap<K, V>(innerMap)
+			valueFactory: (map?: Map<K, V>) => ObservableMap<K, V>,
+		): ThenableSyncIterator<ObservableMap<K, V>> {
+			const innerMap = yield deSerialize<Map<K, V>>(serializedValue.map)
+			const value = valueFactory(innerMap)
 			value.deSerialize(deSerialize, serializedValue)
 			return value
 		},
