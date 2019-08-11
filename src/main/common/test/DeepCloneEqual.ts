@@ -6,7 +6,7 @@ export interface IDeepCloneEqualOptions {
 }
 
 export interface IDeepCloneOptions extends IDeepCloneEqualOptions {
-	customClone?: (o: any, clone: (o: any) => any) => any
+	customClone?: (value: any, setInstance: (instance) => void, cloneNested: (nested: any) => any) => any
 }
 export interface IDeepEqualOptions extends IDeepCloneEqualOptions {
 	noCrossReferences?: boolean,
@@ -91,14 +91,24 @@ export class DeepCloneEqual {
 				}
 			}
 
+			let cloned
+
 			if (customClone) {
-				const result = customClone(source, clone)
+				const result = customClone(source, o => {
+					cloned = o
+					if (id != null) {
+						cache[id] = o
+					}
+				}, clone)
+
 				if (result != null) {
 					return result
 				}
-			}
 
-			let cloned
+				if (id != null && cloned !== null) {
+					cache[id] = null
+				}
+			}
 
 			if (source[Symbol.iterator] && source.next) {
 				cloned = toIterableIterator(clone(Array.from(source[Symbol.iterator]())))
@@ -270,6 +280,14 @@ export class DeepCloneEqual {
 				}
 			}
 
+			if (options && options.equalTypes) {
+				const type1 = o1.constructor
+				const type2 = o2.constructor
+				if (type1 !== type2) {
+					return false
+				}
+			}
+
 			const valueOf1 = o1.valueOf()
 			const valueOf2 = o2.valueOf()
 			if (valueOf1 !== o1 || valueOf2 !== o2) {
@@ -278,14 +296,6 @@ export class DeepCloneEqual {
 				) {
 					return true
 				} else {
-					return false
-				}
-			}
-
-			if (options && options.equalTypes) {
-				const type1 = o1.constructor
-				const type2 = o2.constructor
-				if (type1 !== type2) {
 					return false
 				}
 			}

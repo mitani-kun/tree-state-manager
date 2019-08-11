@@ -3,7 +3,7 @@
 import {IMergeOptions, ITypeMetaMerger} from '../../../../../../../main/common/extensions/merge/contracts'
 import {ObjectMerger, TypeMetaMergerCollection} from '../../../../../../../main/common/extensions/merge/mergers'
 import {TClass} from '../../../../../../../main/common/helpers/helpers'
-import {isFrozenWithoutUniqueId} from '../../../../../../../main/common/lists/helpers/object-unique-id'
+import {canHaveUniqueId, isFrozenWithoutUniqueId} from '../../../../../../../main/common/lists/helpers/object-unique-id'
 import {SortedList} from '../../../../../../../main/common/lists/SortedList'
 import {Assert} from '../../../../../../../main/common/test/Assert'
 import {DeepCloneEqual, isPrimitiveDefault} from '../../../../../../../main/common/test/DeepCloneEqual'
@@ -20,7 +20,7 @@ export const deepCloneEqual = new DeepCloneEqual({
 			if (o.constructor === Number
 				|| o.constructor === Boolean
 				|| o.constructor === String && Object.isFrozen(o)
-				|| isFrozenWithoutUniqueId(o)
+				|| !canHaveUniqueId(o)
 			) {
 				return true
 			}
@@ -29,15 +29,18 @@ export const deepCloneEqual = new DeepCloneEqual({
 		},
 	},
 	cloneOptions: {
-		customClone: (o, clone) => {
+		customClone: (o, setInstance, cloneNested) => {
 			if (o.constructor === SortedList) {
 				const list = new SortedList({
 					autoSort: (o as any).autoSort,
 					notAddIfExists: (o as any).notAddIfExists,
 					compare: (o as any).compare,
 				})
+
+				setInstance(list)
+
 				for (const item of (o as unknown as SortedList<any>)) {
-					list.add(clone(item))
+					list.add(cloneNested(item))
 				}
 				return list as any
 			}
@@ -404,14 +407,16 @@ export class TestMerger extends TestVariants<
 								&& actual.constructor !== String
 								&& actual.constructor !== Number
 								&& actual.constructor !== Boolean
-								&& !isFrozenWithoutUniqueId(actual)
+								&& canHaveUniqueId(actual)
 								|| typeof actual === 'function') {
 								assert.notStrictEqual(actual, expected)
 								assert.notStrictEqual(actual, options.base)
 								assert.notStrictEqual(actual, options.older)
 								assert.notStrictEqual(actual, options.newer)
 							}
-							deepCloneEqual.equal(actual, expected)
+							deepCloneEqual.equal(actual, expected, {
+								noCrossReferences: true,
+							})
 						}
 					}
 

@@ -1,6 +1,6 @@
 /* tslint:disable:no-nested-switch ban-types use-primitive-type */
 import {isIterable, TClass, typeToDebugString} from '../../helpers/helpers'
-import {getObjectUniqueId, isFrozenWithoutUniqueId} from '../../lists/helpers/object-unique-id'
+import {canHaveUniqueId, getObjectUniqueId} from '../../lists/helpers/object-unique-id'
 import {fillMap, fillSet} from '../../lists/helpers/set'
 import {TypeMetaCollection} from '../TypeMeta'
 import {
@@ -18,29 +18,36 @@ class ValueState<TTarget, TSource> {
 	public target: TTarget
 	public type: TClass<TTarget>
 	public preferClone: boolean
+	public selfAsValue: boolean
 	public refs: any[]
 
 	constructor(
 		mergerState: MergeState<TTarget, TSource>,
 		target: TTarget,
 		preferClone: boolean,
+		selfAsValue: boolean,
 		refs: any[],
 	) {
 		this.mergerState = mergerState
 		this.target = target
 		this.preferClone = preferClone
+		this.selfAsValue = selfAsValue
 		this.refs = refs
 		this.type = mergerState.valueType || target.constructor as any
 	}
 
-	private resolveRef() {
+	public resolveRef() {
 		if (this._isRef == null) {
-			const ref = this.getRef(this.target)
-			if (ref) {
-				this.target = ref
-				this._isRef = true
-			} else {
+			if (this.selfAsValue) {
 				this._isRef = false
+			} else {
+				const ref = this.getRef(this.target)
+				if (ref) {
+					this.target = ref
+					this._isRef = true
+				} else {
+					this._isRef = false
+				}
 			}
 		}
 	}
@@ -64,14 +71,14 @@ class ValueState<TTarget, TSource> {
 	}
 
 	public setRef(refObj: any): void {
-		// const id = getObjectUniqueId(this.target as any)
-		// if (id != null) {
-		// 	let {refs} = this
-		// 	if (refs == null) {
-		// 		this.refs = refs = []
-		// 	}
-		// 	refs[id] = refObj
-		// }
+		const id = getObjectUniqueId(this.target as any)
+		if (id != null) {
+			let {refs} = this
+			if (refs == null) {
+				this.refs = refs = []
+			}
+			refs[id] = refObj
+		}
 	}
 
 	private _meta: ITypeMetaMerger<TTarget, TSource>
@@ -121,7 +128,9 @@ class ValueState<TTarget, TSource> {
 			}
 
 			this._mustBeCloned = _mustBeCloned =
-				(metaPreferClone != null ? metaPreferClone : this.preferClone)
+				(metaPreferClone != null
+					? metaPreferClone
+					: this.preferClone && !this.isRef && !this.mergerState.mergerVisitor.getStatus(this.target))
 				|| valueType && valueType !== this.target.constructor
 		}
 		return _mustBeCloned
@@ -154,17 +163,19 @@ class ValueState<TTarget, TSource> {
 		return _cloneInstance
 	}
 
-	public canMerge(source: TTarget|TSource, target?: TTarget): boolean {
+	public canMerge(source: ValueState<TTarget, TSource>, target?: TTarget): boolean {
 		const canMerge = this.merger.canMerge
 		if (canMerge) {
 			if (target == null) {
 				target = this.target
-				if (this.isRef) {
-					return false
+				if (this.isRef || source.isRef) {
+					return target === source.target
+						? null
+						: false
 				}
 			}
 
-			const result = canMerge(target, source)
+			const result = canMerge(target, source.target)
 			if (result == null) {
 				return null
 			}
@@ -184,20 +195,18 @@ class ValueState<TTarget, TSource> {
 			if (this.mustBeCloned) {
 				_clone = this.cloneInstance
 
-				const canMergeResult: boolean = this.canMerge(target, _clone)
+				const canMergeResult: boolean = this.canMerge(this, _clone)
 
 				switch (canMergeResult) {
 					case null:
 						break
 					case true:
-						const { preferClone, refs } = this
 						const mergerVisitor = this.mergerState.mergerVisitor
 
+						this.setRef(_clone)
 						// mergerVisitor.setStatus(_clone, ObjectStatus.Cloned)
-						// const id = getObjectUniqueId(target as any)
-						// if (id != null) {
-						// 	refs[id] = _clone
-						// }
+
+						const { preferClone, refs } = this
 
 						this.merge(
 							mergerVisitor.getNextMerge(preferClone, preferClone, refs, refs, refs),
@@ -281,10 +290,15 @@ class MergeState<TTarget, TSource> {
 				this,
 				this.base,
 				this.preferCloneBase,
+				this.options && this.options.selfAsValueBase,
 				this.refsBase,
 			)
 		}
 		return _baseState
+	}
+
+	public set baseState(value: ValueState<TTarget, TSource>) {
+		this._baseState = value
 	}
 
 	private _olderState: ValueState<TTarget, TSource>
@@ -295,10 +309,15 @@ class MergeState<TTarget, TSource> {
 				this,
 				this.older as any,
 				this.preferCloneOlder,
+				this.options && this.options.selfAsValueOlder,
 				this.refsOlder,
 			)
 		}
 		return _olderState
+	}
+
+	public set olderState(value: ValueState<TTarget, TSource>) {
+		this._olderState = value
 	}
 
 	private _newerState: ValueState<TTarget, TSource>
@@ -309,10 +328,15 @@ class MergeState<TTarget, TSource> {
 				this,
 				this.newer as any,
 				this.preferCloneNewer,
+				this.options && this.options.selfAsValueNewer,
 				this.refsNewer,
 			)
 		}
 		return _newerState
+	}
+
+	public set newerState(value: ValueState<TTarget, TSource>) {
+		this._newerState = value
 	}
 
 	public fillOlderNewer(): void {
@@ -370,7 +394,7 @@ class MergeState<TTarget, TSource> {
 		const { baseState } = this
 
 		const base = baseState.clone
-		baseState.setRef(base)
+		// baseState.setRef(base)
 		olderState.setRef(base)
 		newerState.setRef(base)
 
@@ -434,8 +458,8 @@ function mergePreferClone(o1, o2) {
 }
 
 enum ObjectStatus {
-	Cloned,
-	Merged,
+	Cloned = 1,
+	Merged = 2,
 }
 
 export class MergerVisitor implements IMergerVisitor {
@@ -625,8 +649,62 @@ export class MergerVisitor implements IMergerVisitor {
 			valueFactory,
 		)
 
+		// region refs
+
+		if (!isPrimitive(base) && mergeState.baseState.isRef) {
+			mergeState.newerState.resolveRef()
+			if (mergeState.baseState.target === mergeState.newerState.target) {
+				if (!isPrimitive(older)) {
+					mergeState.olderState.resolveRef()
+					if (mergeState.baseState.target === mergeState.olderState.target) {
+						return false
+					}
+				}
+
+				mergeState.baseState = mergeState.newerState
+				mergeState.newerState = mergeState.olderState
+				newer = mergeState.newerState.target
+			}
+
+			if (!isPrimitive(older)) {
+				mergeState.olderState.resolveRef()
+				if (mergeState.baseState.target === mergeState.olderState.target) {
+					mergeState.olderState.preferClone
+						= mergePreferClone(
+						mergeState.baseState.preferClone,
+						mergeState.olderState.preferClone,
+					)
+					mergeState.baseState = mergeState.olderState
+				}
+				older = mergeState.olderState.target
+			}
+
+			base = mergeState.baseState.target
+		}
+
+		if (!isPrimitive(older)) {
+			mergeState.olderState.resolveRef()
+			mergeState.newerState.resolveRef()
+
+			if ((mergeState.olderState.isRef || mergeState.newerState.isRef)
+				&& mergeState.olderState.target === mergeState.newerState.target
+			) {
+				mergeState.newerState.preferClone
+					= mergePreferClone(
+					mergeState.olderState.preferClone,
+					mergeState.newerState.preferClone,
+				)
+				mergeState.olderState = mergeState.newerState
+			}
+
+			older = mergeState.olderState.target
+			newer = mergeState.newerState.target
+		}
+
+		// endregion
+
 		const fillOlderNewer = () => {
-			switch (mergeState.olderState.canMerge(newer)) {
+			switch (mergeState.olderState.canMerge(mergeState.newerState)) {
 				case null:
 					if (mergeState.olderState.mustBeCloned) {
 						set(mergeState.newerState.clone)
@@ -666,7 +744,7 @@ export class MergerVisitor implements IMergerVisitor {
 		}
 
 		if (isPrimitive(older)) {
-			switch (mergeState.baseState.canMerge(newer)) {
+			switch (mergeState.baseState.canMerge(mergeState.newerState)) {
 				case null:
 					if (set) {
 						set(older as any)
@@ -693,7 +771,7 @@ export class MergerVisitor implements IMergerVisitor {
 			return false
 		}
 
-		switch (mergeState.baseState.canMerge(newer)) {
+		switch (mergeState.baseState.canMerge(mergeState.newerState)) {
 			case false:
 				if (set) {
 					fillOlderNewer()
@@ -701,7 +779,7 @@ export class MergerVisitor implements IMergerVisitor {
 				}
 				return false
 			case null:
-				switch (mergeState.baseState.canMerge(older)) {
+				switch (mergeState.baseState.canMerge(mergeState.olderState)) {
 					case null:
 						return false
 					case false:
@@ -716,15 +794,16 @@ export class MergerVisitor implements IMergerVisitor {
 				throw new Error('Unreachable code')
 		}
 
-		switch (mergeState.baseState.canMerge(older)) {
+		switch (mergeState.baseState.canMerge(mergeState.olderState)) {
 			case null:
-				if (!mergeState.mergeWithBase(mergeState.newerState, mergeState.newerState)) {
-					if (set) {
-						throw new Error('base != newer; base == older; base == newer')
-					}
-					return false
-				}
-				return true
+				return mergeState.mergeWithBase(mergeState.newerState, mergeState.newerState)
+				// if (!mergeState.mergeWithBase(mergeState.newerState, mergeState.newerState)) {
+				// 	if (set) {
+				// 		throw new Error('base != newer; base == older; base == newer')
+				// 	}
+				// 	return false
+				// }
+				// return true
 			case false:
 				if (!mergeState.mergeWithBase(mergeState.newerState, mergeState.newerState)) {
 					if (set) {
@@ -892,11 +971,10 @@ export class ObjectMerger implements IObjectMerger {
 // Handled in MergerVisitor:
 
 function isPrimitive(value) {
-	return value == null
-		|| typeof value === 'number'
-		|| typeof value === 'boolean'
-		|| typeof value === 'function'
-		|| isFrozenWithoutUniqueId(value)
+	return !canHaveUniqueId(value) || typeof value === 'function'
+		// value == null
+		// || typeof value === 'number'
+		// || typeof value === 'boolean'
 }
 
 registerMerger<string, string>(String as any, {
