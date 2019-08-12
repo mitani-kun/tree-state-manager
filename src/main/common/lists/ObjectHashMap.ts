@@ -17,7 +17,7 @@ interface TNumberObject<K, V> {
 	[id: number]: [K, V],
 }
 
-export class ObjectHashMap<K, V> implements
+export class ObjectHashMap<K extends object, V> implements
 	Map<K, V>,
 	IMergeable<ObjectHashMap<K, V>, TNumberObject<K, V>>,
 	ISerializable
@@ -124,7 +124,7 @@ export class ObjectHashMap<K, V> implements
 
 	public _canMerge(source: ObjectHashMap<K, V>): boolean {
 		if (source.constructor === ObjectHashMap
-			&& this._object === (source as ObjectHashMap<K, V>)._object
+			&& this._object === source._object
 		) {
 			return null
 		}
@@ -184,7 +184,7 @@ registerMergeable(ObjectHashMap)
 
 registerSerializable(ObjectHashMap, {
 	serializer: {
-		*deSerialize<K, V>(
+		*deSerialize<K extends object, V>(
 			deSerialize: IDeSerializeValue,
 			serializedValue: ISerializedObject,
 			valueFactory: (map?: { [id: number]: [K, V] }) => ObjectHashMap<K, V>,
