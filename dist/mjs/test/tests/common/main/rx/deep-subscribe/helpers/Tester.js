@@ -2,17 +2,19 @@ import _regeneratorRuntime from "@babel/runtime/regenerator";
 import _asyncToGenerator from "@babel/runtime/helpers/asyncToGenerator";
 import _classCallCheck from "@babel/runtime/helpers/classCallCheck";
 import _createClass from "@babel/runtime/helpers/createClass";
+import _defineProperty from "@babel/runtime/helpers/defineProperty";
 
 /* tslint:disable:no-empty */
+import { delay } from '../../../../../../../main/common/helpers/helpers';
 import { ObservableMap } from '../../../../../../../main/common/lists/ObservableMap';
 import { ObservableSet } from '../../../../../../../main/common/lists/ObservableSet';
 import { SortedList } from '../../../../../../../main/common/lists/SortedList';
+import { VALUE_PROPERTY_DEFAULT } from '../../../../../../../main/common/rx/deep-subscribe/contracts/constants';
 import { deepSubscribe } from '../../../../../../../main/common/rx/deep-subscribe/deep-subscribe';
 import { ObservableObject } from '../../../../../../../main/common/rx/object/ObservableObject';
 import { ObservableObjectBuilder } from '../../../../../../../main/common/rx/object/ObservableObjectBuilder';
 import { Assert } from '../../../../../../../main/common/test/Assert';
 import { DeepCloneEqual } from '../../../../../../../main/common/test/DeepCloneEqual';
-import { delay } from "../../../../../../../main/common/helpers/helpers";
 var assert = new Assert(new DeepCloneEqual({
   commonOptions: {},
   equalOptions: {
@@ -21,6 +23,8 @@ var assert = new Assert(new DeepCloneEqual({
   }
 }));
 export function createObject() {
+  var _Object$assign;
+
   var object = {};
   var list = new SortedList(); // @ts-ignore
 
@@ -35,30 +39,20 @@ export function createObject() {
   var observableList = new SortedList();
   var observableSet = new ObservableSet();
   var observableMap = new ObservableMap();
-  Object.assign(object, {
-    observableObject: observableObject,
-    observableList: observableList,
-    observableSet: observableSet,
-    observableMap: observableMap,
-    object: object,
-    list: list,
-    set: set,
-    map: map,
-    value: null,
-    promiseSync: {
-      then: function then(resolve) {
-        return resolve(observableObject);
-      }
-    },
-    promiseAsync: {
-      then: function then(resolve) {
-        return setTimeout(function () {
-          return resolve(observableObject);
-        }, 0);
-      }
+  var property = new ObservableObject();
+  Object.assign(object, (_Object$assign = {}, _defineProperty(_Object$assign, VALUE_PROPERTY_DEFAULT, 'nothing'), _defineProperty(_Object$assign, "observableObject", observableObject), _defineProperty(_Object$assign, "observableList", observableList), _defineProperty(_Object$assign, "observableSet", observableSet), _defineProperty(_Object$assign, "observableMap", observableMap), _defineProperty(_Object$assign, "object", object), _defineProperty(_Object$assign, "property", property), _defineProperty(_Object$assign, "list", list), _defineProperty(_Object$assign, "set", set), _defineProperty(_Object$assign, "map", map), _defineProperty(_Object$assign, "value", null), _defineProperty(_Object$assign, "promiseSync", {
+    then: function then(resolve) {
+      return resolve(observableObject);
     }
-  });
+  }), _defineProperty(_Object$assign, "promiseAsync", {
+    then: function then(resolve) {
+      return setTimeout(function () {
+        return resolve(observableObject);
+      }, 0);
+    }
+  }), _Object$assign));
   var observableObjectBuilder = new ObservableObjectBuilder(observableObject);
+  var propertyBuilder = new ObservableObjectBuilder(property);
   Object.keys(object).forEach(function (key) {
     if (key !== 'value') {
       list.add(object[key]);
@@ -69,8 +63,12 @@ export function createObject() {
       observableMap.set(key, object[key]);
     }
 
-    observableObjectBuilder.writable(key, null, object[key]);
+    if (key !== VALUE_PROPERTY_DEFAULT) {
+      observableObjectBuilder.writable(key, null, object[key]);
+      propertyBuilder.writable('value_' + key, null, object[key]);
+    }
   });
+  propertyBuilder.writable(VALUE_PROPERTY_DEFAULT, null, observableObject);
   return object;
 }
 
@@ -207,7 +205,7 @@ function () {
         assert.deepStrictEqual(_this2._unsubscribed[_i], []);
 
         if (errorType) {
-          assert.throws(function () {
+          assert["throws"](function () {
             return _this2.subscribePrivate(ruleBuilder, _i);
           }, errorType, errorRegExp);
         } else {
@@ -254,7 +252,7 @@ function () {
       }
 
       if (errorType) {
-        assert.throws(function () {
+        assert["throws"](function () {
           return changeFunc(_this3._object);
         }, errorType, errorRegExp);
       } else {
@@ -289,7 +287,7 @@ function () {
         assert.deepStrictEqual(_this4._unsubscribed[_i3], []);
 
         if (errorType) {
-          assert.throws(function () {
+          assert["throws"](function () {
             return _this4._unsubscribe[_i3]();
           }, errorType, errorRegExp);
           assert.deepStrictEqual(_this4._subscribed[_i3], []);
@@ -359,7 +357,7 @@ function () {
                           assert.deepStrictEqual(_this5._unsubscribed[_i4], []);
 
                           if (errorType) {
-                            assert.throws(function () {
+                            assert["throws"](function () {
                               return _this5.subscribePrivate(ruleBuilder, _i4);
                             }, errorType, errorRegExp);
                           } else {
@@ -455,7 +453,7 @@ function () {
                 }
 
                 if (errorType) {
-                  assert.throws(function () {
+                  assert["throws"](function () {
                     return changeFunc(_this6._object);
                   }, errorType, errorRegExp);
                 } else {
@@ -531,7 +529,7 @@ function () {
                             break;
                           }
 
-                          assert.throws(function () {
+                          assert["throws"](function () {
                             return _this7._unsubscribe[_i6]();
                           }, errorType, errorRegExp);
                           assert.deepStrictEqual(_this7._subscribed[_i6], []);

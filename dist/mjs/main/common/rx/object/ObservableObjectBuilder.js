@@ -1,5 +1,12 @@
+import _defineProperty from "@babel/runtime/helpers/defineProperty";
 import _classCallCheck from "@babel/runtime/helpers/classCallCheck";
 import _createClass from "@babel/runtime/helpers/createClass";
+
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
+
+function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(source, true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(source).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
+
+import { PropertyChangedEvent } from '../../lists/contracts/IPropertyChanged';
 import '../extensions/autoConnect';
 import { ObservableObject } from './ObservableObject';
 export var ObservableObjectBuilder =
@@ -41,19 +48,13 @@ function () {
       if (__fields && typeof initValue !== 'undefined') {
         var value = __fields[name];
 
-        if (initValue === value) {
-          object._propagatePropertyChanged(name, value);
-        } else {
+        if (initValue !== value) {
           object[name] = initValue;
         }
       }
 
       return this;
     }
-    /**
-     * @param options - reserved
-     */
-
   }, {
     key: "readable",
     value: function readable(name, options, value) {
@@ -91,27 +92,33 @@ function () {
           configurable: true,
           enumerable: true,
           get: function get() {
-            var val = factory.call(this);
-            this.__fields[name] = val;
+            var factoryValue = factory.call(this);
             createInstanceProperty(this);
-            return val;
+            var fields = this.__fields;
+
+            if (fields && typeof factoryValue !== 'undefined') {
+              var oldValue = fields[name];
+
+              if (factoryValue !== oldValue) {
+                this._set(name, factoryValue, _objectSpread({}, options && options.factorySetOptions, {
+                  suppressPropertyChanged: true
+                }));
+              }
+            }
+
+            return factoryValue;
           }
         });
 
         if (__fields) {
           var oldValue = __fields[name];
-          var event = {
-            name: name,
-            oldValue: oldValue
-          };
-          Object.defineProperty(event, 'newValue', {
-            configurable: true,
-            enumerable: true,
-            get: function get() {
+          var propertyChangedIfCanEmit = object.propertyChangedIfCanEmit;
+
+          if (propertyChangedIfCanEmit) {
+            propertyChangedIfCanEmit.onPropertyChanged(new PropertyChangedEvent(name, oldValue, function () {
               return object[name];
-            }
-          });
-          object.onPropertyChanged(event);
+            }));
+          }
         }
       } else {
         createInstanceProperty(object);
@@ -119,15 +126,17 @@ function () {
         if (__fields && typeof value !== 'undefined') {
           var _oldValue = __fields[name];
 
-          object._propagatePropertyChanged(name, value);
-
           if (value !== _oldValue) {
             __fields[name] = value;
-            object.onPropertyChanged({
-              name: name,
-              oldValue: _oldValue,
-              newValue: value
-            });
+            var _propertyChangedIfCanEmit = object.propertyChangedIfCanEmit;
+
+            if (_propertyChangedIfCanEmit) {
+              _propertyChangedIfCanEmit.onPropertyChanged({
+                name: name,
+                oldValue: _oldValue,
+                newValue: value
+              });
+            }
           }
         }
       }
@@ -149,10 +158,14 @@ function () {
         delete __fields[name];
 
         if (typeof oldValue !== 'undefined') {
-          object.onPropertyChanged({
-            name: name,
-            oldValue: oldValue
-          });
+          var propertyChangedIfCanEmit = object.propertyChangedIfCanEmit;
+
+          if (propertyChangedIfCanEmit) {
+            propertyChangedIfCanEmit.onPropertyChanged({
+              name: name,
+              oldValue: oldValue
+            });
+          }
         }
       }
 

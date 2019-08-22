@@ -5,11 +5,11 @@ import _getPrototypeOf from "@babel/runtime/helpers/getPrototypeOf";
 import _assertThisInitialized from "@babel/runtime/helpers/assertThisInitialized";
 import _inherits from "@babel/runtime/helpers/inherits";
 import '../extensions/autoConnect';
-import { DeepPropertyChangedObject } from './DeepPropertyChangedObject';
+import { PropertyChangedObject } from './PropertyChangedObject';
 export var ObservableObject =
 /*#__PURE__*/
-function (_DeepPropertyChangedO) {
-  _inherits(ObservableObject, _DeepPropertyChangedO);
+function (_PropertyChangedObjec) {
+  _inherits(ObservableObject, _PropertyChangedObjec);
 
   /** @internal */
   function ObservableObject() {
@@ -34,19 +34,19 @@ function (_DeepPropertyChangedO) {
     value: function _set(name, newValue, options) {
       var __fields = this.__fields;
       var oldValue = __fields[name];
-      var equalsFunc = options.equalsFunc;
+      var equalsFunc = options && options.equalsFunc;
 
       if (equalsFunc ? equalsFunc.call(this, oldValue, newValue) : oldValue === newValue) {
         return false;
       }
 
-      var fillFunc = options.fillFunc;
+      var fillFunc = options && options.fillFunc;
 
       if (fillFunc && oldValue != null && newValue != null && fillFunc.call(this, oldValue, newValue)) {
         return false;
       }
 
-      var convertFunc = options.convertFunc;
+      var convertFunc = options && options.convertFunc;
 
       if (convertFunc) {
         newValue = convertFunc.call(this, newValue);
@@ -56,30 +56,34 @@ function (_DeepPropertyChangedO) {
         return false;
       }
 
-      var beforeChange = options.beforeChange;
+      var beforeChange = options && options.beforeChange;
 
       if (beforeChange) {
         beforeChange.call(this, oldValue);
       }
 
       __fields[name] = newValue;
-
-      this._propagatePropertyChanged(name, newValue);
-
-      var afterChange = options.afterChange;
+      var afterChange = options && options.afterChange;
 
       if (afterChange) {
         afterChange.call(this, newValue);
       }
 
-      this.onPropertyChanged({
-        name: name,
-        oldValue: oldValue,
-        newValue: newValue
-      });
+      if (!options || !options.suppressPropertyChanged) {
+        var propertyChangedIfCanEmit = this.propertyChangedIfCanEmit;
+
+        if (propertyChangedIfCanEmit) {
+          propertyChangedIfCanEmit.onPropertyChanged({
+            name: name,
+            oldValue: oldValue,
+            newValue: newValue
+          });
+        }
+      }
+
       return true;
     }
   }]);
 
   return ObservableObject;
-}(DeepPropertyChangedObject);
+}(PropertyChangedObject);

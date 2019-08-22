@@ -4,6 +4,9 @@ import _createClass from "@babel/runtime/helpers/createClass";
 import _possibleConstructorReturn from "@babel/runtime/helpers/possibleConstructorReturn";
 import _getPrototypeOf from "@babel/runtime/helpers/getPrototypeOf";
 import _inherits from "@babel/runtime/helpers/inherits";
+
+var _Symbol$iterator, _Symbol$toStringTag;
+
 import { mergeMaps } from '../extensions/merge/merge-maps';
 import { createMergeSetWrapper } from '../extensions/merge/merge-sets';
 import { registerMergeable } from '../extensions/merge/mergers';
@@ -40,8 +43,8 @@ export function getDefaultValue(value) {
 
   return null;
 }
-var _Symbol$iterator = Symbol.iterator;
-var _Symbol$toStringTag = Symbol.toStringTag;
+_Symbol$iterator = Symbol.iterator;
+_Symbol$toStringTag = Symbol.toStringTag;
 export var SortedList =
 /*#__PURE__*/
 function (_ListChangedObject) {
@@ -335,11 +338,16 @@ function (_ListChangedObject) {
         });
       }
 
-      this.onPropertyChanged({
-        name: 'size',
-        oldValue: size,
-        newValue: newSize
-      });
+      var propertyChangedIfCanEmit = this.propertyChangedIfCanEmit;
+
+      if (propertyChangedIfCanEmit) {
+        propertyChangedIfCanEmit.onPropertyChanged({
+          name: 'size',
+          oldValue: size,
+          newValue: newSize
+        });
+      }
+
       return true;
     }
   }, {
@@ -425,11 +433,16 @@ function (_ListChangedObject) {
         });
       }
 
-      this.onPropertyChanged({
-        name: 'size',
-        oldValue: size,
-        newValue: newSize
-      });
+      var propertyChangedIfCanEmit = this.propertyChangedIfCanEmit;
+
+      if (propertyChangedIfCanEmit) {
+        propertyChangedIfCanEmit.onPropertyChanged({
+          name: 'size',
+          oldValue: size,
+          newValue: newSize
+        });
+      }
+
       return true;
     }
   }, {
@@ -466,8 +479,8 @@ function (_ListChangedObject) {
           _iteratorError = err;
         } finally {
           try {
-            if (!_iteratorNormalCompletion && _iterator.return != null) {
-              _iterator.return();
+            if (!_iteratorNormalCompletion && _iterator["return"] != null) {
+              _iterator["return"]();
             }
           } finally {
             if (_didIteratorError) {
@@ -503,8 +516,8 @@ function (_ListChangedObject) {
           _iteratorError2 = err;
         } finally {
           try {
-            if (!_iteratorNormalCompletion2 && _iterator2.return != null) {
-              _iterator2.return();
+            if (!_iteratorNormalCompletion2 && _iterator2["return"] != null) {
+              _iterator2["return"]();
             }
           } finally {
             if (_didIteratorError2) {
@@ -544,8 +557,8 @@ function (_ListChangedObject) {
         _iteratorError3 = err;
       } finally {
         try {
-          if (!_iteratorNormalCompletion3 && _iterator3.return != null) {
-            _iterator3.return();
+          if (!_iteratorNormalCompletion3 && _iterator3["return"] != null) {
+            _iterator3["return"]();
           }
         } finally {
           if (_didIteratorError3) {
@@ -581,11 +594,16 @@ function (_ListChangedObject) {
         });
       }
 
-      this.onPropertyChanged({
-        name: 'size',
-        oldValue: size,
-        newValue: newSize
-      });
+      var propertyChangedIfCanEmit = this.propertyChangedIfCanEmit;
+
+      if (propertyChangedIfCanEmit) {
+        propertyChangedIfCanEmit.onPropertyChanged({
+          name: 'size',
+          oldValue: size,
+          newValue: newSize
+        });
+      }
+
       return true;
     }
   }, {
@@ -629,11 +647,16 @@ function (_ListChangedObject) {
         });
       }
 
-      this.onPropertyChanged({
-        name: 'size',
-        oldValue: size,
-        newValue: newSize
-      });
+      var propertyChangedIfCanEmit = this.propertyChangedIfCanEmit;
+
+      if (propertyChangedIfCanEmit) {
+        propertyChangedIfCanEmit.onPropertyChanged({
+          name: 'size',
+          oldValue: size,
+          newValue: newSize
+        });
+      }
+
       return true;
     }
   }, {
@@ -690,11 +713,16 @@ function (_ListChangedObject) {
         });
       }
 
-      this.onPropertyChanged({
-        name: 'size',
-        oldValue: size,
-        newValue: newSize
-      });
+      var propertyChangedIfCanEmit = this.propertyChangedIfCanEmit;
+
+      if (propertyChangedIfCanEmit) {
+        propertyChangedIfCanEmit.onPropertyChanged({
+          name: 'size',
+          oldValue: size,
+          newValue: newSize
+        });
+      }
+
       return true;
     }
   }, {
@@ -749,8 +777,8 @@ function (_ListChangedObject) {
         _iteratorError4 = err;
       } finally {
         try {
-          if (!_iteratorNormalCompletion4 && _iterator4.return != null) {
-            _iterator4.return();
+          if (!_iteratorNormalCompletion4 && _iterator4["return"] != null) {
+            _iterator4["return"]();
           }
         } finally {
           if (_didIteratorError4) {
@@ -972,11 +1000,16 @@ function (_ListChangedObject) {
         });
       }
 
-      this.onPropertyChanged({
-        name: 'size',
-        oldValue: size,
-        newValue: 0
-      });
+      var propertyChangedIfCanEmit = this.propertyChangedIfCanEmit;
+
+      if (propertyChangedIfCanEmit) {
+        propertyChangedIfCanEmit.onPropertyChanged({
+          name: 'size',
+          oldValue: size,
+          newValue: 0
+        });
+      }
+
       return true;
     }
   }, {
@@ -1185,11 +1218,15 @@ function (_ListChangedObject) {
 
       this._updateAllocatedSize();
 
-      this.onPropertyChanged({
-        name: 'minAllocatedSize',
-        oldValue: oldValue,
-        newValue: value
-      });
+      var propertyChangedIfCanEmit = this.propertyChangedIfCanEmit;
+
+      if (propertyChangedIfCanEmit) {
+        propertyChangedIfCanEmit.onPropertyChanged({
+          name: 'minAllocatedSize',
+          oldValue: oldValue,
+          newValue: value
+        });
+      }
     } // endregion
     // region allocatedSize
 
@@ -1255,11 +1292,15 @@ function (_ListChangedObject) {
         this._autoSort = value;
       }
 
-      this.onPropertyChanged({
-        name: 'autoSort',
-        oldValue: !!oldValue,
-        newValue: value
-      });
+      var propertyChangedIfCanEmit = this.propertyChangedIfCanEmit;
+
+      if (propertyChangedIfCanEmit) {
+        propertyChangedIfCanEmit.onPropertyChanged({
+          name: 'autoSort',
+          oldValue: !!oldValue,
+          newValue: value
+        });
+      }
     } // endregion
     // region notAddIfExists
 
@@ -1282,11 +1323,15 @@ function (_ListChangedObject) {
       }
 
       this._notAddIfExists = value;
-      this.onPropertyChanged({
-        name: 'notAddIfExists',
-        oldValue: !!oldValue,
-        newValue: value
-      });
+      var propertyChangedIfCanEmit = this.propertyChangedIfCanEmit;
+
+      if (propertyChangedIfCanEmit) {
+        propertyChangedIfCanEmit.onPropertyChanged({
+          name: 'notAddIfExists',
+          oldValue: !!oldValue,
+          newValue: value
+        });
+      }
     } // endregion
     // endregion
     // region Methods
@@ -1380,8 +1425,8 @@ function () {
         _iteratorError5 = err;
       } finally {
         try {
-          if (!_iteratorNormalCompletion5 && _iterator5.return != null) {
-            _iterator5.return();
+          if (!_iteratorNormalCompletion5 && _iterator5["return"] != null) {
+            _iterator5["return"]();
           }
         } finally {
           if (_didIteratorError5) {
@@ -1433,34 +1478,37 @@ registerMergeable(SortedList, {
 });
 registerSerializable(SortedList, {
   serializer: {
-    deSerialize:
-    /*#__PURE__*/
-    _regeneratorRuntime.mark(function deSerialize(_deSerialize2, serializedValue, valueFactory) {
-      var options, value;
-      return _regeneratorRuntime.wrap(function deSerialize$(_context2) {
-        while (1) {
-          switch (_context2.prev = _context2.next) {
-            case 0:
-              _context2.next = 2;
-              return _deSerialize2(serializedValue.options);
+    deSerialize: function deSerialize(_deSerialize2, serializedValue, valueFactory) {
+      return (
+        /*#__PURE__*/
+        _regeneratorRuntime.mark(function _callee() {
+          var options, value;
+          return _regeneratorRuntime.wrap(function _callee$(_context2) {
+            while (1) {
+              switch (_context2.prev = _context2.next) {
+                case 0:
+                  _context2.next = 2;
+                  return _deSerialize2(serializedValue.options);
 
-            case 2:
-              options = _context2.sent;
-              _context2.next = 5;
-              return _deSerialize2(serializedValue.array);
+                case 2:
+                  options = _context2.sent;
+                  _context2.next = 5;
+                  return _deSerialize2(serializedValue.array);
 
-            case 5:
-              options.array = _context2.sent;
-              value = valueFactory(options);
-              value.deSerialize(_deSerialize2, serializedValue);
-              return _context2.abrupt("return", value);
+                case 5:
+                  options.array = _context2.sent;
+                  value = valueFactory(options);
+                  value.deSerialize(_deSerialize2, serializedValue);
+                  return _context2.abrupt("return", value);
 
-            case 9:
-            case "end":
-              return _context2.stop();
-          }
-        }
-      }, deSerialize);
-    })
+                case 9:
+                case "end":
+                  return _context2.stop();
+              }
+            }
+          }, _callee);
+        })()
+      );
+    }
   }
 });

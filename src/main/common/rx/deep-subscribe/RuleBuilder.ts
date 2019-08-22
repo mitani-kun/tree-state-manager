@@ -1,30 +1,48 @@
-import {ANY_DISPLAY, COLLECTION_PREFIX} from './contracts/constants'
+import {ANY_DISPLAY, COLLECTION_PREFIX, VALUE_PROPERTY_PREFIX} from './contracts/constants'
 import {IRuleSubscribe} from './contracts/rule-subscribe'
 import {IRule, IRuleAny, IRuleRepeat, RuleType} from './contracts/rules'
 import {getFuncPropertiesPath} from './helpers/func-properties-path'
-import {RuleSubscribeCollection, RuleSubscribeMap, RuleSubscribeObject} from './RuleSubscribe'
+import {RuleSubscribeCollection, RuleSubscribeMap, RuleSubscribeObject, SubscribeObjectType} from './RuleSubscribe'
 
-const RuleSubscribeObjectPropertyNames = RuleSubscribeObject.bind(null, null)
+const RuleSubscribeObjectPropertyNames = RuleSubscribeObject.bind(null, SubscribeObjectType.Property, null)
+const RuleSubscribeObjectValuePropertyNames = RuleSubscribeObject.bind(null, SubscribeObjectType.ValueProperty, null)
 const RuleSubscribeMapKeys = RuleSubscribeMap.bind(null, null)
 
 // const UNSUBSCRIBE_PROPERTY_PREFIX = Math.random().toString(36)
 // let nextUnsubscribePropertyId = 0
 
+class RuleNothing implements IRule {
+	public type = RuleType.Nothing
+	public description = 'nothing'
+}
+
 export class RuleBuilder<TObject> {
-	public rule: IRule
+	public result: IRule
 	private _ruleLast: IRule
 
-	public custom<TValue>(
+	public rule<TValue>(rule: IRule): RuleBuilder<TValue> {
+		const {_ruleLast: ruleLast} = this
+
+		if (ruleLast) {
+			ruleLast.next = rule
+		} else {
+			this.result = rule
+		}
+
+		this._ruleLast = rule
+
+		return this as unknown as RuleBuilder<TValue>
+	}
+
+	public ruleSubscribe<TValue>(
 		ruleSubscribe: IRuleSubscribe<TObject, TValue>,
 		description: string,
 	): RuleBuilder<TValue> {
-		const {_ruleLast: ruleLast} = this
-
 		if (description) {
 			ruleSubscribe.description = description
 		}
 
-		if (ruleSubscribe.unsubscribePropertyName) {
+		if (ruleSubscribe.unsubscribers) {
 			throw new Error('You should not add duplicate IRuleSubscribe instances. Clone rule before add.')
 		}
 
@@ -36,24 +54,40 @@ export class RuleBuilder<TObject> {
 		// 	value: UNSUBSCRIBE_PROPERTY_PREFIX + (nextUnsubscribePropertyId++),
 		// })
 
-		ruleSubscribe.unsubscribePropertyName = [] // UNSUBSCRIBE_PROPERTY_PREFIX + (nextUnsubscribePropertyId++)
+		ruleSubscribe.unsubscribers = [] // UNSUBSCRIBE_PROPERTY_PREFIX + (nextUnsubscribePropertyId++)
 
-		if (ruleLast) {
-			ruleLast.next = ruleSubscribe
-		} else {
-			this.rule = ruleSubscribe
-		}
+		return this.rule(ruleSubscribe)
+	}
 
-		this._ruleLast = ruleSubscribe
+	public nothing(): RuleBuilder<TObject> {
+		return this.rule<TObject>(new RuleNothing())
+	}
 
-		return this as unknown as RuleBuilder<TValue>
+	/**
+	 * Object property, Array index
+	 */
+	public valuePropertyName<TValue>(propertyName: string): RuleBuilder<TValue> {
+		return this.ruleSubscribe(
+			new RuleSubscribeObjectValuePropertyNames(propertyName),
+			VALUE_PROPERTY_PREFIX + propertyName,
+		)
+	}
+
+	/**
+	 * Object property, Array index
+	 */
+	public valuePropertyNames<TValue>(...propertiesNames: string[]): RuleBuilder<TValue> {
+		return this.ruleSubscribe(
+			new RuleSubscribeObjectValuePropertyNames(...propertiesNames),
+			VALUE_PROPERTY_PREFIX + propertiesNames.join('|'),
+		)
 	}
 
 	/**
 	 * Object property, Array index
 	 */
 	public propertyName<TValue>(propertyName: string): RuleBuilder<TValue> {
-		return this.custom(
+		return this.ruleSubscribe(
 			new RuleSubscribeObjectPropertyNames(propertyName),
 			propertyName,
 		)
@@ -63,7 +97,7 @@ export class RuleBuilder<TObject> {
 	 * Object property, Array index
 	 */
 	public propertyNames<TValue>(...propertiesNames: string[]): RuleBuilder<TValue> {
-		return this.custom(
+		return this.ruleSubscribe(
 			new RuleSubscribeObjectPropertyNames(...propertiesNames),
 			propertiesNames.join('|'),
 		)
@@ -73,8 +107,8 @@ export class RuleBuilder<TObject> {
 	 * Object property, Array index
 	 */
 	public propertyAll<TValue>(): RuleBuilder<TValue> {
-		return this.custom(
-			new RuleSubscribeObject(),
+		return this.ruleSubscribe(
+			new RuleSubscribeObjectPropertyNames(),
 			ANY_DISPLAY,
 		)
 	}
@@ -86,8 +120,8 @@ export class RuleBuilder<TObject> {
 		predicate: (propertyName: string, object) => boolean,
 		description: string,
 	): RuleBuilder<TValue> {
-		return this.custom(
-			new RuleSubscribeObject(predicate),
+		return this.ruleSubscribe(
+			new RuleSubscribeObject(SubscribeObjectType.Property, predicate),
 			description,
 		)
 	}
@@ -110,7 +144,7 @@ export class RuleBuilder<TObject> {
 	 * IListChanged & Iterable, ISetChanged & Iterable, IMapChanged & Iterable, Iterable
 	 */
 	public collection<TValue>(): RuleBuilder<TValue> {
-		return this.custom(
+		return this.ruleSubscribe(
 			new RuleSubscribeCollection<any, TValue>(),
 			COLLECTION_PREFIX,
 		)
@@ -120,7 +154,7 @@ export class RuleBuilder<TObject> {
 	 * IMapChanged & Map, Map
 	 */
 	public mapKey<TKey, TValue>(key: TKey): RuleBuilder<TValue> {
-		return this.custom(
+		return this.ruleSubscribe(
 			new RuleSubscribeMapKeys(key),
 			COLLECTION_PREFIX + key,
 		)
@@ -130,7 +164,7 @@ export class RuleBuilder<TObject> {
 	 * IMapChanged & Map, Map
 	 */
 	public mapKeys<TKey, TValue>(...keys: TKey[]): RuleBuilder<TValue> {
-		return this.custom(
+		return this.ruleSubscribe(
 			new RuleSubscribeMapKeys(...keys),
 			COLLECTION_PREFIX + keys.join('|'),
 		)
@@ -140,7 +174,7 @@ export class RuleBuilder<TObject> {
 	 * IMapChanged & Map, Map
 	 */
 	public mapAll<TValue>(): RuleBuilder<TValue> {
-		return this.custom(
+		return this.ruleSubscribe(
 			new RuleSubscribeMap() as any,
 			COLLECTION_PREFIX,
 		)
@@ -153,7 +187,7 @@ export class RuleBuilder<TObject> {
 		keyPredicate: (key: TKey, object) => boolean,
 		description: string,
 	): RuleBuilder<TValue> {
-		return this.custom(
+		return this.ruleSubscribe(
 			new RuleSubscribeMap(keyPredicate) as any,
 			description,
 		)
@@ -175,15 +209,22 @@ export class RuleBuilder<TObject> {
 
 	public path<TValue>(getValueFunc: (o: TObject) => TValue): RuleBuilder<TValue> {
 		for (const propertyNames of getFuncPropertiesPath(getValueFunc)) {
-			if (!propertyNames.startsWith(COLLECTION_PREFIX)) {
-				this.propertyNames(...propertyNames.split('|'))
-			} else {
+			if (propertyNames.startsWith(COLLECTION_PREFIX)) {
 				const keys = propertyNames.substring(1)
 				if (keys === '') {
 					this.collection()
 				} else {
 					this.mapKeys(...keys.split('|'))
 				}
+			} else if (propertyNames.startsWith(VALUE_PROPERTY_PREFIX)) {
+				const valuePropertyNames = propertyNames.substring(1)
+				if (valuePropertyNames === '') {
+					throw new Error(`You should specify at least one value property name; path = ${getValueFunc}`)
+				} else {
+					this.valuePropertyNames(...valuePropertyNames.split('|'))
+				}
+			} else {
+				this.propertyNames(...propertyNames.split('|'))
 			}
 		}
 
@@ -197,12 +238,10 @@ export class RuleBuilder<TObject> {
 			throw new Error('any() parameters is empty')
 		}
 
-		const {_ruleLast: ruleLast} = this
-
 		const rule: IRuleAny = {
 			type: RuleType.Any,
 			rules: getChilds.map(o => {
-				const subRule = o(new RuleBuilder<TObject>()).rule
+				const subRule = o(new RuleBuilder<TObject>()).result
 				if (!subRule) {
 					throw new Error(`Any subRule=${rule}`)
 				}
@@ -210,15 +249,7 @@ export class RuleBuilder<TObject> {
 			}),
 		}
 
-		if (ruleLast) {
-			ruleLast.next = rule
-		} else {
-			this.rule = rule
-		}
-
-		this._ruleLast = rule
-
-		return this as unknown as RuleBuilder<TValue>
+		return this.rule(rule)
 	}
 
 	public repeat<TValue>(
@@ -226,7 +257,7 @@ export class RuleBuilder<TObject> {
 		countMax: number,
 		getChild: (builder: RuleBuilder<TObject>) => RuleBuilder<TValue>,
 	): RuleBuilder<TValue> {
-		const subRule = getChild(new RuleBuilder<TObject>()).rule
+		const subRule = getChild(new RuleBuilder<TObject>()).result
 		if (!subRule) {
 			throw new Error(`getChild(...).rule = ${subRule}`)
 		}
@@ -251,20 +282,10 @@ export class RuleBuilder<TObject> {
 				type: RuleType.Repeat,
 				countMin,
 				countMax,
-				rule: getChild(new RuleBuilder<TObject>()).rule,
+				rule: getChild(new RuleBuilder<TObject>()).result,
 			} as IRuleRepeat
 		}
 
-		const {_ruleLast: ruleLast} = this
-
-		if (ruleLast) {
-			ruleLast.next = rule
-		} else {
-			this.rule = rule
-		}
-
-		this._ruleLast = rule
-
-		return this as unknown as RuleBuilder<TValue>
+		return this.rule(rule)
 	}
 }

@@ -1,15 +1,17 @@
+import {PropertyChangedEvent} from '../../lists/contracts/IPropertyChanged'
 import '../extensions/autoConnect'
 import {ISetOptions, ObservableObject} from './ObservableObject'
 
 export interface IGetOptions<T> {
 	factory: () => T
+	factorySetOptions?: ISetOptions
 }
 
-export class ObservableObjectBuilder {
-	public object: ObservableObject
+export class ObservableObjectBuilder<TObject extends ObservableObject> {
+	public object: TObject
 
-	constructor(object?: ObservableObject) {
-		this.object = object || new ObservableObject()
+	constructor(object?: TObject) {
+		this.object = object || new ObservableObject() as TObject
 	}
 
 	public writable<T>(name: string | number, options?: ISetOptions, initValue?: T): this {
@@ -30,19 +32,17 @@ export class ObservableObjectBuilder {
 		Object.defineProperty(object, name, {
 			configurable: true,
 			enumerable  : true,
-			get(this: ObservableObject) {
+			get(this: TObject) {
 				return this.__fields[name]
 			},
-			set(this: ObservableObject, newValue) {
+			set(this: TObject, newValue) {
 				this._set(name, newValue, options)
 			},
 		})
 
 		if (__fields && typeof initValue !== 'undefined') {
 			const value = __fields[name]
-			if (initValue === value) {
-				object._propagatePropertyChanged(name, value)
-			} else {
+			if (initValue !== value) {
 				object[name] = initValue
 			}
 		}
@@ -50,10 +50,7 @@ export class ObservableObjectBuilder {
 		return this
 	}
 
-	/**
-	 * @param options - reserved
-	 */
-	public readable<T>(name: string | number, options: IGetOptions<T>, value?: T): this {
+	public readable<T>(name: string | number, options?: IGetOptions<T>, value?: T): this {
 		const {object} = this
 
 		const {__fields} = object
@@ -75,7 +72,7 @@ export class ObservableObjectBuilder {
 			Object.defineProperty(instance, name, {
 				configurable: true,
 				enumerable: true,
-				get(this: ObservableObject) {
+				get(this: TObject) {
 					return this.__fields[name]
 				},
 			})
@@ -85,29 +82,36 @@ export class ObservableObjectBuilder {
 			Object.defineProperty(object, name, {
 				configurable: true,
 				enumerable: true,
-				get(this: ObservableObject) {
-					const val = factory.call(this)
-					this.__fields[name] = val
+				get(this: TObject) {
+					const factoryValue = factory.call(this)
 					createInstanceProperty(this)
-					return val
+					const {__fields: fields} = this
+
+					if (fields && typeof factoryValue !== 'undefined') {
+						const oldValue = fields[name]
+						if (factoryValue !== oldValue) {
+							this._set(name, factoryValue, {
+								...(options && options.factorySetOptions),
+								suppressPropertyChanged: true,
+							})
+						}
+					}
+
+					return factoryValue
 				},
 			})
 
 			if (__fields) {
 				const oldValue = __fields[name]
 
-				const event = {
-					name,
-					oldValue,
+				const {propertyChangedIfCanEmit} = object
+				if (propertyChangedIfCanEmit) {
+					propertyChangedIfCanEmit.onPropertyChanged(new PropertyChangedEvent(
+						name,
+						oldValue,
+						() => object[name],
+					))
 				}
-
-				Object.defineProperty(event, 'newValue', {
-					configurable: true,
-					enumerable: true,
-					get: () => object[name],
-				})
-
-				object.onPropertyChanged(event)
 			}
 		} else {
 			createInstanceProperty(object)
@@ -115,15 +119,16 @@ export class ObservableObjectBuilder {
 			if (__fields && typeof value !== 'undefined') {
 				const oldValue = __fields[name]
 
-				object._propagatePropertyChanged(name, value)
-
 				if (value !== oldValue) {
 					__fields[name] = value
-					object.onPropertyChanged({
-						name,
-						oldValue,
-						newValue: value,
-					})
+					const {propertyChangedIfCanEmit} = object
+					if (propertyChangedIfCanEmit) {
+						propertyChangedIfCanEmit.onPropertyChanged({
+							name,
+							oldValue,
+							newValue: value,
+						})
+					}
 				}
 			}
 		}
@@ -143,10 +148,13 @@ export class ObservableObjectBuilder {
 		if (__fields) {
 			delete __fields[name]
 			if (typeof oldValue !== 'undefined') {
-				object.onPropertyChanged({
-					name,
-					oldValue,
-				})
+				const {propertyChangedIfCanEmit} = object
+				if (propertyChangedIfCanEmit) {
+					propertyChangedIfCanEmit.onPropertyChanged({
+						name,
+						oldValue,
+					})
+				}
 			}
 		}
 

@@ -24,21 +24,21 @@ describe('common > main > rx > deep-subscribe > func-properties-path', function 
     testParse("function funcName (e /*/** comment ***/ )  {  coverage() \n return ( coverage(), ( coverage(), e ".concat(path, "}"));
     testParse(" funcName (f /* comment */ )  {  coverage()  return f ".concat(path, "}"));
     testParse(new Function('o', "coverage() \n return o".concat(path)));
-    assert.throws(function () {
+    assert["throws"](function () {
       return parsePropertiesPathString('');
     }, Error);
-    assert.throws(function () {
+    assert["throws"](function () {
       return parsePropertiesPathString("(a) => b ".concat(path));
     }, Error);
-    assert.throws(function () {
+    assert["throws"](function () {
       return parsePropertiesPathString("b => ( ( c ".concat(path, " ) ) "));
     }, Error);
-    assert.throws(function () {
+    assert["throws"](function () {
       return parsePropertiesPathString(new Function('w', "return o".concat(path)));
     }, Error);
   });
   it('parsePropertiesPath', function () {
-    var path = '. o[ "\\`\\"\\\'\\\\`\'[]]" ] . o [ 0 ] . o [ \'\\`\\"\\\'\\\\`"][]\' ] . o';
+    var path = '. o[ "\\`\\"\\\'\\\\`\'[]]" ] // [0]\r\n/*\r\n*/ . o [ 0 ] . o [ \'\\`\\"\\\'\\\\`"][]\' ] . o';
 
     function assertParse(properties) {
       assert.deepStrictEqual(properties, ['o', '`\"\'\\`\'[]]', 'o', '0', 'o', '`\"\'\\`\"][]', 'o']);
@@ -61,7 +61,7 @@ describe('common > main > rx > deep-subscribe > func-properties-path', function 
     compileTest().forEach(function (result) {
       assertParse(result);
     });
-    assert.throws(function () {
+    assert["throws"](function () {
       return parsePropertiesPath('.' + path);
     }, Error);
   });

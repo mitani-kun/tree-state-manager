@@ -1,5 +1,13 @@
 import {ITiming, timingDefault} from './timing'
 
+export interface IDeferredCalcOptions {
+	minTimeBetweenCalc?: number,
+	throttleTime?: number,
+	maxThrottleTime?: number,
+	autoInvalidateInterval?: number,
+	timing?: ITiming,
+}
+
 export class DeferredCalc {
 	private readonly _canBeCalcCallback: () => void
 	private readonly _calcCompletedCallback: () => void
@@ -22,46 +30,37 @@ export class DeferredCalc {
 	private _timeCalcStart?: number
 	private _timeCalcEnd?: number
 
-	constructor({
-		canBeCalcCallback,
-		calcFunc,
-		calcCompletedCallback,
-		minTimeBetweenCalc,
-		throttleTime,
-		maxThrottleTime,
-		autoInvalidateInterval,
-		timing,
-	}: {
+	constructor(
 		canBeCalcCallback: () => void,
 		calcFunc: (done: () => void) => void,
 		calcCompletedCallback: () => void,
-		minTimeBetweenCalc?: number,
-		throttleTime?: number,
-		maxThrottleTime?: number,
-		autoInvalidateInterval?: number,
-		timing?: ITiming,
-	}) {
+		options: IDeferredCalcOptions,
+	) {
 		this._canBeCalcCallback = canBeCalcCallback
 		this._calcFunc = calcFunc
 		this._calcCompletedCallback = calcCompletedCallback
 
-		if (minTimeBetweenCalc) {
-			this._minTimeBetweenCalc = minTimeBetweenCalc
-		}
+		if (options) {
+			if (options.minTimeBetweenCalc) {
+				this._minTimeBetweenCalc = options.minTimeBetweenCalc
+			}
 
-		if (throttleTime) {
-			this._throttleTime = throttleTime
-		}
+			if (options.throttleTime) {
+				this._throttleTime = options.throttleTime
+			}
 
-		if (maxThrottleTime != null) {
-			this._maxThrottleTime = maxThrottleTime
-		}
+			if (options.maxThrottleTime != null) {
+				this._maxThrottleTime = options.maxThrottleTime
+			}
 
-		if (autoInvalidateInterval != null) {
-			this._autoInvalidateInterval = autoInvalidateInterval
-		}
+			if (options.autoInvalidateInterval != null) {
+				this._autoInvalidateInterval = options.autoInvalidateInterval
+			}
 
-		this._timing = timing || timingDefault
+			this._timing = options.timing || timingDefault
+		} else {
+			this._timing = timingDefault
+		}
 
 		this.invalidate()
 	}
@@ -199,7 +198,7 @@ export class DeferredCalc {
 				canBeCalcTime = Math.min(canBeCalcTime, this._timeInvalidateFirst + (_maxThrottleTime || 0))
 			}
 			if (this._timeCalcEnd) {
-				canBeCalcTime = Math.max(canBeCalcTime, this._timeCalcEnd + this._minTimeBetweenCalc || 0)
+				canBeCalcTime = Math.max(canBeCalcTime, this._timeCalcEnd + (this._minTimeBetweenCalc || 0))
 			}
 			if (canBeCalcTime <= now) {
 				this._canBeCalc()
@@ -221,7 +220,7 @@ export class DeferredCalc {
 				calcTime = Math.min(calcTime, this._timeInvalidateFirst + (_maxThrottleTime || 0))
 			}
 			if (this._timeCalcEnd) {
-				calcTime = Math.max(calcTime, this._timeCalcEnd + this._minTimeBetweenCalc || 0)
+				calcTime = Math.max(calcTime, this._timeCalcEnd + (this._minTimeBetweenCalc || 0))
 			}
 			if (calcTime <= now) {
 				this._calc()
@@ -265,6 +264,13 @@ export class DeferredCalc {
 	}
 
 	public calc(): void {
+		if (!this._calcRequested && this._canBeCalcEmitted) {
+			this._calcRequested = true
+			this._pulse()
+		}
+	}
+
+	public reCalc(): void {
 		this._calcRequested = true
 		this._pulse()
 	}

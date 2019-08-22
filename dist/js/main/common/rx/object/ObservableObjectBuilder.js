@@ -5,6 +5,8 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.ObservableObjectBuilder = void 0;
 
+var _IPropertyChanged = require("../../lists/contracts/IPropertyChanged");
+
 require("../extensions/autoConnect");
 
 var _ObservableObject = require("./ObservableObject");
@@ -49,19 +51,13 @@ class ObservableObjectBuilder {
     if (__fields && typeof initValue !== 'undefined') {
       const value = __fields[name];
 
-      if (initValue === value) {
-        object._propagatePropertyChanged(name, value);
-      } else {
+      if (initValue !== value) {
         object[name] = initValue;
       }
     }
 
     return this;
   }
-  /**
-   * @param options - reserved
-   */
-
 
   readable(name, options, value) {
     const {
@@ -103,26 +99,36 @@ class ObservableObjectBuilder {
         enumerable: true,
 
         get() {
-          const val = factory.call(this);
-          this.__fields[name] = val;
+          const factoryValue = factory.call(this);
           createInstanceProperty(this);
-          return val;
+          const {
+            __fields: fields
+          } = this;
+
+          if (fields && typeof factoryValue !== 'undefined') {
+            const oldValue = fields[name];
+
+            if (factoryValue !== oldValue) {
+              this._set(name, factoryValue, { ...(options && options.factorySetOptions),
+                suppressPropertyChanged: true
+              });
+            }
+          }
+
+          return factoryValue;
         }
 
       });
 
       if (__fields) {
         const oldValue = __fields[name];
-        const event = {
-          name,
-          oldValue
-        };
-        Object.defineProperty(event, 'newValue', {
-          configurable: true,
-          enumerable: true,
-          get: () => object[name]
-        });
-        object.onPropertyChanged(event);
+        const {
+          propertyChangedIfCanEmit
+        } = object;
+
+        if (propertyChangedIfCanEmit) {
+          propertyChangedIfCanEmit.onPropertyChanged(new _IPropertyChanged.PropertyChangedEvent(name, oldValue, () => object[name]));
+        }
       }
     } else {
       createInstanceProperty(object);
@@ -130,15 +136,19 @@ class ObservableObjectBuilder {
       if (__fields && typeof value !== 'undefined') {
         const oldValue = __fields[name];
 
-        object._propagatePropertyChanged(name, value);
-
         if (value !== oldValue) {
           __fields[name] = value;
-          object.onPropertyChanged({
-            name,
-            oldValue,
-            newValue: value
-          });
+          const {
+            propertyChangedIfCanEmit
+          } = object;
+
+          if (propertyChangedIfCanEmit) {
+            propertyChangedIfCanEmit.onPropertyChanged({
+              name,
+              oldValue,
+              newValue: value
+            });
+          }
         }
       }
     }
@@ -163,10 +173,16 @@ class ObservableObjectBuilder {
       delete __fields[name];
 
       if (typeof oldValue !== 'undefined') {
-        object.onPropertyChanged({
-          name,
-          oldValue
-        });
+        const {
+          propertyChangedIfCanEmit
+        } = object;
+
+        if (propertyChangedIfCanEmit) {
+          propertyChangedIfCanEmit.onPropertyChanged({
+            name,
+            oldValue
+          });
+        }
       }
     }
 

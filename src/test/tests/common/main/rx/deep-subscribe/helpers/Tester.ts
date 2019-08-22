@@ -1,10 +1,14 @@
 /* tslint:disable:no-empty */
+import {delay} from '../../../../../../../main/common/helpers/helpers'
 import {IListChanged} from '../../../../../../../main/common/lists/contracts/IListChanged'
 import {IMapChanged} from '../../../../../../../main/common/lists/contracts/IMapChanged'
 import {ISetChanged} from '../../../../../../../main/common/lists/contracts/ISetChanged'
 import {ObservableMap} from '../../../../../../../main/common/lists/ObservableMap'
 import {ObservableSet} from '../../../../../../../main/common/lists/ObservableSet'
 import {SortedList} from '../../../../../../../main/common/lists/SortedList'
+import {
+	VALUE_PROPERTY_DEFAULT,
+} from '../../../../../../../main/common/rx/deep-subscribe/contracts/constants'
 import {deepSubscribe} from '../../../../../../../main/common/rx/deep-subscribe/deep-subscribe'
 import {RuleBuilder} from '../../../../../../../main/common/rx/deep-subscribe/RuleBuilder'
 import {ObservableObject} from '../../../../../../../main/common/rx/object/ObservableObject'
@@ -12,7 +16,6 @@ import {ObservableObjectBuilder} from '../../../../../../../main/common/rx/objec
 import {IUnsubscribe} from '../../../../../../../main/common/rx/subjects/subject'
 import {Assert} from '../../../../../../../main/common/test/Assert'
 import {DeepCloneEqual} from '../../../../../../../main/common/test/DeepCloneEqual'
-import {delay} from "../../../../../../../main/common/helpers/helpers";
 
 const assert = new Assert(new DeepCloneEqual({
 	commonOptions: {
@@ -27,11 +30,13 @@ const assert = new Assert(new DeepCloneEqual({
 type IAny = IObject | IList | ISet | IMap
 
 interface IObject {
+	[VALUE_PROPERTY_DEFAULT]: string
 	observableObject: IObservableObject
 	observableList: IObservableList
 	observableSet: IObservableSet
 	observableMap: IObservableMap
 	object: IObject
+	property: IProperty
 	list: IList
 	set: ISet
 	map: IMap
@@ -61,6 +66,22 @@ interface IObservableSet extends ISet, ISetChanged<IAny> {
 interface IObservableMap extends IMap, IMapChanged<string, IAny> {
 }
 
+interface IProperty extends ObservableObject {
+	[VALUE_PROPERTY_DEFAULT]: IObservableObject
+	value_observableObject: IObservableObject
+	value_observableList: IObservableList
+	value_observableSet: IObservableSet
+	value_observableMap: IObservableMap
+	value_object: IObject
+	value_property: IProperty
+	value_list: IList
+	value_set: ISet
+	value_map: IMap
+	value_value: any
+	value_promiseSync: { then(value: any): any }
+	value_promiseAsync: { then(value: any): any }
+}
+
 export function createObject() {
 	const object: IObject = {} as any
 	const list: IList = new SortedList() as any
@@ -78,12 +99,16 @@ export function createObject() {
 	const observableSet: IObservableSet = new ObservableSet() as any
 	const observableMap: IObservableMap = new ObservableMap() as any
 
+	const property: IObservableObject = new ObservableObject() as any
+
 	Object.assign(object, {
+		[VALUE_PROPERTY_DEFAULT]: 'nothing',
 		observableObject,
 		observableList,
 		observableSet,
 		observableMap,
 		object,
+		property,
 		list,
 		set,
 		map,
@@ -93,6 +118,7 @@ export function createObject() {
 	})
 
 	const observableObjectBuilder = new ObservableObjectBuilder(observableObject)
+	const propertyBuilder = new ObservableObjectBuilder(property)
 
 	Object.keys(object).forEach(key => {
 		if (key !== 'value') {
@@ -105,8 +131,13 @@ export function createObject() {
 			observableMap.set(key, object[key])
 		}
 
-		observableObjectBuilder.writable(key, null, object[key])
+		if (key !== VALUE_PROPERTY_DEFAULT) {
+			observableObjectBuilder.writable(key, null, object[key])
+			propertyBuilder.writable('value_' + key, null, object[key])
+		}
 	})
+
+	propertyBuilder.writable(VALUE_PROPERTY_DEFAULT, null, observableObject)
 
 	return object
 }

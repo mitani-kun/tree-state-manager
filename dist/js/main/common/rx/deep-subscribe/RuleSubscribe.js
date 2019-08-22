@@ -3,7 +3,7 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.RuleSubscribeCollection = exports.RuleSubscribeMap = exports.RuleSubscribeObject = void 0;
+exports.RuleSubscribeCollection = exports.RuleSubscribeMap = exports.RuleSubscribeObject = exports.SubscribeObjectType = void 0;
 
 var _helpers = require("../../helpers/helpers");
 
@@ -17,17 +17,66 @@ var _constants = require("./contracts/constants");
 
 var _rules = require("./contracts/rules");
 
-var _common = require("./helpers/common");
-
 /* tslint:disable:no-identical-functions */
 // function propertyPredicateAll(propertyName: string, object) {
 // 	return Object.prototype.hasOwnProperty.call(object, propertyName)
 // }
 // region subscribeObject
-function subscribeObject(propertyNames, propertyPredicate, object, immediateSubscribe, subscribeItem, unsubscribeItem) {
-  if (!(object instanceof Object)) {
-    return null;
+function getFirstExistProperty(object, propertyNames) {
+  for (let i = 0, len = propertyNames.length; i < len; i++) {
+    const propertyName = propertyNames[i];
+
+    if (Object.prototype.hasOwnProperty.call(object, propertyName)) {
+      return propertyName;
+    }
   }
+
+  return null;
+}
+
+function subscribeObjectValue(propertyNames, object, immediateSubscribe, subscribeItem, unsubscribeItem) {
+  if (!(object instanceof Object) || object.constructor === Object || Array.isArray(object)) {
+    subscribeItem(object, null);
+    return () => {
+      unsubscribeItem(object, null);
+    };
+  }
+
+  let subscribePropertyName;
+
+  const getSubscribePropertyName = () => {
+    if (!Object.prototype.hasOwnProperty.call(object, _constants.VALUE_PROPERTY_DEFAULT)) {
+      return null;
+    }
+
+    const propertyName = getFirstExistProperty(object, propertyNames);
+
+    if (propertyName == null) {
+      return _constants.VALUE_PROPERTY_DEFAULT;
+    }
+
+    return propertyName;
+  };
+
+  const subscribeProperty = propertyName => {
+    subscribePropertyName = propertyName;
+
+    if (propertyName == null) {
+      subscribeItem(object, null);
+    } else {
+      subscribeItem(object[propertyName], _constants.VALUE_PROPERTY_PREFIX + propertyName);
+    }
+  };
+
+  const unsubscribeProperty = () => {
+    if (subscribePropertyName == null) {
+      unsubscribeItem(object, null);
+    } else {
+      unsubscribeItem(object[subscribePropertyName], _constants.VALUE_PROPERTY_PREFIX + subscribePropertyName);
+    }
+
+    subscribePropertyName = null;
+  };
 
   const {
     propertyChanged
@@ -35,7 +84,68 @@ function subscribeObject(propertyNames, propertyPredicate, object, immediateSubs
   let unsubscribe;
 
   if (propertyChanged) {
-    unsubscribe = (0, _common.checkUnsubscribe)(propertyChanged.subscribe(({
+    unsubscribe = (0, _helpers.checkIsFuncOrNull)(propertyChanged.subscribe(({
+      name,
+      oldValue,
+      newValue
+    }) => {
+      const newSubscribePropertyName = getSubscribePropertyName();
+
+      if (name === subscribePropertyName) {
+        if (typeof oldValue !== 'undefined') {
+          unsubscribeItem(oldValue, _constants.VALUE_PROPERTY_PREFIX + subscribePropertyName);
+        }
+      } else if (subscribePropertyName !== newSubscribePropertyName) {
+        unsubscribeProperty();
+      }
+
+      if (unsubscribe != null) {
+        subscribeProperty(newSubscribePropertyName);
+      }
+    }));
+  }
+
+  if (immediateSubscribe) {
+    subscribeProperty(getSubscribePropertyName());
+  } else if (unsubscribe == null) {
+    return null;
+  }
+
+  return () => {
+    if (unsubscribe) {
+      unsubscribe();
+      unsubscribe = null;
+    }
+
+    unsubscribeProperty();
+  };
+} // endregion
+// region subscribeObject
+
+
+function subscribeObject(propertyNames, propertyPredicate, object, immediateSubscribe, subscribeItem, unsubscribeItem) {
+  if (!(object instanceof Object)) {
+    return null;
+  }
+
+  let unsubscribe;
+
+  if (propertyNames !== _constants.VALUE_PROPERTY_DEFAULT && Object.prototype.hasOwnProperty.call(object, _constants.VALUE_PROPERTY_DEFAULT) && object.constructor !== Object && !Array.isArray(object)) {
+    return subscribeObject(_constants.VALUE_PROPERTY_DEFAULT, o => o === _constants.VALUE_PROPERTY_DEFAULT, object, immediateSubscribe, item => {
+      unsubscribe = subscribeObject(propertyNames, propertyPredicate, item, immediateSubscribe, subscribeItem, unsubscribeItem);
+    }, () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    });
+  }
+
+  const {
+    propertyChanged
+  } = object;
+
+  if (propertyChanged) {
+    unsubscribe = (0, _helpers.checkIsFuncOrNull)(propertyChanged.subscribe(({
       name,
       oldValue,
       newValue
@@ -54,11 +164,17 @@ function subscribeObject(propertyNames, propertyPredicate, object, immediateSubs
 
   const forEach = callbackfn => {
     if (propertyNames) {
-      for (let i = 0, len = propertyNames.length; i < len; i++) {
-        const propertyName = propertyNames[i];
+      if (Array.isArray(propertyNames)) {
+        for (let i = 0, len = propertyNames.length; i < len; i++) {
+          const propertyName = propertyNames[i];
 
-        if (Object.prototype.hasOwnProperty.call(object, propertyName)) {
-          callbackfn(object[propertyName], propertyName);
+          if (Object.prototype.hasOwnProperty.call(object, propertyName)) {
+            callbackfn(object[propertyName], propertyName);
+          }
+        }
+      } else {
+        if (Object.prototype.hasOwnProperty.call(object, propertyNames)) {
+          callbackfn(object[propertyNames], propertyNames);
         }
       }
     } else {
@@ -123,7 +239,7 @@ function subscribeList(object, immediateSubscribe, subscribeItem, unsubscribeIte
   let unsubscribe;
 
   if (listChanged) {
-    unsubscribe = (0, _common.checkUnsubscribe)(listChanged.subscribe(({
+    unsubscribe = (0, _helpers.checkIsFuncOrNull)(listChanged.subscribe(({
       type,
       oldItems,
       newItems
@@ -192,7 +308,7 @@ function subscribeSet(object, immediateSubscribe, subscribeItem, unsubscribeItem
   let unsubscribe;
 
   if (setChanged) {
-    unsubscribe = (0, _common.checkUnsubscribe)(setChanged.subscribe(({
+    unsubscribe = (0, _helpers.checkIsFuncOrNull)(setChanged.subscribe(({
       type,
       oldItems,
       newItems
@@ -252,7 +368,7 @@ function subscribeMap(keys, keyPredicate, object, immediateSubscribe, subscribeI
   let unsubscribe;
 
   if (mapChanged) {
-    unsubscribe = (0, _common.checkUnsubscribe)(mapChanged.subscribe(({
+    unsubscribe = (0, _helpers.checkIsFuncOrNull)(mapChanged.subscribe(({
       type,
       key,
       oldValue,
@@ -394,8 +510,16 @@ function createPropertyPredicate(propertyNames) {
   }
 }
 
+let SubscribeObjectType;
+exports.SubscribeObjectType = SubscribeObjectType;
+
+(function (SubscribeObjectType) {
+  SubscribeObjectType[SubscribeObjectType["Property"] = 0] = "Property";
+  SubscribeObjectType[SubscribeObjectType["ValueProperty"] = 1] = "ValueProperty";
+})(SubscribeObjectType || (exports.SubscribeObjectType = SubscribeObjectType = {}));
+
 class RuleSubscribeObject {
-  constructor(propertyPredicate, ...propertyNames) {
+  constructor(type, propertyPredicate, ...propertyNames) {
     this.type = _rules.RuleType.Action;
 
     if (propertyNames && !propertyNames.length) {
@@ -406,7 +530,7 @@ class RuleSubscribeObject {
       if (typeof propertyPredicate !== 'function') {
         throw new Error(`propertyPredicate (${propertyPredicate}) is not a function`);
       }
-    } else {
+    } else if (type === SubscribeObjectType.Property) {
       propertyPredicate = createPropertyPredicate(propertyNames);
 
       if (!propertyPredicate) {
@@ -414,7 +538,18 @@ class RuleSubscribeObject {
       }
     }
 
-    this.subscribe = subscribeObject.bind(null, propertyNames, propertyPredicate);
+    switch (type) {
+      case SubscribeObjectType.Property:
+        this.subscribe = subscribeObject.bind(null, propertyNames, propertyPredicate);
+        break;
+
+      case SubscribeObjectType.ValueProperty:
+        this.subscribe = subscribeObjectValue.bind(null, propertyNames);
+        break;
+
+      default:
+        throw new Error(`Unknown SubscribeObjectType: ${type}`);
+    }
   }
 
 } // endregion

@@ -1,5 +1,5 @@
 import '../extensions/autoConnect'
-import {DeepPropertyChangedObject} from './DeepPropertyChangedObject'
+import {PropertyChangedObject} from './PropertyChangedObject'
 
 export interface ISetOptions {
 	equalsFunc?: (oldValue, newValue) => boolean,
@@ -7,9 +7,10 @@ export interface ISetOptions {
 	convertFunc?: (newValue) => any,
 	beforeChange?: (oldValue) => void,
 	afterChange?: (newValue) => void,
+	suppressPropertyChanged?: boolean,
 }
 
-export class ObservableObject extends DeepPropertyChangedObject {
+export class ObservableObject extends PropertyChangedObject {
 
 	/** @internal */
 	public readonly __fields?: {
@@ -29,21 +30,21 @@ export class ObservableObject extends DeepPropertyChangedObject {
 	}
 
 	/** @internal */
-	public _set(name: string | number, newValue, options: ISetOptions) {
+	public _set(name: string | number, newValue, options?: ISetOptions) {
 		const {__fields} = this
 		const oldValue = __fields[name]
 
-		const {equalsFunc} = options
+		const equalsFunc = options && options.equalsFunc
 		if (equalsFunc ? equalsFunc.call(this, oldValue, newValue) : oldValue === newValue) {
 			return false
 		}
 
-		const {fillFunc} = options
+		const fillFunc = options && options.fillFunc
 		if (fillFunc && oldValue != null && newValue != null && fillFunc.call(this, oldValue, newValue)) {
 			return false
 		}
 
-		const {convertFunc} = options
+		const convertFunc = options && options.convertFunc
 		if (convertFunc) {
 			newValue = convertFunc.call(this, newValue)
 		}
@@ -52,25 +53,28 @@ export class ObservableObject extends DeepPropertyChangedObject {
 			return false
 		}
 
-		const {beforeChange} = options
+		const beforeChange = options && options.beforeChange
 		if (beforeChange) {
 			beforeChange.call(this, oldValue)
 		}
 
 		__fields[name] = newValue
 
-		this._propagatePropertyChanged(name, newValue)
-
-		const {afterChange} = options
+		const afterChange = options && options.afterChange
 		if (afterChange) {
 			afterChange.call(this, newValue)
 		}
 
-		this.onPropertyChanged({
-			name,
-			oldValue,
-			newValue,
-		})
+		if (!options || !options.suppressPropertyChanged) {
+			const {propertyChangedIfCanEmit} = this
+			if (propertyChangedIfCanEmit) {
+				propertyChangedIfCanEmit.onPropertyChanged({
+					name,
+					oldValue,
+					newValue,
+				})
+			}
+		}
 
 		return true
 	}

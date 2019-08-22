@@ -1,14 +1,13 @@
 /* tslint:disable:no-identical-functions */
-import {isIterable} from '../../helpers/helpers'
+import {checkIsFuncOrNull, isIterable} from '../../helpers/helpers'
 import {IListChanged, ListChangedType} from '../../lists/contracts/IListChanged'
 import {IMapChanged, MapChangedType} from '../../lists/contracts/IMapChanged'
 import {IPropertyChanged} from '../../lists/contracts/IPropertyChanged'
 import {ISetChanged, SetChangedType} from '../../lists/contracts/ISetChanged'
 import {IUnsubscribe} from '../subjects/subject'
-import {ANY, COLLECTION_PREFIX} from './contracts/constants'
+import {ANY, COLLECTION_PREFIX, VALUE_PROPERTY_DEFAULT, VALUE_PROPERTY_PREFIX} from './contracts/constants'
 import {IRuleSubscribe, ISubscribeObject} from './contracts/rule-subscribe'
 import {IRule, RuleType} from './contracts/rules'
-import {checkUnsubscribe} from './helpers/common'
 
 // function propertyPredicateAll(propertyName: string, object) {
 // 	return Object.prototype.hasOwnProperty.call(object, propertyName)
@@ -16,8 +15,109 @@ import {checkUnsubscribe} from './helpers/common'
 
 // region subscribeObject
 
-function subscribeObject<TValue>(
+function getFirstExistProperty(object: object, propertyNames: string[]) {
+	for (let i = 0, len = propertyNames.length; i < len; i++) {
+		const propertyName = propertyNames[i]
+		if (Object.prototype.hasOwnProperty.call(object, propertyName)) {
+			return propertyName
+		}
+	}
+	return null
+}
+
+function subscribeObjectValue<TValue>(
 	propertyNames: string[],
+	object: IPropertyChanged,
+	immediateSubscribe: boolean,
+	subscribeItem: (item: TValue, debugPropertyName: string) => void,
+	unsubscribeItem: (item: TValue, debugPropertyName: string) => void,
+): IUnsubscribe {
+	if (!(object instanceof Object)
+		|| object.constructor === Object
+		|| Array.isArray(object)
+	) {
+		subscribeItem(object as any, null)
+		return () => {
+			unsubscribeItem(object as any, null)
+		}
+	}
+
+	let subscribePropertyName
+
+	const getSubscribePropertyName = () => {
+		if (!Object.prototype.hasOwnProperty.call(object, VALUE_PROPERTY_DEFAULT)) {
+			return null
+		}
+
+		const propertyName = getFirstExistProperty(object, propertyNames)
+		if (propertyName == null) {
+			return VALUE_PROPERTY_DEFAULT
+		}
+
+		return propertyName
+	}
+
+	const subscribeProperty = propertyName => {
+		subscribePropertyName = propertyName
+		if (propertyName == null) {
+			subscribeItem(object as any, null)
+		} else {
+			subscribeItem(object[propertyName], VALUE_PROPERTY_PREFIX + propertyName)
+		}
+	}
+
+	const unsubscribeProperty = () => {
+		if (subscribePropertyName == null) {
+			unsubscribeItem(object as any, null)
+		} else {
+			unsubscribeItem(object[subscribePropertyName], VALUE_PROPERTY_PREFIX + subscribePropertyName)
+		}
+		subscribePropertyName = null
+	}
+
+	const {propertyChanged} = object
+	let unsubscribe
+
+	if (propertyChanged) {
+		unsubscribe = checkIsFuncOrNull(propertyChanged
+			.subscribe(({name, oldValue, newValue}) => {
+				const newSubscribePropertyName = getSubscribePropertyName()
+
+				if (name === subscribePropertyName) {
+					if (typeof oldValue !== 'undefined') {
+						unsubscribeItem(oldValue, VALUE_PROPERTY_PREFIX + subscribePropertyName)
+					}
+				} else if (subscribePropertyName !== newSubscribePropertyName) {
+					unsubscribeProperty()
+				}
+
+				if (unsubscribe != null) {
+					subscribeProperty(newSubscribePropertyName)
+				}
+			}))
+	}
+
+	if (immediateSubscribe) {
+		subscribeProperty(getSubscribePropertyName())
+	} else if (unsubscribe == null) {
+		return null
+	}
+
+	return () => {
+		if (unsubscribe) {
+			unsubscribe()
+			unsubscribe = null
+		}
+		unsubscribeProperty()
+	}
+}
+
+// endregion
+
+// region subscribeObject
+
+function subscribeObject<TValue>(
+	propertyNames: string|string[],
 	propertyPredicate: (propertyName, object) => boolean,
 	object: IPropertyChanged,
 	immediateSubscribe: boolean,
@@ -28,11 +128,38 @@ function subscribeObject<TValue>(
 		return null
 	}
 
-	const {propertyChanged} = object
 	let unsubscribe
 
+	if (propertyNames !== VALUE_PROPERTY_DEFAULT
+		&& Object.prototype.hasOwnProperty.call(object, VALUE_PROPERTY_DEFAULT)
+		&& object.constructor !== Object
+		&& !Array.isArray(object)
+	) {
+		return subscribeObject(
+			VALUE_PROPERTY_DEFAULT,
+			o => o === VALUE_PROPERTY_DEFAULT,
+			object,
+			immediateSubscribe,
+			item => {
+				unsubscribe = subscribeObject(
+					propertyNames,
+					propertyPredicate,
+					item as any,
+					immediateSubscribe,
+					subscribeItem,
+					unsubscribeItem)
+			},
+			() => {
+				if (unsubscribe) {
+					unsubscribe()
+				}
+			})
+	}
+
+	const {propertyChanged} = object
+
 	if (propertyChanged) {
-		unsubscribe = checkUnsubscribe(propertyChanged
+		unsubscribe = checkIsFuncOrNull(propertyChanged
 			.subscribe(({name, oldValue, newValue}) => {
 				if (!propertyPredicate || propertyPredicate(name, object)) {
 					if (typeof oldValue !== 'undefined') {
@@ -47,10 +174,16 @@ function subscribeObject<TValue>(
 
 	const forEach = (callbackfn: (item: TValue, debugPropertyName: string) => void) => {
 		if (propertyNames) {
-			for (let i = 0, len = propertyNames.length; i < len; i++) {
-				const propertyName = propertyNames[i]
-				if (Object.prototype.hasOwnProperty.call(object, propertyName)) {
-					callbackfn(object[propertyName], propertyName)
+			if (Array.isArray(propertyNames)) {
+				for (let i = 0, len = propertyNames.length; i < len; i++) {
+					const propertyName = propertyNames[i]
+					if (Object.prototype.hasOwnProperty.call(object, propertyName)) {
+						callbackfn(object[propertyName], propertyName)
+					}
+				}
+			} else {
+				if (Object.prototype.hasOwnProperty.call(object, propertyNames)) {
+					callbackfn(object[propertyNames], propertyNames)
 				}
 			}
 		} else {
@@ -127,7 +260,7 @@ function subscribeList<TItem>(
 	const {listChanged} = object
 	let unsubscribe
 	if (listChanged) {
-		unsubscribe = checkUnsubscribe(listChanged
+		unsubscribe = checkIsFuncOrNull(listChanged
 			.subscribe(({type, oldItems, newItems}) => {
 				switch (type) {
 					case ListChangedType.Added:
@@ -190,7 +323,7 @@ function subscribeSet<TItem>(
 	const {setChanged} = object
 	let unsubscribe
 	if (setChanged) {
-		unsubscribe = checkUnsubscribe(setChanged
+		unsubscribe = checkIsFuncOrNull(setChanged
 			.subscribe(({type, oldItems, newItems}) => {
 				switch (type) {
 					case SetChangedType.Added:
@@ -250,7 +383,7 @@ function subscribeMap<K, V>(
 	let unsubscribe
 
 	if (mapChanged) {
-		unsubscribe = checkUnsubscribe(mapChanged
+		unsubscribe = checkIsFuncOrNull(mapChanged
 			.subscribe(({type, key, oldValue, newValue}) => {
 				if (!keyPredicate || keyPredicate(key, object)) {
 					switch (type) {
@@ -314,7 +447,7 @@ function subscribeCollection<TItem>(
 	immediateSubscribe: boolean,
 	subscribeItem: (item: TItem, debugPropertyName: string) => void,
 	unsubscribeItem: (item: TItem, debugPropertyName: string) => void,
-) {
+): IUnsubscribe {
 	if (!object) {
 		return null
 	}
@@ -385,6 +518,11 @@ function createPropertyPredicate(propertyNames: string[]) {
 	}
 }
 
+export enum SubscribeObjectType {
+	Property,
+	ValueProperty,
+}
+
 export class RuleSubscribeObject<TObject, TValue> implements IRuleSubscribe<TObject, TValue> {
 	public readonly type: RuleType = RuleType.Action
 	public readonly subscribe: ISubscribeObject<TObject, TValue>
@@ -392,6 +530,7 @@ export class RuleSubscribeObject<TObject, TValue> implements IRuleSubscribe<TObj
 	public next: IRule
 
 	constructor(
+		type: SubscribeObjectType,
 		propertyPredicate?: (propertyName: string, object) => boolean,
 		...propertyNames: string[]
 	) {
@@ -403,18 +542,31 @@ export class RuleSubscribeObject<TObject, TValue> implements IRuleSubscribe<TObj
 			if (typeof propertyPredicate !== 'function') {
 				throw new Error(`propertyPredicate (${propertyPredicate}) is not a function`)
 			}
-		} else {
+		} else if (type === SubscribeObjectType.Property) {
 			propertyPredicate = createPropertyPredicate(propertyNames)
 			if (!propertyPredicate) {
 				propertyNames = null
 			}
 		}
 
-		this.subscribe = subscribeObject.bind(
-			null,
-			propertyNames,
-			propertyPredicate,
-		)
+		switch (type) {
+			case SubscribeObjectType.Property:
+				this.subscribe = subscribeObject.bind(
+					null,
+					propertyNames,
+					propertyPredicate,
+				)
+				break
+			case SubscribeObjectType.ValueProperty:
+				this.subscribe = subscribeObjectValue.bind(
+					null,
+					propertyNames,
+				)
+				break
+			default:
+				throw new Error(`Unknown SubscribeObjectType: ${type}`)
+		}
+
 	}
 }
 

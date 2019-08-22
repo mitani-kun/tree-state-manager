@@ -27,6 +27,8 @@ var _compare2 = require("./helpers/compare");
 
 var _set = require("./helpers/set");
 
+let _Symbol$iterator, _Symbol$toStringTag;
+
 function calcOptimalArraySize(desiredSize) {
   let optimalSize = 4;
 
@@ -53,8 +55,8 @@ function getDefaultValue(value) {
   return null;
 }
 
-var _Symbol$iterator = Symbol.iterator;
-var _Symbol$toStringTag = Symbol.toStringTag;
+_Symbol$iterator = Symbol.iterator;
+_Symbol$toStringTag = Symbol.toStringTag;
 
 class SortedList extends _ListChangedObject.ListChangedObject {
   // region constructor
@@ -110,11 +112,17 @@ class SortedList extends _ListChangedObject.ListChangedObject {
 
     this._updateAllocatedSize();
 
-    this.onPropertyChanged({
-      name: 'minAllocatedSize',
-      oldValue,
-      newValue: value
-    });
+    const {
+      propertyChangedIfCanEmit
+    } = this;
+
+    if (propertyChangedIfCanEmit) {
+      propertyChangedIfCanEmit.onPropertyChanged({
+        name: 'minAllocatedSize',
+        oldValue,
+        newValue: value
+      });
+    }
   } // endregion
   // region allocatedSize
 
@@ -236,11 +244,17 @@ class SortedList extends _ListChangedObject.ListChangedObject {
       this._autoSort = value;
     }
 
-    this.onPropertyChanged({
-      name: 'autoSort',
-      oldValue: !!oldValue,
-      newValue: value
-    });
+    const {
+      propertyChangedIfCanEmit
+    } = this;
+
+    if (propertyChangedIfCanEmit) {
+      propertyChangedIfCanEmit.onPropertyChanged({
+        name: 'autoSort',
+        oldValue: !!oldValue,
+        newValue: value
+      });
+    }
   } // endregion
   // region notAddIfExists
 
@@ -265,11 +279,17 @@ class SortedList extends _ListChangedObject.ListChangedObject {
     }
 
     this._notAddIfExists = value;
-    this.onPropertyChanged({
-      name: 'notAddIfExists',
-      oldValue: !!oldValue,
-      newValue: value
-    });
+    const {
+      propertyChangedIfCanEmit
+    } = this;
+
+    if (propertyChangedIfCanEmit) {
+      propertyChangedIfCanEmit.onPropertyChanged({
+        name: 'notAddIfExists',
+        oldValue: !!oldValue,
+        newValue: value
+      });
+    }
   } // endregion
   // endregion
   // region Methods
@@ -518,11 +538,18 @@ class SortedList extends _ListChangedObject.ListChangedObject {
       });
     }
 
-    this.onPropertyChanged({
-      name: 'size',
-      oldValue: size,
-      newValue: newSize
-    });
+    const {
+      propertyChangedIfCanEmit
+    } = this;
+
+    if (propertyChangedIfCanEmit) {
+      propertyChangedIfCanEmit.onPropertyChanged({
+        name: 'size',
+        oldValue: size,
+        newValue: newSize
+      });
+    }
+
     return true;
   }
 
@@ -610,11 +637,18 @@ class SortedList extends _ListChangedObject.ListChangedObject {
       });
     }
 
-    this.onPropertyChanged({
-      name: 'size',
-      oldValue: size,
-      newValue: newSize
-    });
+    const {
+      propertyChangedIfCanEmit
+    } = this;
+
+    if (propertyChangedIfCanEmit) {
+      propertyChangedIfCanEmit.onPropertyChanged({
+        name: 'size',
+        oldValue: size,
+        newValue: newSize
+      });
+    }
+
     return true;
   }
 
@@ -711,11 +745,18 @@ class SortedList extends _ListChangedObject.ListChangedObject {
       });
     }
 
-    this.onPropertyChanged({
-      name: 'size',
-      oldValue: size,
-      newValue: newSize
-    });
+    const {
+      propertyChangedIfCanEmit
+    } = this;
+
+    if (propertyChangedIfCanEmit) {
+      propertyChangedIfCanEmit.onPropertyChanged({
+        name: 'size',
+        oldValue: size,
+        newValue: newSize
+      });
+    }
+
     return true;
   }
 
@@ -762,11 +803,18 @@ class SortedList extends _ListChangedObject.ListChangedObject {
       });
     }
 
-    this.onPropertyChanged({
-      name: 'size',
-      oldValue: size,
-      newValue: newSize
-    });
+    const {
+      propertyChangedIfCanEmit
+    } = this;
+
+    if (propertyChangedIfCanEmit) {
+      propertyChangedIfCanEmit.onPropertyChanged({
+        name: 'size',
+        oldValue: size,
+        newValue: newSize
+      });
+    }
+
     return true;
   }
 
@@ -826,11 +874,18 @@ class SortedList extends _ListChangedObject.ListChangedObject {
       });
     }
 
-    this.onPropertyChanged({
-      name: 'size',
-      oldValue: size,
-      newValue: newSize
-    });
+    const {
+      propertyChangedIfCanEmit
+    } = this;
+
+    if (propertyChangedIfCanEmit) {
+      propertyChangedIfCanEmit.onPropertyChanged({
+        name: 'size',
+        oldValue: size,
+        newValue: newSize
+      });
+    }
+
     return true;
   }
 
@@ -1096,11 +1151,18 @@ class SortedList extends _ListChangedObject.ListChangedObject {
       });
     }
 
-    this.onPropertyChanged({
-      name: 'size',
-      oldValue: size,
-      newValue: 0
-    });
+    const {
+      propertyChangedIfCanEmit
+    } = this;
+
+    if (propertyChangedIfCanEmit) {
+      propertyChangedIfCanEmit.onPropertyChanged({
+        name: 'size',
+        oldValue: size,
+        newValue: 0
+      });
+    }
+
     return true;
   }
 

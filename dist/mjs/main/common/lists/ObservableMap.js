@@ -4,6 +4,9 @@ import _createClass from "@babel/runtime/helpers/createClass";
 import _possibleConstructorReturn from "@babel/runtime/helpers/possibleConstructorReturn";
 import _getPrototypeOf from "@babel/runtime/helpers/getPrototypeOf";
 import _inherits from "@babel/runtime/helpers/inherits";
+
+var _Symbol$toStringTag, _Symbol$iterator;
+
 import { createMergeMapWrapper, mergeMaps } from '../extensions/merge/merge-maps';
 import { registerMergeable } from '../extensions/merge/mergers';
 import { registerSerializable } from '../extensions/serialization/serializers';
@@ -11,8 +14,8 @@ import { isIterable } from '../helpers/helpers';
 import { MapChangedObject } from './base/MapChangedObject';
 import { MapChangedType } from './contracts/IMapChanged';
 import { fillMap } from './helpers/set';
-var _Symbol$toStringTag = Symbol.toStringTag;
-var _Symbol$iterator = Symbol.iterator;
+_Symbol$toStringTag = Symbol.toStringTag;
+_Symbol$iterator = Symbol.iterator;
 export var ObservableMap =
 /*#__PURE__*/
 function (_MapChangedObject) {
@@ -52,11 +55,15 @@ function (_MapChangedObject) {
           });
         }
 
-        this.onPropertyChanged({
-          name: 'size',
-          oldValue: oldSize,
-          newValue: size
-        });
+        var propertyChangedIfCanEmit = this.propertyChangedIfCanEmit;
+
+        if (propertyChangedIfCanEmit) {
+          propertyChangedIfCanEmit.onPropertyChanged({
+            name: 'size',
+            oldValue: oldSize,
+            newValue: size
+          });
+        }
       } else {
         var _mapChangedIfCanEmit2 = this._mapChangedIfCanEmit;
 
@@ -80,7 +87,7 @@ function (_MapChangedObject) {
 
       var oldValue = _map.get(key);
 
-      this._map.delete(key);
+      this._map["delete"](key);
 
       var size = _map.size;
 
@@ -95,11 +102,16 @@ function (_MapChangedObject) {
           });
         }
 
-        this.onPropertyChanged({
-          name: 'size',
-          oldValue: oldSize,
-          newValue: size
-        });
+        var propertyChangedIfCanEmit = this.propertyChangedIfCanEmit;
+
+        if (propertyChangedIfCanEmit) {
+          propertyChangedIfCanEmit.onPropertyChanged({
+            name: 'size',
+            oldValue: oldSize,
+            newValue: size
+          });
+        }
+
         return true;
       }
 
@@ -134,11 +146,15 @@ function (_MapChangedObject) {
         this._map.clear();
       }
 
-      this.onPropertyChanged({
-        name: 'size',
-        oldValue: size,
-        newValue: 0
-      });
+      var propertyChangedIfCanEmit = this.propertyChangedIfCanEmit;
+
+      if (propertyChangedIfCanEmit) {
+        propertyChangedIfCanEmit.onPropertyChanged({
+          name: 'size',
+          oldValue: size,
+          newValue: 0
+        });
+      }
     } // region Unchanged Map methods
 
   }, {
@@ -234,29 +250,32 @@ ObservableMap.uuid = 'e162178d-5123-4bea-ab6e-b96d5b8f130b';
 registerMergeable(ObservableMap);
 registerSerializable(ObservableMap, {
   serializer: {
-    deSerialize:
-    /*#__PURE__*/
-    _regeneratorRuntime.mark(function deSerialize(_deSerialize2, serializedValue, valueFactory) {
-      var innerMap, value;
-      return _regeneratorRuntime.wrap(function deSerialize$(_context) {
-        while (1) {
-          switch (_context.prev = _context.next) {
-            case 0:
-              _context.next = 2;
-              return _deSerialize2(serializedValue.map);
+    deSerialize: function deSerialize(_deSerialize2, serializedValue, valueFactory) {
+      return (
+        /*#__PURE__*/
+        _regeneratorRuntime.mark(function _callee() {
+          var innerMap, value;
+          return _regeneratorRuntime.wrap(function _callee$(_context) {
+            while (1) {
+              switch (_context.prev = _context.next) {
+                case 0:
+                  _context.next = 2;
+                  return _deSerialize2(serializedValue.map);
 
-            case 2:
-              innerMap = _context.sent;
-              value = valueFactory(innerMap);
-              value.deSerialize(_deSerialize2, serializedValue);
-              return _context.abrupt("return", value);
+                case 2:
+                  innerMap = _context.sent;
+                  value = valueFactory(innerMap);
+                  value.deSerialize(_deSerialize2, serializedValue);
+                  return _context.abrupt("return", value);
 
-            case 6:
-            case "end":
-              return _context.stop();
-          }
-        }
-      }, deSerialize);
-    })
+                case 6:
+                case "end":
+                  return _context.stop();
+              }
+            }
+          }, _callee);
+        })()
+      );
+    }
   }
 });
