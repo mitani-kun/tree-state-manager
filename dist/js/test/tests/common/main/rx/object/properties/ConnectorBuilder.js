@@ -13,8 +13,7 @@ var _Tester = require("../../deep-subscribe/helpers/Tester");
 /* eslint-disable guard-for-in */
 describe('common > main > rx > properties > ConnectorBuilder', function () {
   it('connect', function () {
-    const source = (0, _Tester.createObject)().observableObject;
-    new _ObservableObjectBuilder.ObservableObjectBuilder(source).writable('baseProp1').writable('baseProp2').writable('prop1').writable('prop2');
+    const source = new _ObservableObjectBuilder.ObservableObjectBuilder((0, _Tester.createObject)().observableObject).writable('baseProp1').writable('baseProp2').writable('prop1').writable('prop2').object;
     source.baseProp1 = 'baseProp1_init_source';
 
     class BaseClass1 extends _ObservableObject.ObservableObject {
@@ -31,10 +30,10 @@ describe('common > main > rx > properties > ConnectorBuilder', function () {
 
     class Class2 extends BaseClass2 {}
 
-    const baseBuilder1 = new _ConnectorBuilder.ConnectorBuilder(BaseClass1.prototype).connect('baseProp1', b => b.path(o => o.source.property['@value_property'].observableMap['#observableList']['#'].baseProp1), null, 'baseProp1_init');
-    const baseBuilder2 = new _ConnectorBuilder.ConnectorBuilder(BaseClass2.prototype).connect('baseProp2', b => b.path(o => o.source.property['@value_property'].observableMap['#observableList']['#'].baseProp2), null, 'baseProp2_init');
-    const builder1 = new _ConnectorBuilder.ConnectorBuilder(Class1.prototype).connect('prop1', b => b.path(o => o.source.property['@value_property'].observableMap['#observableList']['#'].prop1), null, 'prop1_init');
-    const builder2 = new _ConnectorBuilder.ConnectorBuilder(Class2.prototype).connect('prop2', b => b.path(o => o.source.property['@value_property'].observableMap['#observableList']['#'].prop2), null, 'prop2_init');
+    new _ConnectorBuilder.ConnectorBuilder(BaseClass1.prototype).connect('baseProp1', b => b.path(o => o.source.property['@value_property'].observableMap['#observableList']['#'].baseProp1));
+    new _ConnectorBuilder.ConnectorBuilder(BaseClass2.prototype).connect('baseProp2', b => b.path(o => o['@value_property'].source.property['@value_property'].observableMap['#observableList']['#'].baseProp2), null, 'baseProp2_init');
+    new _ConnectorBuilder.ConnectorBuilder(Class1.prototype).connect('prop1', b => b.path(o => o['@value_property'].source.property['@value_property'].observableMap['#observableList']['#'].prop1), null, 'prop1_init');
+    new _ConnectorBuilder.ConnectorBuilder(Class2.prototype).connect('prop2', b => b.path(o => o['@value_property'].source.property['@value_property'].observableMap['#observableList']['#'].prop2), null, 'prop2_init');
     const baseObject1 = new BaseClass1();
     const baseObject2 = new BaseClass2();
     const object1 = new Class1();
@@ -87,9 +86,9 @@ describe('common > main > rx > properties > ConnectorBuilder', function () {
     assert.deepStrictEqual(results1, []);
     assert.deepStrictEqual(results2, []);
     assert.deepStrictEqual(baseObject1.baseProp1, '1');
-    assert.deepStrictEqual(baseObject2.baseProp1, 'baseProp1_init_source');
-    assert.deepStrictEqual(object1.baseProp1, 'baseProp1_init_source');
-    assert.deepStrictEqual(object2.baseProp1, 'baseProp1_init_source');
+    assert.deepStrictEqual(baseObject2.baseProp1, '1');
+    assert.deepStrictEqual(object1.baseProp1, '1');
+    assert.deepStrictEqual(object2.baseProp1, '1');
     assert.strictEqual(baseObject2.baseProp2, 'baseProp2_init');
     source.baseProp2 = '3';
     assert.deepStrictEqual(baseResults1, []);
@@ -104,7 +103,7 @@ describe('common > main > rx > properties > ConnectorBuilder', function () {
     assert.deepStrictEqual(baseObject1.baseProp2, undefined);
     assert.deepStrictEqual(baseObject2.baseProp2, '3');
     assert.deepStrictEqual(object1.baseProp2, undefined);
-    assert.deepStrictEqual(object2.baseProp2, 'baseProp2_init');
+    assert.deepStrictEqual(object2.baseProp2, '3');
     new _ConnectorBuilder.ConnectorBuilder(object2).readable('baseProp1', null, '7');
     assert.deepStrictEqual(baseResults1, []);
     assert.deepStrictEqual(baseResults2, []);
@@ -112,12 +111,12 @@ describe('common > main > rx > properties > ConnectorBuilder', function () {
     assert.deepStrictEqual(results2, [{
       name: 'baseProp1',
       newValue: '7',
-      oldValue: 'baseProp1_init_source'
+      oldValue: '1'
     }]);
     results2 = [];
     assert.deepStrictEqual(baseObject1.baseProp1, '1');
-    assert.deepStrictEqual(baseObject2.baseProp1, 'baseProp1_init_source');
-    assert.deepStrictEqual(object1.baseProp1, 'baseProp1_init_source');
+    assert.deepStrictEqual(baseObject2.baseProp1, '1');
+    assert.deepStrictEqual(object1.baseProp1, '1');
     assert.deepStrictEqual(object2.baseProp1, '7');
   });
 });

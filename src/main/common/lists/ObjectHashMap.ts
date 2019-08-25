@@ -161,7 +161,7 @@ export class ObjectHashMap<K extends object, V> implements
 
 	// region ISerializable
 
-	public static uuid: string = '7a5731ae-37ad-4c5b-aee0-25a8f1cd2228'
+	public static uuid: string = '7a5731ae37ad4c5baee025a8f1cd2228'
 
 	public serialize(serialize: ISerializeValue): ISerializedObject {
 		return {
@@ -170,8 +170,8 @@ export class ObjectHashMap<K extends object, V> implements
 	}
 
 	public deSerialize(
-		deSerialize: IDeSerializeValue,
-		serializedValue: ISerializedObject,
+		// deSerialize: IDeSerializeValue,
+		// serializedValue: ISerializedObject,
 	// tslint:disable-next-line:no-empty
 	): void {
 
@@ -191,7 +191,7 @@ registerSerializable(ObjectHashMap, {
 		): ThenableIterator<ObjectHashMap<K, V>> {
 			const innerMap = yield deSerialize<{ [id: number]: [K, V] }>(serializedValue.object)
 			const value = valueFactory(innerMap)
-			value.deSerialize(deSerialize, serializedValue)
+			// value.deSerialize(deSerialize, serializedValue)
 			return value
 		},
 	},

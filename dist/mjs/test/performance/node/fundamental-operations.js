@@ -16,6 +16,7 @@ import _typeof from "@babel/runtime/helpers/typeof";
 /* eslint-disable prefer-rest-params,arrow-body-style */
 import { calcPerformance } from 'rdtsc';
 import { SynchronousPromise } from 'synchronous-promise';
+import { resolveValue } from '../../../main/common/async/async';
 import { resolveAsync, ThenableSync } from '../../../main/common/async/ThenableSync';
 import { isIterable } from '../../../main/common/helpers/helpers';
 import { ArraySet } from '../../../main/common/lists/ArraySet';
@@ -23,7 +24,6 @@ import { binarySearch } from '../../../main/common/lists/helpers/array';
 import { freezeWithUniqueId, getObjectUniqueId } from '../../../main/common/lists/helpers/object-unique-id';
 import { SortedList } from '../../../main/common/lists/SortedList';
 import { createObject, Tester } from '../../tests/common/main/rx/deep-subscribe/helpers/Tester';
-import { resolveValue } from "../../../main/common/async/async";
 var SetNative = Set;
 
 require('./src/SetPolyfill');
@@ -1251,7 +1251,7 @@ describe('fundamental-operations', function () {
     });
   }
 
-  it('delete property', function () {
+  xit('delete property', function () {
     this.timeout(300000);
     var hashTable = {};
 
@@ -1700,7 +1700,7 @@ describe('fundamental-operations', function () {
     return _calcCountPerSecondAsync.apply(this, arguments);
   }
 
-  it('ThenableSync 2',
+  xit('ThenableSync 2',
   /*#__PURE__*/
   _asyncToGenerator(
   /*#__PURE__*/
@@ -1895,5 +1895,52 @@ describe('fundamental-operations', function () {
         }
       }
     }, _callee5, this);
-  })));
+  }))); // xit('decorators', function() {
+  // 	this.timeout(300000)
+  //
+  // 	function decoratorOwn() {
+  // 		return descriptor => {
+  // 			descriptor.placement = 'own'
+  // 		}
+  // 	}
+  //
+  // 	function decoratorPrototype() {
+  // 		return descriptor => {
+  // 			descriptor.placement = 'prototype'
+  // 		}
+  // 	}
+  //
+  // 	class Class {
+  // 		public x: any
+  // 	}
+  //
+  // 	class ClassOwn {
+  // 		@decoratorOwn()
+  // 		public x: any
+  // 	}
+  //
+  // 	class ClassPrototype {
+  // 		@decoratorPrototype()
+  // 		public x: any
+  // 	}
+  //
+  // 	const result = calcPerformance(
+  // 		120000,
+  // 		() => {
+  // 			// no operations
+  // 		},
+  //
+  // 		() => { // 4
+  // 			return new Class()
+  // 		},
+  // 		() => { // 1400
+  // 			return new ClassOwn()
+  // 		},
+  // 		() => { // 54
+  // 			return new ClassPrototype()
+  // 		},
+  // 	)
+  //
+  // 	console.log(result)
+  // })
 });

@@ -134,7 +134,7 @@ export class ObservableSet<T> extends SetChangedObject<T> implements
 	}
 
 	public forEach(callbackfn: (value: T, value2: T, set: Set<T>) => void, thisArg?: any): void {
-		this._set.forEach((k, v, s) => callbackfn.call(thisArg, k, v, this))
+		this._set.forEach((k, v) => callbackfn.call(thisArg, k, v, this))
 	}
 
 	public has(value: T): boolean {
@@ -198,7 +198,7 @@ export class ObservableSet<T> extends SetChangedObject<T> implements
 
 	// region ISerializable
 
-	public static uuid: string = '91539dfb-55f4-4bfb-9dbf-bff7f6ab800d'
+	public static uuid: string = '91539dfb55f44bfb9dbfbff7f6ab800d'
 
 	public serialize(serialize: ISerializeValue): ISerializedObject {
 		return {
@@ -207,8 +207,8 @@ export class ObservableSet<T> extends SetChangedObject<T> implements
 	}
 
 	public deSerialize(
-		deSerialize: IDeSerializeValue,
-		serializedValue: ISerializedObject,
+		// deSerialize: IDeSerializeValue,
+		// serializedValue: ISerializedObject,
 	// tslint:disable-next-line:no-empty
 	): void {
 
@@ -228,7 +228,7 @@ registerSerializable(ObservableSet, {
 		): ThenableIterator<ObservableSet<T>> {
 			const innerSet = yield deSerialize<Set<T>>(serializedValue.set)
 			const value = valueFactory(innerSet)
-			value.deSerialize(deSerialize, serializedValue)
+			// value.deSerialize(deSerialize, serializedValue)
 			return value
 		},
 	},

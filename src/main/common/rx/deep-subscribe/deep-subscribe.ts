@@ -1,12 +1,11 @@
 /* tslint:disable */
 import {IUnsubscribe} from '../subjects/subject'
 import {IRule} from './contracts/rules'
-import {IRuleOrIterable, iterateRule, subscribeNextRule} from './iterate-rule'
-import {RuleBuilder} from "./RuleBuilder";
-import {PeekIterator} from "./helpers/PeekIterator";
-import {ISubscribeValue} from "./contracts/common";
-import {getObjectUniqueId} from "../../lists/helpers/object-unique-id";
-import {checkIsFuncOrNull, toSingleCall} from "../../helpers/helpers";
+import {IRuleIterator, iterateRule, subscribeNextRule} from './iterate-rule'
+import {RuleBuilder} from "./RuleBuilder"
+import {ISubscribeValue} from "./contracts/common"
+import {getObjectUniqueId} from "../../lists/helpers/object-unique-id"
+import {checkIsFuncOrNull, toSingleCall} from "../../helpers/helpers"
 
 // const UNSUBSCRIBE_PROPERTY_PREFIX = Math.random().toString(36)
 // let nextUnsubscribePropertyId = 0
@@ -15,7 +14,7 @@ function deepSubscribeRuleIterator<TValue>(
 	object: any,
 	subscribeValue: ISubscribeValue<TValue>,
 	immediate: boolean,
-	ruleIterator: PeekIterator<IRuleOrIterable>,
+	ruleIterator: IRuleIterator,
 	leafUnsubscribers?: IUnsubscribe[],
 	propertiesPath?: () => string,
 	debugPropertyName?: string,
@@ -121,6 +120,7 @@ function deepSubscribeRuleIterator<TValue>(
 					}, newPropertiesPath)
 				}
 
+				// noinspection JSUnusedLocalSymbols
 				const unsubscribeItem = (item, debugPropertyName: string) => {
 					unsubscribeNested(item, unsubscribers)
 				}
@@ -201,20 +201,20 @@ export function deepSubscribeRule<TValue>(
 		object,
 		subscribeValue,
 		immediate,
-		new PeekIterator(iterateRule(rule)[Symbol.iterator]()),
+		iterateRule(rule)[Symbol.iterator](),
 	))
 }
 
-export function deepSubscribe<TObject, TValue>(
+export function deepSubscribe<TObject, TValue, TValueKeys extends string | number = never>(
 	object: TObject,
 	subscribeValue: ISubscribeValue<TValue>,
 	immediate: boolean,
-	ruleBuilder: (ruleBuilder: RuleBuilder<TObject>) => RuleBuilder<TValue>,
+	ruleBuilder: (ruleBuilder: RuleBuilder<TObject, TValueKeys>) => RuleBuilder<TValue, TValueKeys>,
 ): IUnsubscribe {
 	return toSingleCall(deepSubscribeRule(
 		object,
 		subscribeValue,
 		immediate,
-		ruleBuilder(new RuleBuilder<TObject>()).result
+		ruleBuilder(new RuleBuilder<TObject, TValueKeys>()).result
 	))
 }

@@ -161,7 +161,7 @@ export class ArrayMap<K extends object, V> implements
 
 	// region ISerializable
 
-	public static uuid: string = 'ef0ced8a-58f7-4381-b850-3b09c0a42eed'
+	public static uuid: string = 'ef0ced8a58f74381b8503b09c0a42eed'
 
 	public serialize(serialize: ISerializeValue): ISerializedObject {
 		return {
@@ -170,8 +170,8 @@ export class ArrayMap<K extends object, V> implements
 	}
 
 	public deSerialize(
-		deSerialize: IDeSerializeValue,
-		serializedValue: ISerializedObject,
+		// deSerialize: IDeSerializeValue,
+		// serializedValue: ISerializedObject,
 	// tslint:disable-next-line:no-empty
 	): void {
 
@@ -192,7 +192,7 @@ registerSerializable(ArrayMap, {
 			// @ts-ignore
 			const innerMap = yield deSerialize<Array<[K, V]>>(serializedValue.array, null, { arrayAsObject: true })
 			const value = valueFactory(innerMap)
-			value.deSerialize(deSerialize, serializedValue)
+			// value.deSerialize(deSerialize, serializedValue)
 			return value
 		},
 	},

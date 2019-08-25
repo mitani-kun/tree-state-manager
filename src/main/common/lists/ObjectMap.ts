@@ -138,7 +138,7 @@ export class ObjectMap<V> implements
 
 	// region ISerializable
 
-	public static uuid: string = '62388f07-b21a-4778-8b38-58f225cdbd42'
+	public static uuid: string = '62388f07b21a47788b3858f225cdbd42'
 
 	public serialize(serialize: ISerializeValue): ISerializedObject {
 		return {
@@ -147,8 +147,8 @@ export class ObjectMap<V> implements
 	}
 
 	public deSerialize(
-		deSerialize: IDeSerializeValue,
-		serializedValue: ISerializedObject,
+		// deSerialize: IDeSerializeValue,
+		// serializedValue: ISerializedObject,
 	// tslint:disable-next-line:no-empty
 	): void {
 
@@ -168,7 +168,7 @@ registerSerializable(ObjectMap, {
 		): ThenableIterator<ObjectMap<V>> {
 			const innerMap = yield deSerialize<object>(serializedValue.object)
 			const value = valueFactory(innerMap)
-			value.deSerialize(deSerialize, serializedValue)
+			// value.deSerialize(deSerialize, serializedValue)
 			return value
 		},
 	},

@@ -12,18 +12,36 @@ var _RuleBuilder = require("../../deep-subscribe/RuleBuilder");
 var _ObservableObjectBuilder = require("../ObservableObjectBuilder");
 
 class ConnectorBuilder extends _ObservableObjectBuilder.ObservableObjectBuilder {
-  connect(name, buildRule, options, initValue) {
-    const ruleBuilder = buildRule(new _RuleBuilder.RuleBuilder());
-    const rule = ruleBuilder && ruleBuilder.result;
+  constructor(object, buildSourceRule) {
+    super(object);
+    this.buildSourceRule = buildSourceRule;
+  }
 
-    if (rule == null) {
+  connect(name, buildRule, options, initValue) {
+    const {
+      object,
+      buildSourceRule
+    } = this;
+    let ruleBuilder = new _RuleBuilder.RuleBuilder();
+
+    if (buildSourceRule) {
+      ruleBuilder = buildSourceRule(ruleBuilder);
+    }
+
+    ruleBuilder = buildRule(ruleBuilder);
+    const ruleBase = ruleBuilder && ruleBuilder.result;
+
+    if (ruleBase == null) {
       throw new Error('buildRule() return null or not initialized RuleBuilder');
     }
 
+    const setOptions = options && options.setOptions;
     return this.readable(name, {
-      factorySetOptions: options,
+      setOptions,
+      hidden: options && options.hidden,
 
-      factory() {
+      // tslint:disable-next-line:no-shadowed-variable
+      factory(initValue) {
         let setValue = value => {
           if (typeof value !== 'undefined') {
             initValue = value;
@@ -33,18 +51,18 @@ class ConnectorBuilder extends _ObservableObjectBuilder.ObservableObjectBuilder 
         const unsubscribe = (0, _deepSubscribe.deepSubscribeRule)(this, value => {
           setValue(value);
           return null;
-        }, true, rule);
+        }, true, this === object ? ruleBase : (0, _RuleBuilder.cloneRule)(ruleBase));
 
         this._setUnsubscriber(name, unsubscribe);
 
         setValue = value => {
-          this._set(name, value, options);
+          this._set(name, value, setOptions);
         };
 
         return initValue;
       }
 
-    });
+    }, initValue);
   }
 
 }

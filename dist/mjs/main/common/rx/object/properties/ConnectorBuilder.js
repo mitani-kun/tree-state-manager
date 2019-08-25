@@ -4,33 +4,48 @@ import _possibleConstructorReturn from "@babel/runtime/helpers/possibleConstruct
 import _getPrototypeOf from "@babel/runtime/helpers/getPrototypeOf";
 import _inherits from "@babel/runtime/helpers/inherits";
 import { deepSubscribeRule } from '../../deep-subscribe/deep-subscribe';
-import { RuleBuilder } from '../../deep-subscribe/RuleBuilder';
+import { cloneRule, RuleBuilder } from '../../deep-subscribe/RuleBuilder';
 import { ObservableObjectBuilder } from '../ObservableObjectBuilder';
 export var ConnectorBuilder =
 /*#__PURE__*/
 function (_ObservableObjectBuil) {
   _inherits(ConnectorBuilder, _ObservableObjectBuil);
 
-  function ConnectorBuilder() {
+  function ConnectorBuilder(object, buildSourceRule) {
+    var _this;
+
     _classCallCheck(this, ConnectorBuilder);
 
-    return _possibleConstructorReturn(this, _getPrototypeOf(ConnectorBuilder).apply(this, arguments));
+    _this = _possibleConstructorReturn(this, _getPrototypeOf(ConnectorBuilder).call(this, object));
+    _this.buildSourceRule = buildSourceRule;
+    return _this;
   }
 
   _createClass(ConnectorBuilder, [{
     key: "connect",
     value: function connect(name, buildRule, options, initValue) {
-      var ruleBuilder = buildRule(new RuleBuilder());
-      var rule = ruleBuilder && ruleBuilder.result;
+      var object = this.object,
+          buildSourceRule = this.buildSourceRule;
+      var ruleBuilder = new RuleBuilder();
 
-      if (rule == null) {
+      if (buildSourceRule) {
+        ruleBuilder = buildSourceRule(ruleBuilder);
+      }
+
+      ruleBuilder = buildRule(ruleBuilder);
+      var ruleBase = ruleBuilder && ruleBuilder.result;
+
+      if (ruleBase == null) {
         throw new Error('buildRule() return null or not initialized RuleBuilder');
       }
 
+      var setOptions = options && options.setOptions;
       return this.readable(name, {
-        factorySetOptions: options,
-        factory: function factory() {
-          var _this = this;
+        setOptions: setOptions,
+        hidden: options && options.hidden,
+        // tslint:disable-next-line:no-shadowed-variable
+        factory: function factory(initValue) {
+          var _this2 = this;
 
           var setValue = function setValue(value) {
             if (typeof value !== 'undefined') {
@@ -41,17 +56,17 @@ function (_ObservableObjectBuil) {
           var unsubscribe = deepSubscribeRule(this, function (value) {
             setValue(value);
             return null;
-          }, true, rule);
+          }, true, this === object ? ruleBase : cloneRule(ruleBase));
 
           this._setUnsubscriber(name, unsubscribe);
 
           setValue = function setValue(value) {
-            _this._set(name, value, options);
+            _this2._set(name, value, setOptions);
           };
 
           return initValue;
         }
-      });
+      }, initValue);
     }
   }]);
 

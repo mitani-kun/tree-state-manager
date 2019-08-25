@@ -253,7 +253,9 @@ export class Tester<TObject, TValue> {
 				}
 			},
 			this._immediate,
-			ruleBuilder)
+			Math.random() > 0.5
+				? o => ruleBuilder(o).clone()
+				: ruleBuilder)
 	}
 
 	// region Sync
@@ -377,7 +379,7 @@ export class Tester<TObject, TValue> {
 
 	// endregion
 
-	// rergion Async
+	// region Async
 
 	public async subscribeAsync(
 		expectedSubscribed: TValue[]|((object: TObject) => TValue[]),

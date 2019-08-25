@@ -13,8 +13,7 @@ import { ConnectorBuilder } from '../../../../../../../main/common/rx/object/pro
 import { createObject } from '../../deep-subscribe/helpers/Tester';
 describe('common > main > rx > properties > ConnectorBuilder', function () {
   it('connect', function () {
-    var source = createObject().observableObject;
-    new ObservableObjectBuilder(source).writable('baseProp1').writable('baseProp2').writable('prop1').writable('prop2');
+    var source = new ObservableObjectBuilder(createObject().observableObject).writable('baseProp1').writable('baseProp2').writable('prop1').writable('prop2').object;
     source.baseProp1 = 'baseProp1_init_source';
 
     var BaseClass1 =
@@ -83,24 +82,24 @@ describe('common > main > rx > properties > ConnectorBuilder', function () {
       return Class2;
     }(BaseClass2);
 
-    var baseBuilder1 = new ConnectorBuilder(BaseClass1.prototype).connect('baseProp1', function (b) {
+    new ConnectorBuilder(BaseClass1.prototype).connect('baseProp1', function (b) {
       return b.path(function (o) {
         return o.source.property['@value_property'].observableMap['#observableList']['#'].baseProp1;
       });
-    }, null, 'baseProp1_init');
-    var baseBuilder2 = new ConnectorBuilder(BaseClass2.prototype).connect('baseProp2', function (b) {
+    });
+    new ConnectorBuilder(BaseClass2.prototype).connect('baseProp2', function (b) {
       return b.path(function (o) {
-        return o.source.property['@value_property'].observableMap['#observableList']['#'].baseProp2;
+        return o['@value_property'].source.property['@value_property'].observableMap['#observableList']['#'].baseProp2;
       });
     }, null, 'baseProp2_init');
-    var builder1 = new ConnectorBuilder(Class1.prototype).connect('prop1', function (b) {
+    new ConnectorBuilder(Class1.prototype).connect('prop1', function (b) {
       return b.path(function (o) {
-        return o.source.property['@value_property'].observableMap['#observableList']['#'].prop1;
+        return o['@value_property'].source.property['@value_property'].observableMap['#observableList']['#'].prop1;
       });
     }, null, 'prop1_init');
-    var builder2 = new ConnectorBuilder(Class2.prototype).connect('prop2', function (b) {
+    new ConnectorBuilder(Class2.prototype).connect('prop2', function (b) {
       return b.path(function (o) {
-        return o.source.property['@value_property'].observableMap['#observableList']['#'].prop2;
+        return o['@value_property'].source.property['@value_property'].observableMap['#observableList']['#'].prop2;
       });
     }, null, 'prop2_init');
     var baseObject1 = new BaseClass1();
@@ -155,9 +154,9 @@ describe('common > main > rx > properties > ConnectorBuilder', function () {
     assert.deepStrictEqual(results1, []);
     assert.deepStrictEqual(results2, []);
     assert.deepStrictEqual(baseObject1.baseProp1, '1');
-    assert.deepStrictEqual(baseObject2.baseProp1, 'baseProp1_init_source');
-    assert.deepStrictEqual(object1.baseProp1, 'baseProp1_init_source');
-    assert.deepStrictEqual(object2.baseProp1, 'baseProp1_init_source');
+    assert.deepStrictEqual(baseObject2.baseProp1, '1');
+    assert.deepStrictEqual(object1.baseProp1, '1');
+    assert.deepStrictEqual(object2.baseProp1, '1');
     assert.strictEqual(baseObject2.baseProp2, 'baseProp2_init');
     source.baseProp2 = '3';
     assert.deepStrictEqual(baseResults1, []);
@@ -172,7 +171,7 @@ describe('common > main > rx > properties > ConnectorBuilder', function () {
     assert.deepStrictEqual(baseObject1.baseProp2, undefined);
     assert.deepStrictEqual(baseObject2.baseProp2, '3');
     assert.deepStrictEqual(object1.baseProp2, undefined);
-    assert.deepStrictEqual(object2.baseProp2, 'baseProp2_init');
+    assert.deepStrictEqual(object2.baseProp2, '3');
     new ConnectorBuilder(object2).readable('baseProp1', null, '7');
     assert.deepStrictEqual(baseResults1, []);
     assert.deepStrictEqual(baseResults2, []);
@@ -180,12 +179,12 @@ describe('common > main > rx > properties > ConnectorBuilder', function () {
     assert.deepStrictEqual(results2, [{
       name: 'baseProp1',
       newValue: '7',
-      oldValue: 'baseProp1_init_source'
+      oldValue: '1'
     }]);
     results2 = [];
     assert.deepStrictEqual(baseObject1.baseProp1, '1');
-    assert.deepStrictEqual(baseObject2.baseProp1, 'baseProp1_init_source');
-    assert.deepStrictEqual(object1.baseProp1, 'baseProp1_init_source');
+    assert.deepStrictEqual(baseObject2.baseProp1, '1');
+    assert.deepStrictEqual(object1.baseProp1, '1');
     assert.deepStrictEqual(object2.baseProp1, '7');
   });
 });

@@ -1,5 +1,3 @@
-import {IUnsubscribe} from '../../subjects/subject'
-
 export enum RuleType {
 	Nothing,
 	Action,
@@ -11,6 +9,7 @@ export interface IRule {
 	readonly type: RuleType
 	next?: IRule
 	description?: string
+	clone(): IRule
 }
 
 // tslint:disable-next-line:no-empty-interface

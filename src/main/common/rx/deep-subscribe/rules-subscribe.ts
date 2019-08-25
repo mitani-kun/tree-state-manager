@@ -7,11 +7,14 @@ import {ISetChanged, SetChangedType} from '../../lists/contracts/ISetChanged'
 import {IUnsubscribe} from '../subjects/subject'
 import {ANY, COLLECTION_PREFIX, VALUE_PROPERTY_DEFAULT, VALUE_PROPERTY_PREFIX} from './contracts/constants'
 import {IRuleSubscribe, ISubscribeObject} from './contracts/rule-subscribe'
-import {IRule, RuleType} from './contracts/rules'
+import {RuleType} from './contracts/rules'
+import {Rule} from './rules'
 
-// function propertyPredicateAll(propertyName: string, object) {
-// 	return Object.prototype.hasOwnProperty.call(object, propertyName)
-// }
+function forEachSimple<TItem>(iterable: Iterable<TItem>, callbackfn: (item: TItem, debugPropertyName: string) => void) {
+	for (const item of iterable) {
+		callbackfn(item, COLLECTION_PREFIX)
+	}
+}
 
 // region subscribeObject
 
@@ -80,7 +83,7 @@ function subscribeObjectValue<TValue>(
 
 	if (propertyChanged) {
 		unsubscribe = checkIsFuncOrNull(propertyChanged
-			.subscribe(({name, oldValue, newValue}) => {
+			.subscribe(({name, oldValue}) => {
 				const newSubscribePropertyName = getSubscribePropertyName()
 
 				if (name === subscribePropertyName) {
@@ -285,14 +288,8 @@ function subscribeList<TItem>(
 			}))
 	}
 
-	const forEach = (callbackfn: (item: TItem, debugPropertyName: string) => void) => {
-		for (const item of object) {
-			callbackfn(item, COLLECTION_PREFIX)
-		}
-	}
-
 	if (immediateSubscribe) {
-		forEach(subscribeItem)
+		forEachSimple(object, subscribeItem)
 	} else if (unsubscribe == null) {
 		return null
 	}
@@ -302,7 +299,7 @@ function subscribeList<TItem>(
 			unsubscribe()
 			unsubscribe = null
 		}
-		forEach(unsubscribeItem)
+		forEachSimple(object, unsubscribeItem)
 	}
 }
 
@@ -342,14 +339,8 @@ function subscribeSet<TItem>(
 			}))
 	}
 
-	const forEach = (callbackfn: (item: TItem, debugPropertyName: string) => void) => {
-		for (const item of object) {
-			callbackfn(item, COLLECTION_PREFIX)
-		}
-	}
-
 	if (immediateSubscribe) {
-		forEach(subscribeItem)
+		forEachSimple(object, subscribeItem)
 	} else if (unsubscribe == null) {
 		return null
 	}
@@ -359,7 +350,7 @@ function subscribeSet<TItem>(
 			unsubscribe()
 			unsubscribe = null
 		}
-		forEach(unsubscribeItem)
+		forEachSimple(object, unsubscribeItem)
 	}
 }
 
@@ -497,7 +488,7 @@ function createPropertyPredicate(propertyNames: string[]) {
 			return null
 		}
 
-		return (propName: string, object) => {
+		return (propName: string) => {
 			return propName === propertyName
 		}
 	} else {
@@ -512,7 +503,7 @@ function createPropertyPredicate(propertyNames: string[]) {
 			propertyNamesMap[propertyName] = true
 		}
 
-		return (propName: string, object) => {
+		return (propName: string) => {
 			return !!propertyNamesMap[propName]
 		}
 	}
@@ -523,17 +514,40 @@ export enum SubscribeObjectType {
 	ValueProperty,
 }
 
-export class RuleSubscribeObject<TObject, TValue> implements IRuleSubscribe<TObject, TValue> {
-	public readonly type: RuleType = RuleType.Action
-	public readonly subscribe: ISubscribeObject<TObject, TValue>
-	public description: string
-	public next: IRule
+export abstract class RuleSubscribe<TObject = any, TChild = any>
+	extends Rule
+	implements IRuleSubscribe<TObject, TChild>
+{
+	public subscribe: ISubscribeObject<TObject, TChild>
+	public readonly unsubscribers: IUnsubscribe[]
 
+	protected constructor() {
+		super(RuleType.Action)
+	}
+
+	public clone(): IRuleSubscribe<TObject, TChild> {
+		const clone = super.clone() as IRuleSubscribe<TObject, TChild>
+		const {subscribe} = this
+
+		if (subscribe != null) {
+			(clone as any).subscribe = subscribe
+		}
+
+		return clone
+	}
+}
+
+export class RuleSubscribeObject<TObject, TValue>
+	extends RuleSubscribe<TObject, TValue>
+	implements IRuleSubscribe<TObject, TValue>
+{
 	constructor(
 		type: SubscribeObjectType,
 		propertyPredicate?: (propertyName: string, object) => boolean,
 		...propertyNames: string[]
 	) {
+		super()
+
 		if (propertyNames && !propertyNames.length) {
 			propertyNames = null
 		}
@@ -566,7 +580,6 @@ export class RuleSubscribeObject<TObject, TValue> implements IRuleSubscribe<TObj
 			default:
 				throw new Error(`Unknown SubscribeObjectType: ${type}`)
 		}
-
 	}
 }
 
@@ -587,7 +600,7 @@ function createKeyPredicate<TKey>(keys: TKey[]) {
 			return null
 		}
 
-		return (k: TKey, object) => {
+		return (k: TKey) => {
 			return k === key
 		}
 	} else {
@@ -599,22 +612,22 @@ function createKeyPredicate<TKey>(keys: TKey[]) {
 			}
 		}
 
-		return (k: TKey, object) => {
+		return (k: TKey) => {
 			return keys.indexOf(k) >= 0
 		}
 	}
 }
 
-export class RuleSubscribeMap<TObject extends Map<K, V>, K, V> implements IRuleSubscribe<TObject, V> {
-	public readonly type: RuleType = RuleType.Action
-	public readonly subscribe: ISubscribeObject<Map<K, V>, V>
-	public description: string
-	public next: IRule
-
+export class RuleSubscribeMap<TObject extends Map<K, V>, K, V>
+	extends RuleSubscribe<TObject, V>
+	implements IRuleSubscribe<TObject, V>
+{
 	constructor(
 		keyPredicate?: (key: K, object) => boolean,
 		...keys: K[]
 	) {
+		super()
+
 		if (keys && !keys.length) {
 			keys = null
 		}
@@ -642,13 +655,13 @@ export class RuleSubscribeMap<TObject extends Map<K, V>, K, V> implements IRuleS
 
 // region RuleSubscribeCollection
 
-export class RuleSubscribeCollection<TObject extends Iterable<TItem>, TItem> implements IRuleSubscribe<TObject, TItem> {
-	public readonly type: RuleType = RuleType.Action
-	public readonly subscribe: ISubscribeObject<TObject, TItem>
-	public description: string
-	public next: IRule
-
+export class RuleSubscribeCollection<TObject extends Iterable<TItem>, TItem>
+	extends RuleSubscribe<TObject, TItem>
+	implements IRuleSubscribe<TObject, TItem>
+{
 	constructor() {
+		super()
+
 		this.subscribe = subscribeCollection
 	}
 }

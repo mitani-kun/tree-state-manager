@@ -10,7 +10,7 @@ import {
 	ISerializedObject,
 	ISerializeValue,
 } from '../extensions/serialization/contracts'
-import {registerSerializable, registerSerializer} from '../extensions/serialization/serializers'
+import {registerSerializable} from '../extensions/serialization/serializers'
 import {isIterable} from '../helpers/helpers'
 import {getObjectUniqueId} from './helpers/object-unique-id'
 import {fillSet} from './helpers/set'
@@ -165,7 +165,7 @@ export class ArraySet<T extends Object> implements
 
 	// region ISerializable
 
-	public static uuid: string = '0e8c7f09-ea9e-4631-8af8-a635c214a01c'
+	public static uuid: string = '0e8c7f09ea9e46318af8a635c214a01c'
 
 	public serialize(serialize: ISerializeValue): ISerializedObject {
 		return {
@@ -174,8 +174,8 @@ export class ArraySet<T extends Object> implements
 	}
 
 	public deSerialize(
-		deSerialize: IDeSerializeValue,
-		serializedValue: ISerializedObject,
+		// deSerialize: IDeSerializeValue,
+		// serializedValue: ISerializedObject,
 	// tslint:disable-next-line:no-empty
 	): void {
 
@@ -195,7 +195,7 @@ registerSerializable(ArraySet, {
 		): ThenableIterator<ArraySet<T>> {
 			const innerSet = yield deSerialize(serializedValue.array, null, { arrayAsObject: true })
 			const value = valueFactory(innerSet)
-			value.deSerialize(deSerialize, serializedValue)
+			// value.deSerialize(deSerialize, serializedValue)
 			return value
 		},
 	},

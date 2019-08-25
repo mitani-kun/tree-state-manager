@@ -140,7 +140,7 @@ export class ObjectSet implements
 
 	// region ISerializable
 
-	public static uuid: string = '6988ebc9-cd06-4a9b-97a9-8415b8cf1dc4'
+	public static uuid: string = '6988ebc9cd064a9b97a98415b8cf1dc4'
 
 	public serialize(serialize: ISerializeValue): ISerializedObject {
 		return {
@@ -149,8 +149,8 @@ export class ObjectSet implements
 	}
 
 	public deSerialize(
-		deSerialize: IDeSerializeValue,
-		serializedValue: ISerializedObject,
+		// deSerialize: IDeSerializeValue,
+		// serializedValue: ISerializedObject,
 	// tslint:disable-next-line:no-empty
 	): void {
 
@@ -170,7 +170,7 @@ registerSerializable(ObjectSet, {
 		): ThenableIterator<ObjectSet> {
 			const innerSet = yield deSerialize<object>(serializedValue.object)
 			const value = valueFactory(innerSet)
-			value.deSerialize(deSerialize, serializedValue)
+			// value.deSerialize(deSerialize, serializedValue)
 			return value
 		},
 	},

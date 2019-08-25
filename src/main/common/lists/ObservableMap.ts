@@ -158,7 +158,7 @@ export class ObservableMap<K, V>
 	}
 
 	public forEach(callbackfn: (value: V, key: K, map: Map<K, V>) => void, thisArg?: any): void {
-		this._map.forEach((k, v, s) => callbackfn.call(thisArg, k, v, this))
+		this._map.forEach((k, v) => callbackfn.call(thisArg, k, v, this))
 	}
 
 	public has(key: K): boolean {
@@ -222,7 +222,7 @@ export class ObservableMap<K, V>
 
 	// region ISerializable
 
-	public static uuid: string = 'e162178d-5123-4bea-ab6e-b96d5b8f130b'
+	public static uuid: string = 'e162178d51234beaab6eb96d5b8f130b'
 
 	public serialize(serialize: ISerializeValue): ISerializedObject {
 		return {
@@ -231,8 +231,8 @@ export class ObservableMap<K, V>
 	}
 
 	public deSerialize(
-		deSerialize: IDeSerializeValue,
-		serializedValue: ISerializedObject,
+		// deSerialize: IDeSerializeValue,
+		// serializedValue: ISerializedObject,
 	// tslint:disable-next-line:no-empty
 	): void {
 
@@ -252,7 +252,7 @@ registerSerializable(ObservableMap, {
 		): ThenableIterator<ObservableMap<K, V>> {
 			const innerMap = yield deSerialize<Map<K, V>>(serializedValue.map)
 			const value = valueFactory(innerMap)
-			value.deSerialize(deSerialize, serializedValue)
+			// value.deSerialize(deSerialize, serializedValue)
 			return value
 		},
 	},

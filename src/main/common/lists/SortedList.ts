@@ -27,7 +27,7 @@ function calcOptimalArraySize(desiredSize: number) {
 }
 
 export function getDefaultValue(value) {
-	if (value === null || typeof value === 'undefined') {
+	if (value == null) {
 		return value
 	}
 	if (typeof value === 'number') {
@@ -1225,7 +1225,7 @@ export class SortedList<T>
 
 	// region ISerializable
 
-	public static uuid: string = '1ec56e52-1aa5-4dd1-8471-a6185f22ed0a'
+	public static uuid: string = '1ec56e521aa54dd18471a6185f22ed0a'
 
 	public serialize(serialize: ISerializeValue): ISerializedObject {
 		return {
@@ -1240,8 +1240,8 @@ export class SortedList<T>
 	}
 
 	public deSerialize(
-		deSerialize: IDeSerializeValue,
-		serializedValue: ISerializedObject,
+		// deSerialize: IDeSerializeValue,
+		// serializedValue: ISerializedObject,
 	// tslint:disable-next-line:no-empty
 	): void {
 
@@ -1324,7 +1324,7 @@ registerSerializable(SortedList, {
 			const options = yield deSerialize(serializedValue.options)
 			options.array = yield deSerialize(serializedValue.array)
 			const value = valueFactory(options)
-			value.deSerialize(deSerialize, serializedValue)
+			// value.deSerialize(deSerialize, serializedValue)
 			return value
 		},
 	},

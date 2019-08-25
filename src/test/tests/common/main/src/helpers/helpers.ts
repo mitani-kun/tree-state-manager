@@ -1,8 +1,6 @@
 /* tslint:disable:object-literal-key-quotes no-construct use-primitive-type */
 import {ThenableIterator} from '../../../../../../main/common/async/async'
 import {IMergeable, IMergeOptions, IMergeValue} from '../../../../../../main/common/extensions/merge/contracts'
-import {mergeMaps} from '../../../../../../main/common/extensions/merge/merge-maps'
-import {createMergeSetWrapper} from '../../../../../../main/common/extensions/merge/merge-sets'
 import {registerMergeable} from '../../../../../../main/common/extensions/merge/mergers'
 import {
 	IDeSerializeValue,
@@ -65,7 +63,7 @@ export class CircularClass extends ObservableObject
 
 	// region ISerializable
 
-	public static uuid: string = 'e729e03f-d0f4-4994-9f0f-97da23c7bab8'
+	public static uuid: string = 'e729e03fd0f449949f0f97da23c7bab8'
 
 	public serialize(serialize: ISerializeValue): ISerializedTypedValue {
 		return {
