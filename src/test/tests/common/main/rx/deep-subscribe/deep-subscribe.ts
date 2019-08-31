@@ -1,40 +1,79 @@
 /* tslint:disable:no-construct use-primitive-type no-shadowed-variable no-duplicate-string no-empty max-line-length */
-import {delay} from '../../../../../../main/common/helpers/helpers'
-import {VALUE_PROPERTY_DEFAULT} from '../../../../../../main/common/rx/deep-subscribe/contracts/constants'
+import {delay, VALUE_PROPERTY_DEFAULT} from '../../../../../../main/common/helpers/helpers'
+import {RuleBuilder} from '../../../../../../main/common/rx/deep-subscribe/RuleBuilder'
 import {ObservableObjectBuilder} from '../../../../../../main/common/rx/object/ObservableObjectBuilder'
-import {createObject, Tester} from './helpers/Tester'
+import {createObject, IObject, Tester} from './helpers/Tester'
 
 describe('common > main > rx > deep-subscribe > deep-subscribe', function() {
 	const check = createObject()
 
 	it('object', function() {
+		const object1 = createObject()
 		new Tester(
 			{
-				object: createObject().object,
-				immediate: false,
+				object: object1.observableObject,
+				immediate: true,
 			},
-			b => b.path(o => o.object),
-			b => b.path(o => o.object.object),
-			b => b.path(o => o.object.object.object),
+			b => b.path(o => o.observableObjectPrototype.observableObject.valueObject),
+			b => b.path(o => o.valueObject),
+			b => b.path(o => o.observableObject['@last'].valueObject),
+			b => b.path(o => o.observableObjectPrototype.observableObject.valueObject['@last']),
+			b => b.path(o => o.observableObject.observableObject.valueObject),
 		)
-			.subscribe(null)
-			.change(o => o.object = null, [], [])
+			.subscribe(o => [o.valueObject])
+			.unsubscribe(o => [o.valueObject])
+			.subscribe(o => [o.valueObject])
+			.change(o => o.valueObject = new Number(1) as any,
+				[object1.valueObject], [new Number(1) as any])
+			.unsubscribe([new Number(1) as any])
 
 		new Tester(
 			{
 				object: createObject().observableObject,
-				immediate: false,
+				immediate: true,
 			},
-			b => b.path(o => o.object),
-			// b => b.path(o => o.observableObject.object),
-			// b => b.path(o => o.observableObject.observableObject.object),
-			// b => b.path(o => o.observableObject.observableObject.observableObject.object),
+			b => b.path(o => o.observableObject['@last'].valueObject),
+			b => b.path(o => o.observableObject.observableObject.valueObject),
+			b => b.path(o => (o.map['#observableObject'] as IObject).observableObject.map['#object'].object.valueObject),
+		)
+			.subscribe(o => [o.valueObject])
+			.unsubscribe(o => [o.valueObject])
+			.subscribe(o => [o.valueObject])
+			.change(o => o.observableObject = new Number(1) as any,
+				[new String("value")], [])
+			.change(o => o.observableObject = o,
+				[], [new String("value")])
+			.unsubscribe([new String("value")])
+
+		new Tester(
+			{
+				object: createObject().observableObject,
+				immediate: true,
+				doNotSubscribeNonObjectValues: true,
+			},
+			b => b.path(o => o.observableObjectPrototype.valueObjectWritable),
+			b => b.path(o => o.observableObject.observableObjectPrototype.valueObjectWritable),
+			b => b.path(o => o.observableObjectPrototype.observableObject.observableObjectPrototype.valueObjectWritable),
+			b => b.path(o => o.observableObject.observableObject.observableObjectPrototype.valueObjectWritable),
 		)
 			.subscribe([])
 			.unsubscribe([])
 			.subscribe([])
-			.change(o => o.object = new Number(1) as any,
+			.change(o => o.observableObjectPrototype.valueObjectWritable = new Number(1) as any,
 				[], [new Number(1) as any])
+			.unsubscribe([new Number(1) as any])
+
+		new Tester(
+			{
+				object: createObject().object,
+				immediate: true,
+			},
+			b => b.path(o => o.object),
+			// b => b.path(o => o.object.object),
+			// b => b.path(o => o.object.object.object),
+		)
+			.subscribe(o => [o.object])
+			.change(o => o.object = null, o => [], [])
 
 		new Tester(
 			{
@@ -129,20 +168,20 @@ describe('common > main > rx > deep-subscribe > deep-subscribe', function() {
 				new Number(2) as any,
 			])
 
-		new Tester(
-			{
-				object: createObject().object,
-				immediate: false,
-			},
-			b => b
-				.repeat(1, 3, b => b
-					.any(
-						b => b.propertyRegexp(/object|observableObject/),
-						b => b.path(o => o['list|set|map|observableList|observableSet|observableMap']['#']),
-					),
-				),
-		)
-			.subscribe([])
+		// new Tester(
+		// 	{
+		// 		object: createObject().object,
+		// 		immediate: false,
+		// 	},
+		// 	b => b
+		// 		.repeat(1, 3, b => b
+		// 			.any(
+		// 				b => b.propertyRegexp(/object|observableObject/),
+		// 				b => b.path(o => o['list|set|map|observableList|observableSet|observableMap']['#']),
+		// 			),
+		// 		),
+		// )
+		// 	.subscribe([])
 	})
 
 	it('chain of same objects', function() {
@@ -163,22 +202,30 @@ describe('common > main > rx > deep-subscribe > deep-subscribe', function() {
 			)
 			.unsubscribe([])
 
-		new Tester(
-			{
-				object: createObject().observableObject,
-				immediate: true,
-			},
-			// b => b.path(o => o.object),
-			b => b.path(o => o.object.observableObject.object),
-			b => b.path(o => o.object.observableObject.object.observableObject.object),
-		)
-			.subscribe(o => [o.object])
-			.change(
-				o => o.object = new Number(1) as any,
-				o => [o.object],
-				o => [],
+		{
+			const object = createObject()
+			new Tester(
+				{
+					object: object.observableObject,
+					immediate: true,
+				},
+				// b => b.path(o => o.object),
+				b => b.path(o => o.object.observableObject.object),
+				b => b.path(o => o.object.observableObject.object.observableObject.object),
 			)
-			.unsubscribe([])
+				.subscribe([object])
+				.change(
+					o => o.object = new Number(1) as any,
+					[object],
+					[],
+				)
+				.change(
+					o => o.object = object,
+					[],
+					[object],
+				)
+				.unsubscribe([object])
+		}
 
 		const observableList = createObject().observableList
 		observableList.clear()
@@ -332,6 +379,38 @@ describe('common > main > rx > deep-subscribe > deep-subscribe', function() {
 	})
 
 	it('value properties', async function() {
+		new Tester(
+			{
+				object: createObject().observableObject,
+				immediate: true,
+			},
+			b => b.path(o => o.property as any),
+		)
+			.subscribe(o => [o.observableObject])
+			.change(o => o.property[VALUE_PROPERTY_DEFAULT] = new Number(1) as any,
+				o => [o.observableObject], [new Number(1)])
+			.change(o => o.property = new Number(2) as any,
+				[new Number(1)], [new Number(2)])
+			.change(o => o.property = o.object.property,
+				[new Number(2)], [new Number(1)])
+			.unsubscribe([new Number(1)])
+
+		new Tester(
+			{
+				object: createObject().observableObject,
+				immediate: true,
+			},
+			b => b.path(o => o.property['@value_observableObject']),
+		)
+			.subscribe(o => [o.observableObject])
+			.change(o => o.property.value_observableObject = new Number(1) as any,
+				o => [o.observableObject], [new Number(1)])
+			.change(o => o.property = new Number(2) as any,
+				[new Number(1)], [new Number(2)])
+			.change(o => o.property = o.object.property,
+				[new Number(2)], [new Number(1)])
+			.unsubscribe([new Number(1)])
+
 		{
 			const object = createObject()
 			new ObservableObjectBuilder(object.property).delete(VALUE_PROPERTY_DEFAULT)
@@ -487,7 +566,7 @@ describe('common > main > rx > deep-subscribe > deep-subscribe', function() {
 				.path(o => o.value),
 		)
 			.subscribe([])
-			.change(o => o.observableObject.target = value,
+			.change(o => (o.observableObject as any).target = value,
 				[], [value])
 			.change(o => o.observableList.add(value as any),
 				[], [])
@@ -514,7 +593,7 @@ describe('common > main > rx > deep-subscribe > deep-subscribe', function() {
 				.path(o => o['#value']),
 		)
 			.subscribe([])
-			.change(o => o.observableObject.target = value,
+			.change(o => (o.observableObject as any).target = value,
 				[], [])
 			.change(o => o.observableList.add(value as any),
 				[], [])
@@ -584,7 +663,7 @@ describe('common > main > rx > deep-subscribe > deep-subscribe', function() {
 			b => b.path(o => o.value),
 			b => b.path(o => o.object.object.object.value),
 			b => b.path(o => o.observableObject.observableObject.observableObject.value),
-			b => b.path(o => o.observableList['#'].observableList['#'].observableList['#'].value),
+			b => b.path(o => (o.observableList['#'] as IObject).observableList['#'].observableList['#'].value),
 			b => {
 				b = b.path(o => o.object.object.object.value)
 				delete b.result.description
@@ -593,7 +672,7 @@ describe('common > main > rx > deep-subscribe > deep-subscribe', function() {
 			},
 		)
 			.subscribe(
-				[null], [null],
+				["value"], ["value"],
 				Error,
 				/unsubscribe function for non Object value/,
 			)
@@ -627,7 +706,7 @@ describe('common > main > rx > deep-subscribe > deep-subscribe', function() {
 				.path((o: any) => o.object.value),
 		)
 			.subscribe(
-				[null], [],
+				["value"], [],
 				Error,
 				/Value is not a function or null\/undefined/,
 			)

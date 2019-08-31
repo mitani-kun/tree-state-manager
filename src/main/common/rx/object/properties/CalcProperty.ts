@@ -1,14 +1,17 @@
-import {ThenableOrValue} from '../../../async/async'
+import {
+	ThenableOrIteratorOrValue,
+	ThenableOrValue,
+} from '../../../async/async'
 import {resolveAsyncFunc} from '../../../async/ThenableSync'
-import {PropertyChangedEvent} from '../../../lists/contracts/IPropertyChanged'
-import {VALUE_PROPERTY_DEFAULT} from '../../deep-subscribe/contracts/constants'
+import {VALUE_PROPERTY_DEFAULT} from '../../../helpers/helpers'
 import {DeferredCalc, IDeferredCalcOptions} from '../../deferred-calc/DeferredCalc'
+import {PropertyChangedEvent} from '../IPropertyChanged'
 import {ObservableObject} from '../ObservableObject'
 import {ObservableObjectBuilder} from '../ObservableObjectBuilder'
 import {IPropertyOptions, Property} from './property'
 
 export type CalcPropertyFunc<TInput, TTarget, TSource>
-	= (input: TInput, valueProperty: Property<TTarget, TSource>) => ThenableOrValue<void>
+	= (input: TInput, valueProperty: Property<TTarget, TSource>) => ThenableOrIteratorOrValue<void>
 
 // export interface ICalcProperty<TInput, TValue, TMergeSource> {
 // 	['@last']: TValue
@@ -16,12 +19,23 @@ export type CalcPropertyFunc<TInput, TTarget, TSource>
 // 	['@lastOrWait']: TValue
 // }
 
-export class CalcProperty<TInput, TValue, TMergeSource> extends ObservableObject {
+export interface ICalcProperty<TValue> {
+	readonly [VALUE_PROPERTY_DEFAULT]: ThenableOrValue<TValue>
+	readonly last: TValue
+	readonly wait: ThenableOrValue<TValue>
+	readonly lastOrWait: ThenableOrValue<TValue>
+}
+
+export class CalcProperty<TValue, TInput = any, TMergeSource = any>
+	extends ObservableObject
+	implements ICalcProperty<TValue>
+{
 	private readonly _calcFunc: CalcPropertyFunc<TInput, TValue, TMergeSource>
 	private readonly _valueProperty: Property<TValue, TMergeSource>
 	private readonly _deferredCalc: DeferredCalc
 	private _deferredValue: ThenableOrValue<TValue>
 	private _hasValue: boolean
+	private readonly _initValue?: TValue
 
 	public input: TInput
 
@@ -37,6 +51,10 @@ export class CalcProperty<TInput, TValue, TMergeSource> extends ObservableObject
 			throw new Error(`calcFunc must be a function: ${calcFunc}`)
 		}
 
+		if (typeof initValue !== 'function') {
+			this._initValue = initValue
+		}
+
 		this._calcFunc = calcFunc
 		this._valueProperty = new Property(valueOptions, initValue)
 
@@ -44,21 +62,27 @@ export class CalcProperty<TInput, TValue, TMergeSource> extends ObservableObject
 			() => {
 				this.onValueChanged()
 			},
-			(done: () => void) => {
+			(done: (isChanged: boolean) => void) => {
+				const prevValue = this._valueProperty.value
 				this._deferredValue = resolveAsyncFunc(
 					() => this._calcFunc(this.input, this._valueProperty),
 					() => {
 						this._hasValue = true
 						const val = this._valueProperty.value
-						done()
+						done(prevValue !== val)
 						return val
 					},
-					done,
+					err => {
+						done(prevValue !== this._valueProperty.value)
+						return err
+					},
 					true,
 				)
 			},
-			() => {
-				this.onValueChanged()
+			isChanged => {
+				if (isChanged) {
+					this.onValueChanged()
+				}
 			},
 			calcOptions,
 		)
@@ -73,6 +97,7 @@ export class CalcProperty<TInput, TValue, TMergeSource> extends ObservableObject
 		if (propertyChangedIfCanEmit) {
 			const oldValue = this._valueProperty.value
 			propertyChangedIfCanEmit.onPropertyChanged(
+				new PropertyChangedEvent(VALUE_PROPERTY_DEFAULT, oldValue, () => this[VALUE_PROPERTY_DEFAULT]),
 				new PropertyChangedEvent('last', oldValue, () => this.last),
 				new PropertyChangedEvent('wait', oldValue, () => this.wait),
 				new PropertyChangedEvent('lastOrWait', oldValue, () => this.lastOrWait),
@@ -82,24 +107,31 @@ export class CalcProperty<TInput, TValue, TMergeSource> extends ObservableObject
 
 	public get [VALUE_PROPERTY_DEFAULT](): ThenableOrValue<TValue>
 	{
-		return this.lastOrWait as any
+		return this.wait as any
 	}
 
-	public get last(): TValue {
+	get last(): TValue {
 		this._deferredCalc.calc()
 		return this._valueProperty.value
 	}
 
-	public get wait(): ThenableOrValue<TValue> {
+	get wait(): ThenableOrValue<TValue> {
 		this._deferredCalc.calc()
 		return this._deferredValue as TValue
 	}
 
-	public get lastOrWait(): ThenableOrValue<TValue> {
+	get lastOrWait(): ThenableOrValue<TValue> {
 		this._deferredCalc.calc()
 		return this._hasValue
 			? this._valueProperty.value
 			: this._deferredValue as TValue
+	}
+
+	public clear() {
+		if (this._valueProperty.value !== this._initValue) {
+			this._valueProperty.value = this._initValue
+			this.onValueChanged()
+		}
 	}
 }
 

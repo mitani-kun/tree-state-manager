@@ -13,6 +13,7 @@ export function subject(base): any {
 	// tslint:disable-next-line:no-shadowed-variable
 	return class Subject<T> extends base implements ISubject<T> {
 		private _subscribers: Array<ISubscriber<T>>
+		private _subscribersInProcess: Array<ISubscriber<T>>
 
 		get hasSubscribers() {
 			return !!(this._subscribers && this._subscribers.length)
@@ -23,9 +24,9 @@ export function subject(base): any {
 				return null
 			}
 
-			let {_subscribers} = this
+			const {_subscribers} = this
 			if (!_subscribers) {
-				this._subscribers = _subscribers = [subscriber]
+				this._subscribers = [subscriber]
 			} else {
 				_subscribers[_subscribers.length] = subscriber
 			}
@@ -35,10 +36,28 @@ export function subject(base): any {
 					return
 				}
 
+				// tslint:disable-next-line:no-shadowed-variable
+				const {_subscribers} = this
+				const len = _subscribers.length
 				const index = _subscribers.indexOf(subscriber)
-
 				if (index >= 0) {
-					_subscribers.splice(index, 1)
+					if (this._subscribersInProcess === _subscribers) {
+						const subscribers = new Array(len - 1)
+
+						for (let i = 0; i < index; i++) {
+							subscribers[i] = _subscribers[i]
+						}
+						for (let i = index + 1; i < len; i++) {
+							subscribers[i - 1] = _subscribers[i]
+						}
+
+						this._subscribers = subscribers
+					} else {
+						for (let i = index + 1; i < len; i++) {
+							_subscribers[i - 1] = _subscribers[i]
+						}
+						_subscribers.length = len - 1
+					}
 				}
 
 				subscriber = null
@@ -46,15 +65,21 @@ export function subject(base): any {
 		}
 
 		public emit(value: T): this {
-			let {_subscribers} = this
+			const {_subscribers} = this
 			if (!_subscribers) {
 				return this
 			}
 
-			_subscribers = _subscribers.slice()
+			if (this._subscribersInProcess !== _subscribers) {
+				this._subscribersInProcess = _subscribers
+			}
 
-			for (let i = 0, l = _subscribers.length; i < l; i++) {
+			for (let i = 0, len = _subscribers.length; i < len; i++) {
 				_subscribers[i](value)
+			}
+
+			if (this._subscribersInProcess === _subscribers) {
+				this._subscribersInProcess = null
 			}
 
 			return this

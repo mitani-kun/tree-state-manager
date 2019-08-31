@@ -8,11 +8,14 @@ import {calcPerformance} from 'rdtsc'
 import {SynchronousPromise} from 'synchronous-promise'
 import {resolveValue} from '../../../main/common/async/async'
 import {resolveAsync, ThenableSync} from '../../../main/common/async/ThenableSync'
-import {isIterable} from '../../../main/common/helpers/helpers'
+import {createFunction, isIterable} from '../../../main/common/helpers/helpers'
 import {ArraySet} from '../../../main/common/lists/ArraySet'
 import {binarySearch} from '../../../main/common/lists/helpers/array'
 import {freezeWithUniqueId, getObjectUniqueId} from '../../../main/common/lists/helpers/object-unique-id'
 import {SortedList} from '../../../main/common/lists/SortedList'
+import {deepSubscribe} from '../../../main/common/rx/deep-subscribe/deep-subscribe'
+import {ObservableObject} from '../../../main/common/rx/object/ObservableObject'
+import {ObservableObjectBuilder} from '../../../main/common/rx/object/ObservableObjectBuilder'
 import {createObject, Tester} from '../../tests/common/main/rx/deep-subscribe/helpers/Tester'
 
 const SetNative = Set
@@ -1616,13 +1619,13 @@ describe('fundamental-operations', function() {
 			},
 
 			() => { // 157
-				return resolveValue(1, () => {}, () => {}, () => {})
+				return resolveValue(1, () => {}, () => {})
 			},
 			() => { // 767
-				return resolveValue(resolved, () => {}, () => {}, () => {})
+				return resolveValue(resolved, () => {}, () => {})
 			},
 			() => { // 835
-				return resolveValue(rejected, () => {}, () => {}, () => {})
+				return resolveValue(rejected, () => {}, () => {})
 			},
 
 			() => { // 563
@@ -1767,4 +1770,209 @@ describe('fundamental-operations', function() {
 	//
 	// 	console.log(result)
 	// })
+
+	xit('Resolve properties path', function() {
+		this.timeout(300000)
+
+		class ResolvePropertiesPath<TValue> {
+			public value: TValue
+			constructor(value: TValue) {
+				this.value = value
+			}
+
+			public get<TKey extends keyof TValue, TNextValue = TValue[TKey]>(key: TKey): ResolvePropertiesPath<TNextValue> {
+				let {value} = this
+				if (value != null) {
+					this.value = value = value[key] as any
+				}
+				return this as unknown as ResolvePropertiesPath<TNextValue>
+			}
+		}
+
+		type TGetPropertyValue<TValue> =
+			(<TNextValue>(getValue: (value: TValue) => TNextValue) => TGetPropertyValue<TNextValue>) & { value: TValue }
+
+		function get(getValue: (o) => any) {
+			(get as any).value = getValue((get as any).value)
+			return get
+		}
+
+		function resolvePropertiesPath<TValue>(value: TValue): TGetPropertyValue<TValue> {
+			(get as any).value = value
+			return get as any
+		}
+
+		const object = { a: { b: { c: { d: { e: {}, f: 1 } } } } }
+
+		const result = calcPerformance(
+			120000,
+			() => {
+				// no operations
+			},
+			() => { // 4
+				return object.a.b.c.d.e
+			},
+			() => { // 4
+				let value: any = object
+				value = value.a
+				value = value.b
+				value = value.c
+				value = value.d
+				value = value.e
+				return value
+			},
+			() => { // 307
+				return new ResolvePropertiesPath(object).get('a').get('b').get('c').get('d').get('e').value
+			},
+			() => { // 31
+				return resolvePropertiesPath(object)(o => o.a)(o => o.b)(o => o.c)(o => o.d)(o => o.e).value
+			},
+		)
+
+		console.log(result)
+	})
+
+	xit('ObservableObjectTest', function() {
+		this.timeout(300000)
+
+		const withOptimization = true
+		const optimizationAfter = 100
+
+		class ObservableObjectTest {
+			public readonly __fields?: {
+				[key: string]: any;
+				[key: number]: any;
+			}
+
+			constructor() {
+				this.__fields = {}
+			}
+		}
+
+		function createGetFunction<Name extends string | number>(
+			propertyName: Name,
+			setOptimizedFunc: (optimizedFunc: (o: { [newProp in Name]: any }, v: any) => void) => void,
+		): (o: { [newProp in Name]: any }, v: any) => void
+		{
+			let count = 0
+			function func() {
+				if (++count > optimizationAfter) {
+					const newFunc = Function('return this.__fields["' + propertyName + '"]') as any
+					setOptimizedFunc(newFunc)
+					return newFunc.call(this)
+				}
+
+				return this.__fields[propertyName]
+			}
+
+			return function() { return func.call(this) }
+		}
+
+		function createSetFunction<Name extends string | number>(propertyName: Name)
+			: (o: { [newProp in Name]: any }, v: any) => void
+		{
+			let count = 0
+			let func = (o, v) => {
+				if (++count > optimizationAfter) {
+					func = Function('o', 'v', 'o["' + propertyName + '"] = v') as any
+					func(o, v)
+					return
+				}
+
+				o[propertyName] = v
+			}
+			return (o, v) => { func(o, v) }
+		}
+
+		const getValueBase = Function('name', 'object', 'return object.__fields[name]')
+
+		class ObservableObjectBuilderTest<TObject extends ObservableObjectTest> {
+			public object: TObject
+
+			constructor(object?: TObject) {
+				this.object = object || new ObservableObjectTest() as TObject
+			}
+
+			public writable<T, Name extends string | number>(
+				name: Name,
+				// getValue: (o: { [newProp in Name]: T }) => T,
+				// setValue: (o: { [newProp in Name]: T }, v: T) => void,
+			): this & { object: { [newProp in Name]: T } } {
+				const getValue = createFunction('o', `return o.__fields["${name}"]`)
+				const setValue = createFunction('o', 'v', `o.__fields["${name}"] = v`)
+				// let getValue = createGetFunction(name, o => { getValue = o as any }) as (o: { [newProp in Name]: T }) => T
+				// const getValue = getValueBase.bind(null, name)
+				// const setValue = createSetFunction(name) as (o: { [newProp in Name]: T }, v: T) => void
+				if (withOptimization) {
+					Object.defineProperty(ObservableObjectTest.prototype, name, {
+						configurable: true,
+						enumerable: true,
+						get() { return getValue(this) },
+						set(this: ObservableObjectTest, newValue) { setValue(this, newValue) },
+					})
+				} else {
+					Object.defineProperty(ObservableObjectTest.prototype, name, {
+						configurable: true,
+						enumerable: true,
+						get(this: ObservableObjectTest) {
+							return this.__fields[name]
+						},
+						set(this: ObservableObjectTest, newValue) {
+							this.__fields[name] = newValue
+						},
+					})
+				}
+
+				return this as any
+			}
+		}
+
+		new ObservableObjectBuilderTest(ObservableObjectTest.prototype)
+			.writable('prop') // , o => o.prop, (o, v) => o.prop = v)
+			.writable('prop2') // , o => o.prop2, (o, v) => o.prop2 = v)
+
+		const observableObject1 = new ObservableObjectTest() as any
+		const observableObject2 = new ObservableObjectTest() as any
+
+		const object1 = { prop: void 0, prop2: void 0 }
+		const object2 = { prop: void 0, prop2: void 0 }
+
+		let value = -2000000000
+		object1.prop = value++
+		object1.prop2 = value++
+		object2.prop = value++
+		object2.prop2 = value++
+		observableObject1.prop = value++
+		observableObject1.prop2 = value++
+		observableObject2.prop = value++
+		observableObject2.prop2 = value++
+
+		const result = calcPerformance(
+			20000,
+			() => {
+				// no operations
+				value++
+			},
+			() => { // 8
+				object1.prop = value++
+				object1.prop2 = value++
+				object2.prop = value++
+				object2.prop2 = value++
+			},
+			() => { // 11
+ 				return object1.prop && object1.prop2 && object2.prop && object2.prop2
+			},
+			() => { // 27
+				observableObject1.prop = value++
+				observableObject1.prop2 = value++
+				observableObject2.prop = value++
+				observableObject2.prop2 = value++
+			},
+			() => { // 8
+				return observableObject1.prop && observableObject1.prop2 && observableObject1.prop && observableObject2.prop2
+			},
+		)
+
+		console.log(result)
+	})
 })

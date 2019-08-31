@@ -1,3 +1,5 @@
+import {AsyncValueOf, ThenableOrIteratorOrValue} from '../async/async'
+
 export function isIterable(value: any): boolean {
 	return value != null
 		&& typeof value[Symbol.iterator] === 'function'
@@ -26,6 +28,7 @@ export function delay(timeMilliseconds) {
 }
 
 export function checkIsFuncOrNull<T extends TFunc<any>>(func: T): T {
+	// PROF: 66 - 0.1%
 	if (func != null && typeof func !== 'function') {
 		throw new Error(`Value is not a function or null/undefined: ${func}`)
 	}
@@ -51,3 +54,37 @@ export function toSingleCall<T extends TFunc<any>>(func: T, throwOnMultipleCall?
 		return func(...args)
 	}) as any
 }
+
+const createFunctionCache = {}
+// tslint:disable-next-line:ban-types
+export function createFunction(...args: string[]): Function {
+	const id = args[args.length - 1] + ''
+	let func = createFunctionCache[id]
+	if (!func) {
+		createFunctionCache[id] = func = Function(...args)
+	}
+	return func
+}
+
+export function hideObjectProperty(object: object, propertyName: string) {
+	const descriptor = Object.getOwnPropertyDescriptor(object, propertyName)
+	if (descriptor) {
+		descriptor.enumerable = false
+		return
+	}
+
+	Object.defineProperty(object, propertyName, {
+		configurable: true,
+		enumerable: false,
+		value: object[propertyName],
+	})
+}
+
+export const VALUE_PROPERTY_DEFAULT = ''
+export type VALUE_PROPERTY_DEFAULT = ''
+export interface HasDefaultValue<T> { [VALUE_PROPERTY_DEFAULT]: ThenableOrIteratorOrValue<T> }
+export type HasDefaultOrValue<T> = T | HasDefaultValue<T>
+export type HasDefaultValueOf<T> = T extends HasDefaultValue<any>
+	? AsyncValueOf<T[VALUE_PROPERTY_DEFAULT]>
+	: T
+export type AsyncHasDefaultValueOf<T> = HasDefaultValueOf<AsyncValueOf<T>>

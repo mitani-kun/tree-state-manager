@@ -23,6 +23,8 @@ export type TOnRejected<TResult = any>
 export type TResolve<TValue> = (value?: ThenableOrIteratorOrValue<TValue>) => void
 export type TReject = (error?: any) => void
 
+export type TResolveAsyncValue<TValue = any, TResult = any> = (value: TValue) => ThenableOrIteratorOrValue<TResult>
+
 export interface Thenable<T = any> {
 	then<TResult1 = T, TResult2 = never>(
 		onfulfilled?: TOnFulfilled<T, TResult1>,
@@ -32,6 +34,10 @@ export interface Thenable<T = any> {
 
 export function isThenable(value: any): boolean {
 	return value != null && typeof value.then === 'function'
+}
+
+export function isAsync(value: any): boolean {
+	return isThenable(value) || isIterator(value)
 }
 
 export enum ResolveResult {
@@ -49,6 +55,7 @@ export function resolveIterator<T>(
 	isError: boolean,
 	onImmediate: (value: ThenableOrIteratorOrValue<T>, isError: boolean) => void,
 	onDeferred: (value: ThenableOrIteratorOrValue<T>, isError: boolean) => void,
+	customResolveValue: TResolveAsyncValue<T>,
 ): ResolveResult {
 	if (!isIterator(iterator)) {
 		return ResolveResult.None
@@ -86,6 +93,7 @@ export function resolveIterator<T>(
 					(o, nextIsError) => {
 						iterate(o, nextIsError, nextOnDeferred, nextOnDeferred)
 					},
+					customResolveValue,
 				)
 
 				if ((result & ResolveResult.Deferred) !== 0) {
@@ -144,6 +152,7 @@ function _resolveValue<T>(
 	isError: boolean,
 	onImmediate: (value: T, isError: boolean) => void,
 	onDeferred: (value: T, isError: boolean) => void,
+	customResolveValue: TResolveAsyncValue<T>,
 ): ResolveResult {
 	const nextOnImmediate = (o, nextIsError) => {
 		if (nextIsError) {
@@ -152,7 +161,7 @@ function _resolveValue<T>(
 		value = o
 	}
 	const nextOnDeferred = (val, nextIsError) => {
-		_resolveValue(val, isError || nextIsError, onDeferred, onDeferred)
+		_resolveValue(val, isError || nextIsError, onDeferred, onDeferred, customResolveValue)
 	}
 
 	while (true) {
@@ -178,12 +187,21 @@ function _resolveValue<T>(
 				isError,
 				nextOnImmediate,
 				nextOnDeferred,
+				customResolveValue,
 			)
 
 			if ((result & ResolveResult.Deferred) !== 0) {
 				return result
 			}
 			if ((result & ResolveResult.Immediate) !== 0) {
+				continue
+			}
+		}
+
+		if (value != null && customResolveValue != null) {
+			const newValue = customResolveValue(value as T)
+			if (newValue !== value) {
+				value = newValue
 				continue
 			}
 		}
@@ -197,12 +215,14 @@ export function resolveValue<T>(
 	value: ThenableOrIteratorOrValue<T>,
 	onImmediate: (value: T, isError: boolean) => void,
 	onDeferred: (value: T, isError: boolean) => void,
+	customResolveValue?: TResolveAsyncValue<T>,
 ): ResolveResult {
 	return _resolveValue(
 		value,
 		false,
 		onImmediate,
 		onDeferred,
+		customResolveValue,
 	)
 }
 
@@ -210,9 +230,10 @@ export function resolveValueFunc<T>(
 	func: () => ThenableOrIteratorOrValue<T>,
 	onImmediate: (value: T, isError: boolean) => void,
 	onDeferred: (value: T, isError: boolean) => void,
+	customResolveValue: TResolveAsyncValue<T>,
 ): ResolveResult {
 	try {
-		return resolveValue(func(), onImmediate, onDeferred)
+		return resolveValue(func(), onImmediate, onDeferred, customResolveValue)
 	} catch (err) {
 		onImmediate(err, true)
 		return ResolveResult.ImmediateError
