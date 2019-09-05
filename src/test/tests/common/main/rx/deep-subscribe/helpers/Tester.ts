@@ -1,5 +1,6 @@
 /* tslint:disable:no-empty no-construct use-primitive-type */
-import {delay, VALUE_PROPERTY_DEFAULT} from '../../../../../../../main/common/helpers/helpers'
+import {delay} from '../../../../../../../main/common/helpers/helpers'
+import {VALUE_PROPERTY_DEFAULT} from '../../../../../../../main/common/helpers/value-property'
 import {IListChanged} from '../../../../../../../main/common/lists/contracts/IListChanged'
 import {IMapChanged} from '../../../../../../../main/common/lists/contracts/IMapChanged'
 import {ISetChanged} from '../../../../../../../main/common/lists/contracts/ISetChanged'
@@ -10,7 +11,7 @@ import {deepSubscribe} from '../../../../../../../main/common/rx/deep-subscribe/
 import {RuleBuilder} from '../../../../../../../main/common/rx/deep-subscribe/RuleBuilder'
 import {ObservableObject} from '../../../../../../../main/common/rx/object/ObservableObject'
 import {ObservableObjectBuilder} from '../../../../../../../main/common/rx/object/ObservableObjectBuilder'
-import {IUnsubscribe} from '../../../../../../../main/common/rx/subjects/subject'
+import {IUnsubscribe} from '../../../../../../../main/common/rx/subjects/observable'
 import {Assert} from '../../../../../../../main/common/test/Assert'
 import {DeepCloneEqual} from '../../../../../../../main/common/test/DeepCloneEqual'
 
@@ -36,7 +37,7 @@ export interface IObject {
 	property: IProperty
 	list: IList
 	set: ISet
-	map: IMap
+	map2: IMap
 	value: any
 	valueObject: any
 	valueObjectWritable: any
@@ -75,7 +76,7 @@ interface IProperty extends ObservableObject {
 	value_property: IProperty
 	value_list: IList
 	value_set: ISet
-	value_map: IMap
+	value_map2: IMap
 	value_value: any
 	value_promiseSync: { then(value: any): any }
 	value_promiseAsync: { then(value: any): any }
@@ -91,7 +92,7 @@ export function createObject() {
 		value: null,
 	})
 	const set: ISet = new Set() as any
-	const map: IMap = new Map() as any
+	const map2: IMap = new Map() as any
 
 	class ObservableClass extends ObservableObject {
 	}
@@ -115,7 +116,7 @@ export function createObject() {
 		property,
 		list,
 		set,
-		map,
+		map2,
 		value: 'value',
 		valueObject: new String('value'),
 		promiseSync: { then: resolve => resolve(observableObject) },
@@ -130,7 +131,7 @@ export function createObject() {
 		if (key !== 'value' && key !== 'valueObject') {
 			list.add(object[key])
 			set.add(object[key])
-			map.set(key, object[key])
+			map2.set(key, object[key])
 
 			observableList.add(object[key])
 			observableSet.add(object[key])

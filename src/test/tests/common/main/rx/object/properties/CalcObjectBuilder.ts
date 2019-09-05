@@ -4,11 +4,11 @@ import {ThenableOrIteratorOrValue} from '../../../../../../../main/common/async/
 import {ThenableSync} from '../../../../../../../main/common/async/ThenableSync'
 import {ObservableObject} from '../../../../../../../main/common/rx/object/ObservableObject'
 import {CalcObjectBuilder} from '../../../../../../../main/common/rx/object/properties/CalcObjectBuilder'
-import {ICalcProperty} from '../../../../../../../main/common/rx/object/properties/CalcProperty'
 import {calcPropertyFactory} from '../../../../../../../main/common/rx/object/properties/CalcPropertyBuilder'
 import {connectorFactory} from '../../../../../../../main/common/rx/object/properties/ConnectorBuilder'
+import {ICalcProperty} from '../../../../../../../main/common/rx/object/properties/contracts'
 import {resolvePath} from '../../../../../../../main/common/rx/object/properties/helpers'
-import {Property} from '../../../../../../../main/common/rx/object/properties/property'
+import {Property} from '../../../../../../../main/common/rx/object/properties/Property'
 
 declare const assert: any
 
@@ -28,8 +28,8 @@ describe('common > main > rx > properties > CalcObjectBuilder', function() {
 		.calc('prop1',
 			connectorFactory(c => c
 				.connect('connectValue1', b => b.path(o => o['@lastOrWait'].source['@wait']))),
-			calcPropertyFactory((input, valueProperty: Property<Date, number>): ThenableOrIteratorOrValue<void> => {
-				valueProperty.value = new Date(123)
+			calcPropertyFactory((input, property: Property<Date, number>): ThenableOrIteratorOrValue<void> => {
+				property.value = new Date(123)
 				return ThenableSync.createResolved(null)
 			}),
 		)
@@ -38,9 +38,9 @@ describe('common > main > rx > properties > CalcObjectBuilder', function() {
 		.calc('prop1',
 			connectorFactory(c => c
 				.connect('connectValue1', b => b.path(o => o['@lastOrWait'].source['@wait']))),
-			calcPropertyFactory(function *(input, valueProperty: Property<Date, number>): ThenableOrIteratorOrValue<void> {
+			calcPropertyFactory(function *(input, property: Property<Date, number>): ThenableOrIteratorOrValue<void> {
 				yield new Promise(r => setTimeout(r, 100))
-				valueProperty.value = new Date(123)
+				property.value = new Date(123)
 			}),
 		)
 
