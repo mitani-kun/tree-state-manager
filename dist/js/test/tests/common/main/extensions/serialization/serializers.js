@@ -2,22 +2,6 @@
 
 var _interopRequireDefault = require("@babel/runtime-corejs3/helpers/interopRequireDefault");
 
-var _defineProperty2 = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/object/define-property"));
-
-var _defineProperties = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/object/define-properties"));
-
-var _getOwnPropertyDescriptors = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/object/get-own-property-descriptors"));
-
-var _forEach = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/instance/for-each"));
-
-var _getOwnPropertyDescriptor = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/object/get-own-property-descriptor"));
-
-var _filter = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/instance/filter"));
-
-var _getOwnPropertySymbols = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/object/get-own-property-symbols"));
-
-var _keys = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/object/keys"));
-
 var _regenerator = _interopRequireDefault(require("@babel/runtime-corejs3/regenerator"));
 
 var _get2 = _interopRequireDefault(require("@babel/runtime-corejs3/helpers/get"));
@@ -38,7 +22,7 @@ var _map = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable
 
 var _isNan = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/number/is-nan"));
 
-var _defineProperty3 = _interopRequireDefault(require("@babel/runtime-corejs3/helpers/defineProperty"));
+var _extends2 = _interopRequireDefault(require("@babel/runtime-corejs3/helpers/extends"));
 
 var _bind = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/instance/bind"));
 
@@ -52,10 +36,7 @@ var _DeepCloneEqual = require("../../../../../../main/common/test/DeepCloneEqual
 
 var _helpers = require("../../src/helpers/helpers");
 
-function ownKeys(object, enumerableOnly) { var keys = (0, _keys.default)(object); if (_getOwnPropertySymbols.default) { var symbols = (0, _getOwnPropertySymbols.default)(object); if (enumerableOnly) symbols = (0, _filter.default)(symbols).call(symbols, function (sym) { return (0, _getOwnPropertyDescriptor.default)(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
-
-function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { var _context2; (0, _forEach.default)(_context2 = ownKeys(source, true)).call(_context2, function (key) { (0, _defineProperty3.default)(target, key, source[key]); }); } else if (_getOwnPropertyDescriptors.default) { (0, _defineProperties.default)(target, (0, _getOwnPropertyDescriptors.default)(source)); } else { var _context3; (0, _forEach.default)(_context3 = ownKeys(source)).call(_context3, function (key) { (0, _defineProperty2.default)(target, key, (0, _getOwnPropertyDescriptor.default)(source, key)); }); } } return target; }
-
+/* tslint:disable:no-duplicate-string no-shadowed-variable */
 var assert = new _Assert.Assert(new _DeepCloneEqual.DeepCloneEqual({
   commonOptions: {},
   equalOptions: {
@@ -139,11 +120,11 @@ describe('common > extensions > serialization > serializers', function () {
   deSerializeValue = (0, _bind.default)(deSerializeValue).call(deSerializeValue, _serializers.ObjectSerializer.default);
 
   function testComplexObject(options, prepare, log) {
-    var object = (0, _helpers.createComplexObject)(_objectSpread({
+    var object = (0, _helpers.createComplexObject)((0, _extends2.default)({
       array: true,
       undefined: true
     }, options));
-    var checkObject = (0, _helpers.createComplexObject)(_objectSpread({
+    var checkObject = (0, _helpers.createComplexObject)((0, _extends2.default)({
       array: true
     }, options, {
       undefined: false
@@ -353,7 +334,7 @@ describe('common > extensions > serialization > serializers', function () {
     (0, _createClass2.default)(Class3, [{
       key: "serialize",
       value: function serialize(_serialize2) {
-        return _objectSpread({}, (0, _get2.default)((0, _getPrototypeOf2.default)(Class3.prototype), "serialize", this).call(this, _serialize2), {
+        return (0, _extends2.default)({}, (0, _get2.default)((0, _getPrototypeOf2.default)(Class3.prototype), "serialize", this).call(this, _serialize2), {
           prop4: _serialize2(this.prop4)
         });
       }
@@ -411,9 +392,9 @@ describe('common > extensions > serialization > serializers', function () {
     sortedList.add(sortedList);
     var serialized = serializeValue(sortedList);
     var result = deSerializeValue(serialized);
-    assert.notStrictEqual(result, sortedList);
-    console.log(sortedList);
-    console.log(result);
+    assert.notStrictEqual(result, sortedList); // console.log(sortedList)
+    // console.log(result)
+
     assertDeepEqualExt(result, sortedList);
   });
   it('complex object', function () {

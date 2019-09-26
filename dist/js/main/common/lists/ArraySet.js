@@ -2,12 +2,7 @@
 
 var _interopRequireDefault = require("@babel/runtime-corejs3/helpers/interopRequireDefault");
 
-var _Object$defineProperty = require("@babel/runtime-corejs3/core-js-stable/object/define-property");
-
-_Object$defineProperty(exports, "__esModule", {
-  value: true
-});
-
+exports.__esModule = true;
 exports.ArraySet = void 0;
 
 var _iterator = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/symbol/iterator"));
@@ -38,7 +33,7 @@ var _serializers = require("../extensions/serialization/serializers");
 
 var _helpers = require("../helpers/helpers");
 
-var _objectUniqueId = require("./helpers/object-unique-id");
+var _objectUniqueId = require("../helpers/object-unique-id");
 
 var _set = require("./helpers/set");
 

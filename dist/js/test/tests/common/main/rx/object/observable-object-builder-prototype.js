@@ -2,8 +2,6 @@
 
 var _interopRequireDefault = require("@babel/runtime-corejs3/helpers/interopRequireDefault");
 
-var _typeof2 = _interopRequireDefault(require("@babel/runtime-corejs3/helpers/typeof"));
-
 var _classCallCheck2 = _interopRequireDefault(require("@babel/runtime-corejs3/helpers/classCallCheck"));
 
 var _possibleConstructorReturn2 = _interopRequireDefault(require("@babel/runtime-corejs3/helpers/possibleConstructorReturn"));
@@ -124,10 +122,10 @@ describe('common > main > rx > observable-object-builder-prototype', function ()
     var baseUnsubscribe2 = [];
     var unsubscribe1 = [];
     var unsubscribe2 = [];
-    assert.strictEqual((0, _typeof2.default)(baseUnsubscribe1[0] = baseObject1.propertyChanged.subscribe(baseSubscriber1)), 'function');
-    assert.strictEqual((0, _typeof2.default)(baseUnsubscribe2[0] = baseObject2.propertyChanged.subscribe(baseSubscriber2)), 'function');
-    assert.strictEqual((0, _typeof2.default)(unsubscribe1[0] = object1.propertyChanged.subscribe(subscriber1)), 'function');
-    assert.strictEqual((0, _typeof2.default)(unsubscribe2[0] = object2.propertyChanged.subscribe(subscriber2)), 'function');
+    assert.strictEqual(typeof (baseUnsubscribe1[0] = baseObject1.propertyChanged.subscribe(baseSubscriber1)), 'function');
+    assert.strictEqual(typeof (baseUnsubscribe2[0] = baseObject2.propertyChanged.subscribe(baseSubscriber2)), 'function');
+    assert.strictEqual(typeof (unsubscribe1[0] = object1.propertyChanged.subscribe(subscriber1)), 'function');
+    assert.strictEqual(typeof (unsubscribe2[0] = object2.propertyChanged.subscribe(subscriber2)), 'function');
     baseObject1.baseProp1 = '1';
     assertEvents(baseResults1, [{
       name: 'baseProp1',
@@ -320,10 +318,10 @@ describe('common > main > rx > observable-object-builder-prototype', function ()
     var baseUnsubscribe2 = [];
     var unsubscribe1 = [];
     var unsubscribe2 = [];
-    assert.strictEqual((0, _typeof2.default)(baseUnsubscribe1[0] = baseObject1.propertyChanged.subscribe(baseSubscriber1)), 'function');
-    assert.strictEqual((0, _typeof2.default)(baseUnsubscribe2[0] = baseObject2.propertyChanged.subscribe(baseSubscriber2)), 'function');
-    assert.strictEqual((0, _typeof2.default)(unsubscribe1[0] = object1.propertyChanged.subscribe(subscriber1)), 'function');
-    assert.strictEqual((0, _typeof2.default)(unsubscribe2[0] = object2.propertyChanged.subscribe(subscriber2)), 'function');
+    assert.strictEqual(typeof (baseUnsubscribe1[0] = baseObject1.propertyChanged.subscribe(baseSubscriber1)), 'function');
+    assert.strictEqual(typeof (baseUnsubscribe2[0] = baseObject2.propertyChanged.subscribe(baseSubscriber2)), 'function');
+    assert.strictEqual(typeof (unsubscribe1[0] = object1.propertyChanged.subscribe(subscriber1)), 'function');
+    assert.strictEqual(typeof (unsubscribe2[0] = object2.propertyChanged.subscribe(subscriber2)), 'function');
     baseBuilder1.readable('baseProp1', null, '1');
     assertEvents(baseResults1, []);
     baseResults1 = [];

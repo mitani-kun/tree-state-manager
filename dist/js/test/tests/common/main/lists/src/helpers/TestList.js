@@ -2,16 +2,13 @@
 
 var _interopRequireDefault = require("@babel/runtime-corejs3/helpers/interopRequireDefault");
 
-var _Object$defineProperty = require("@babel/runtime-corejs3/core-js-stable/object/define-property");
-
-_Object$defineProperty(exports, "__esModule", {
-  value: true
-});
-
+exports.__esModule = true;
 exports.applyListChangedToArray = applyListChangedToArray;
 exports.TestList = exports.assert = void 0;
 
 var _getIterator2 = _interopRequireDefault(require("@babel/runtime-corejs3/core-js/get-iterator"));
+
+var _isArray2 = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/array/is-array"));
 
 var _stringify = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/json/stringify"));
 
@@ -34,8 +31,6 @@ var _indexOf = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-st
 var _sort = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/instance/sort"));
 
 var _concat = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/instance/concat"));
-
-var _toConsumableArray2 = _interopRequireDefault(require("@babel/runtime-corejs3/helpers/toConsumableArray"));
 
 var _splice = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/instance/splice"));
 
@@ -108,13 +103,13 @@ function applyListChangedToArray(event, array, compare) {
       if (event.moveIndex !== event.index) {
         var _spliceInstanceProper, _context;
 
-        (_spliceInstanceProper = (0, _splice.default)(array)).call.apply(_spliceInstanceProper, (0, _concat.default)(_context = [array, event.moveIndex, 0]).call(_context, (0, _toConsumableArray2.default)((0, _splice.default)(array).call(array, event.index, 1))));
+        (_spliceInstanceProper = (0, _splice.default)(array)).call.apply(_spliceInstanceProper, (0, _concat.default)(_context = [array, event.moveIndex, 0]).call(_context, (0, _splice.default)(array).call(array, event.index, 1)));
       }
 
       break;
 
     case _IListChanged.ListChangedType.Moved:
-      (_spliceInstanceProper2 = (0, _splice.default)(array)).call.apply(_spliceInstanceProper2, (0, _concat.default)(_context2 = [array, event.moveIndex, 0]).call(_context2, (0, _toConsumableArray2.default)((0, _splice.default)(array).call(array, event.index, event.moveSize))));
+      (_spliceInstanceProper2 = (0, _splice.default)(array)).call.apply(_spliceInstanceProper2, (0, _concat.default)(_context2 = [array, event.moveIndex, 0]).call(_context2, (0, _splice.default)(array).call(array, event.index, event.moveSize)));
 
       break;
 
@@ -326,9 +321,7 @@ function (_TestVariants) {
           if (_ret === "break") break;
         } catch (ex) {
           if (!debugIteration) {
-            var _context5, _context6, _context7;
-
-            console.log((0, _concat.default)(_context5 = (0, _concat.default)(_context6 = (0, _concat.default)(_context7 = "Error in: ".concat(options.description, "\n")).call(_context7, (0, _stringify.default)(options, null, 4), "\n")).call(_context6, options.action.toString(), "\n")).call(_context5, ex.stack));
+            console.log("Error in: " + options.description + "\n" + (0, _stringify.default)(options, null, 4) + "\n" + options.action.toString() + "\n" + ex.stack);
             error = ex;
           }
         } finally {
@@ -370,50 +363,43 @@ function (_TestVariants) {
       if (!testCases.countSorted && maxArrayLength <= 1 && (!testCases.compare || testCases.compare.length <= 0)) {
         var compare = testCases.compare && testCases.compare.length && testCases.compare[0] || _compare.compareFast;
         var minCountSorted;
-        var _iteratorNormalCompletion = true;
-        var _didIteratorError = false;
-        var _iteratorError = undefined;
 
-        try {
-          for (var _iterator = (0, _getIterator2.default)(testCases.array), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-            var _array2 = _step.value;
-            var countSorted = 0;
+        for (var _iterator = testCases.array, _isArray = (0, _isArray2.default)(_iterator), _i7 = 0, _iterator = _isArray ? _iterator : (0, _getIterator2.default)(_iterator);;) {
+          var _ref;
 
-            for (var _i8 = 0; _i8 < _array2.length; _i8++) {
-              if (_i8 > 0 && compare(_array2[_i8 - 1], _array2[_i8]) > 0) {
-                break;
-              }
+          if (_isArray) {
+            if (_i7 >= _iterator.length) break;
+            _ref = _iterator[_i7++];
+          } else {
+            _i7 = _iterator.next();
+            if (_i7.done) break;
+            _ref = _i7.value;
+          }
 
-              countSorted++;
-            }
+          var _array2 = _ref;
+          var countSorted = 0;
 
-            if (minCountSorted == null || countSorted < minCountSorted) {
-              minCountSorted = countSorted;
-            }
-
-            if (minCountSorted === 0) {
+          for (var _i9 = 0; _i9 < _array2.length; _i9++) {
+            if (_i9 > 0 && compare(_array2[_i9 - 1], _array2[_i9]) > 0) {
               break;
             }
+
+            countSorted++;
           }
-        } catch (err) {
-          _didIteratorError = true;
-          _iteratorError = err;
-        } finally {
-          try {
-            if (!_iteratorNormalCompletion && _iterator.return != null) {
-              _iterator.return();
-            }
-          } finally {
-            if (_didIteratorError) {
-              throw _iteratorError;
-            }
+
+          if (minCountSorted == null || countSorted < minCountSorted) {
+            minCountSorted = countSorted;
+          }
+
+          if (minCountSorted === 0) {
+            break;
           }
         }
 
         testCases.countSorted = [undefined, 0];
 
-        for (var _i7 = 1; _i7 <= minCountSorted; _i7++) {
-          testCases.countSorted.push(_i7);
+        for (var _i8 = 1; _i8 <= minCountSorted; _i8++) {
+          testCases.countSorted.push(_i8);
         }
       }
 

@@ -8,7 +8,7 @@
 import { registerMergeable } from '../../../../../../main/common/extensions/merge/mergers';
 import { ArrayMap } from '../../../../../../main/common/lists/ArrayMap';
 import { ArraySet } from '../../../../../../main/common/lists/ArraySet';
-import { canHaveUniqueId } from '../../../../../../main/common/lists/helpers/object-unique-id';
+import { canHaveUniqueId } from '../../../../../../main/common/helpers/object-unique-id';
 import { fillMap, fillObject, fillObjectKeys, fillSet } from '../../../../../../main/common/lists/helpers/set';
 import { ObjectHashMap } from '../../../../../../main/common/lists/ObjectHashMap';
 import { ObjectMap } from '../../../../../../main/common/lists/ObjectMap';
@@ -1018,7 +1018,9 @@ describe('common > extensions > merge > ObjectMerger', function () {
         testMergeSets([o => fillSet(new Set(), o), o => fillSet(new ObservableSet(new Set()), o)], [o => fillSet(new Set(), o), o => fillSet(new ObservableSet(new Set()), o)], [0, func, void 0], [0, func, object], [0, 1, void 0, object], [0, 1, object]);
       });
       it('ArraySet', function () {
-        testMergeSets([o => fillSet(new ArraySet(), o), o => fillSet(new ObservableSet(new ArraySet()), o)], [o => fillSet(new Set(), o), o => fillSet(new ObservableSet(new Set()), o), o => fillSet(new ArraySet(), o), o => fillSet(new ObservableSet(new ArraySet()), o)], [func2, func, func4], [func2, func, object], [func2, func3, func4, object], [func2, func3, object]);
+        testMergeSets([o => fillSet(new ArraySet(), o), o => fillSet(new ObservableSet(new ArraySet()), o) // o => fillSet(new ObjectHashSet(), o), o => fillSet(new ObservableSet(new ObjectHashSet()), o),
+        ], [o => fillSet(new Set(), o), o => fillSet(new ObservableSet(new Set()), o), o => fillSet(new ArraySet(), o), o => fillSet(new ObservableSet(new ArraySet()), o) // o => fillSet(new ObjectHashSet(), o), o => fillSet(new ObservableSet(new ObjectHashSet()), o),
+        ], [func2, func, func4], [func2, func, object], [func2, func3, func4, object], [func2, func3, object]);
       });
       it('ObjectSet', function () {
         testMergeSets([o => fillSet(new ObjectSet(), o), o => fillSet(new ObservableSet(new ObjectSet()), o), o => fillSet(new SortedList({

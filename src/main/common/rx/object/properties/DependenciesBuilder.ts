@@ -1,8 +1,7 @@
 import {IRule} from '../../deep-subscribe/contracts/rules'
 import {deepSubscribeRule} from '../../deep-subscribe/deep-subscribe'
 import {RuleBuilder} from '../../deep-subscribe/RuleBuilder'
-import {IUnsubscribe} from '../../subjects/observable'
-import {CalcObjectDebugger} from './CalcObjectDebugger'
+import {IUnsubscribeOrVoid} from '../../subjects/observable'
 import {ValueKeys} from './contracts'
 
 export type IDependencyAction<TTarget, TValue = any>
@@ -36,7 +35,7 @@ export class DependenciesBuilder<TTarget, TSource, TValueKeys extends string | n
 		}
 		ruleBuilder = buildRule(ruleBuilder as any)
 
-		const ruleBase = ruleBuilder && ruleBuilder.result
+		const ruleBase = ruleBuilder && ruleBuilder.result()
 		if (ruleBase == null) {
 			throw new Error('buildRule() return null or not initialized RuleBuilder')
 		}
@@ -60,19 +59,20 @@ export function subscribeDependencies<TSubscribeObject, TActionTarget>(
 	subscribeObject: TSubscribeObject,
 	actionTarget: TActionTarget,
 	dependencies: Array<IDependency<TActionTarget>>,
-): IUnsubscribe {
+): IUnsubscribeOrVoid {
 	const unsubscribers = []
 	for (let i = 0, len = dependencies.length; i < len; i++) {
 		const [rule, action] = dependencies[i]
-		unsubscribers.push(deepSubscribeRule(
-			subscribeObject,
-			(value, parent, propertyName) => {
+		unsubscribers.push(deepSubscribeRule({
+			object: subscribeObject,
+			subscribeValue(value, parent, propertyName) {
 				action(actionTarget, value, parent, propertyName)
-				return null
 			},
-			true,
+			unsubscribeValue(value, parent, propertyName) {
+				action(actionTarget, void 0, parent, propertyName)
+			},
 			rule,
-		))
+		}))
 	}
 
 	return () => {

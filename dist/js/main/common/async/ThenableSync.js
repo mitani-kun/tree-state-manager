@@ -2,12 +2,7 @@
 
 var _interopRequireDefault = require("@babel/runtime-corejs3/helpers/interopRequireDefault");
 
-var _Object$defineProperty = require("@babel/runtime-corejs3/core-js-stable/object/define-property");
-
-_Object$defineProperty(exports, "__esModule", {
-  value: true
-});
-
+exports.__esModule = true;
 exports.createResolved = createResolved;
 exports.createRejected = createRejected;
 exports.resolveAsync = resolveAsync;
@@ -69,7 +64,7 @@ function () {
     key: "resolve",
     value: function resolve(value) {
       if (this._status != null) {
-        throw new Error("Multiple call resolve/reject() is forbidden; status = ".concat(this._status));
+        throw new Error("Multiple call resolve/reject() is forbidden; status = " + this._status);
       }
 
       this._resolve(value);
@@ -82,7 +77,7 @@ function () {
       var _status = this._status;
 
       if (_status != null && _status !== ThenableSyncStatus.Resolving) {
-        throw new Error("Multiple call resolve/reject() is forbidden; status = ".concat(_status));
+        throw new Error("Multiple call resolve/reject() is forbidden; status = " + _status);
       }
 
       var result = (0, _async.resolveValue)(value, function (o, e) {
@@ -127,7 +122,7 @@ function () {
     key: "reject",
     value: function reject(error) {
       if (this._status != null) {
-        throw new Error("Multiple call resolve/reject() is forbidden; status = ".concat(this._status));
+        throw new Error("Multiple call resolve/reject() is forbidden; status = " + this._status);
       }
 
       this._reject(error);
@@ -140,7 +135,7 @@ function () {
       var _status = this._status;
 
       if (_status != null && _status !== ThenableSyncStatus.Resolving) {
-        throw new Error("Multiple call resolve/reject() is forbidden; status = ".concat(_status));
+        throw new Error("Multiple call resolve/reject() is forbidden; status = " + _status);
       }
 
       var result = (0, _async.resolveValue)(error, function (o) {

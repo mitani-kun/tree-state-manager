@@ -2,12 +2,7 @@
 
 var _interopRequireDefault = require("@babel/runtime-corejs3/helpers/interopRequireDefault");
 
-var _Object$defineProperty = require("@babel/runtime-corejs3/core-js-stable/object/define-property");
-
-_Object$defineProperty(exports, "__esModule", {
-  value: true
-});
-
+exports.__esModule = true;
 exports.getDefaultValue = getDefaultValue;
 exports.createMergeSortedListWrapper = createMergeSortedListWrapper;
 exports.MergeSortedListWrapper = exports.SortedList = void 0;
@@ -18,11 +13,9 @@ var _toStringTag = _interopRequireDefault(require("@babel/runtime-corejs3/core-j
 
 var _regenerator = _interopRequireDefault(require("@babel/runtime-corejs3/regenerator"));
 
-var _concat = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/instance/concat"));
-
 var _getIterator2 = _interopRequireDefault(require("@babel/runtime-corejs3/core-js/get-iterator"));
 
-var _isArray = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/array/is-array"));
+var _isArray6 = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/array/is-array"));
 
 var _slice = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/instance/slice"));
 
@@ -97,10 +90,10 @@ function (_ListChangedObject) {
   (0, _inherits2.default)(SortedList, _ListChangedObject);
 
   // region constructor
-  function SortedList() {
+  function SortedList(_temp) {
     var _this;
 
-    var _ref = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
+    var _ref = _temp === void 0 ? {} : _temp,
         array = _ref.array,
         minAllocatedSize = _ref.minAllocatedSize,
         compare = _ref.compare,
@@ -520,7 +513,7 @@ function (_ListChangedObject) {
         return false;
       }
 
-      if ((0, _isArray.default)(items)) {
+      if ((0, _isArray6.default)(items)) {
         return this.insertArray(index, items, null, itemsSize);
       }
 
@@ -530,64 +523,50 @@ function (_ListChangedObject) {
 
       if (this._autoSort) {
         var result = false;
-        var _iteratorNormalCompletion = true;
-        var _didIteratorError = false;
-        var _iteratorError = undefined;
 
-        try {
-          for (var _iterator = (0, _getIterator2.default)(items), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-            var item = _step.value;
-            result = this.add(item) || result;
+        for (var _iterator = items, _isArray = (0, _isArray6.default)(_iterator), _i4 = 0, _iterator = _isArray ? _iterator : (0, _getIterator2.default)(_iterator);;) {
+          var _ref2;
+
+          if (_isArray) {
+            if (_i4 >= _iterator.length) break;
+            _ref2 = _iterator[_i4++];
+          } else {
+            _i4 = _iterator.next();
+            if (_i4.done) break;
+            _ref2 = _i4.value;
           }
-        } catch (err) {
-          _didIteratorError = true;
-          _iteratorError = err;
-        } finally {
-          try {
-            if (!_iteratorNormalCompletion && _iterator.return != null) {
-              _iterator.return();
-            }
-          } finally {
-            if (_didIteratorError) {
-              throw _iteratorError;
-            }
-          }
+
+          var item = _ref2;
+          result = this.add(item) || result;
         }
 
         return result;
       } else if (this._notAddIfExists) {
         var nextIndex = start;
         i = 0;
-        var _iteratorNormalCompletion2 = true;
-        var _didIteratorError2 = false;
-        var _iteratorError2 = undefined;
 
-        try {
-          for (var _iterator2 = (0, _getIterator2.default)(items), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-            var _item = _step2.value;
+        for (var _iterator2 = items, _isArray2 = (0, _isArray6.default)(_iterator2), _i5 = 0, _iterator2 = _isArray2 ? _iterator2 : (0, _getIterator2.default)(_iterator2);;) {
+          var _ref3;
 
-            if (this.insert(nextIndex, _item)) {
-              nextIndex++;
-            }
-
-            i++;
-
-            if (i >= itemsSize) {
-              break;
-            }
+          if (_isArray2) {
+            if (_i5 >= _iterator2.length) break;
+            _ref3 = _iterator2[_i5++];
+          } else {
+            _i5 = _iterator2.next();
+            if (_i5.done) break;
+            _ref3 = _i5.value;
           }
-        } catch (err) {
-          _didIteratorError2 = true;
-          _iteratorError2 = err;
-        } finally {
-          try {
-            if (!_iteratorNormalCompletion2 && _iterator2.return != null) {
-              _iterator2.return();
-            }
-          } finally {
-            if (_didIteratorError2) {
-              throw _iteratorError2;
-            }
+
+          var _item = _ref3;
+
+          if (this.insert(nextIndex, _item)) {
+            nextIndex++;
+          }
+
+          i++;
+
+          if (i >= itemsSize) {
+            break;
           }
         }
 
@@ -604,37 +583,28 @@ function (_ListChangedObject) {
       }
 
       i = start;
-      var _iteratorNormalCompletion3 = true;
-      var _didIteratorError3 = false;
-      var _iteratorError3 = undefined;
 
-      try {
-        for (var _iterator3 = (0, _getIterator2.default)(items), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
-          var _item2 = _step3.value;
-          _array[i++] = _item2;
+      for (var _iterator3 = items, _isArray3 = (0, _isArray6.default)(_iterator3), _i6 = 0, _iterator3 = _isArray3 ? _iterator3 : (0, _getIterator2.default)(_iterator3);;) {
+        var _ref4;
 
-          if (i >= end) {
-            break;
-          }
+        if (_isArray3) {
+          if (_i6 >= _iterator3.length) break;
+          _ref4 = _iterator3[_i6++];
+        } else {
+          _i6 = _iterator3.next();
+          if (_i6.done) break;
+          _ref4 = _i6.value;
         }
-      } catch (err) {
-        _didIteratorError3 = true;
-        _iteratorError3 = err;
-      } finally {
-        try {
-          if (!_iteratorNormalCompletion3 && _iterator3.return != null) {
-            _iterator3.return();
-          }
-        } finally {
-          if (_didIteratorError3) {
-            throw _iteratorError3;
-          }
+
+        var _item2 = _ref4;
+        _array[i++] = _item2;
+
+        if (i >= end) {
+          break;
         }
       }
 
       if (i !== end) {
-        var _context11;
-
         // rollback
         try {
           this.__meta.propertyChangedDisabled = true;
@@ -643,7 +613,7 @@ function (_ListChangedObject) {
           this.__meta.propertyChangedDisabled = false;
         }
 
-        throw new Error((0, _concat.default)(_context11 = "Iterable items size (".concat(i - start, ") less than itemsSize (")).call(_context11, itemsSize, ")"));
+        throw new Error("Iterable items size (" + (i - start) + ") less than itemsSize (" + itemsSize + ")");
       }
 
       if (start < this._countSorted) {
@@ -758,8 +728,8 @@ function (_ListChangedObject) {
           this._countSorted = start;
         }
       } else {
-        for (var _i4 = end; _i4 < size; _i4++) {
-          _array[_i4 - removeSize] = _array[_i4];
+        for (var _i7 = end; _i7 < size; _i7++) {
+          _array[_i7 - removeSize] = _array[_i7];
         }
       }
 
@@ -795,9 +765,9 @@ function (_ListChangedObject) {
   }, {
     key: "remove",
     value: function remove(item, withoutShift) {
-      var _context12;
+      var _context11;
 
-      var index = (0, _indexOf.default)(_context12 = this).call(_context12, item, null, null, 1);
+      var index = (0, _indexOf.default)(_context11 = this).call(_context11, item, null, null, 1);
 
       if (index < 0) {
         return false;
@@ -827,33 +797,26 @@ function (_ListChangedObject) {
         return false;
       }
 
-      if ((0, _isArray.default)(items)) {
+      if ((0, _isArray6.default)(items)) {
         return this.removeArray(items, null, itemsSize);
       }
 
       var result = false;
-      var _iteratorNormalCompletion4 = true;
-      var _didIteratorError4 = false;
-      var _iteratorError4 = undefined;
 
-      try {
-        for (var _iterator4 = (0, _getIterator2.default)(items), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
-          var item = _step4.value;
-          result = this.remove(item) || result;
+      for (var _iterator4 = items, _isArray4 = (0, _isArray6.default)(_iterator4), _i8 = 0, _iterator4 = _isArray4 ? _iterator4 : (0, _getIterator2.default)(_iterator4);;) {
+        var _ref5;
+
+        if (_isArray4) {
+          if (_i8 >= _iterator4.length) break;
+          _ref5 = _iterator4[_i8++];
+        } else {
+          _i8 = _iterator4.next();
+          if (_i8.done) break;
+          _ref5 = _i8.value;
         }
-      } catch (err) {
-        _didIteratorError4 = true;
-        _iteratorError4 = err;
-      } finally {
-        try {
-          if (!_iteratorNormalCompletion4 && _iterator4.return != null) {
-            _iterator4.return();
-          }
-        } finally {
-          if (_didIteratorError4) {
-            throw _iteratorError4;
-          }
-        }
+
+        var item = _ref5;
+        result = this.remove(item) || result;
       }
 
       return result;
@@ -945,9 +908,9 @@ function (_ListChangedObject) {
       end = SortedList._prepareEnd(end, _size);
 
       if (this._autoSort) {
-        var _context13;
+        var _context12;
 
-        (0, _sort.default)(_context13 = this).call(_context13);
+        (0, _sort.default)(_context12 = this).call(_context12);
       }
 
       var countSorted = this._countSorted;
@@ -977,38 +940,38 @@ function (_ListChangedObject) {
           }
         } else if (item !== item) {
           // item is NaN
-          for (var _i5 = countSorted; _i5 < end; _i5++) {
-            var o = _array[_i5];
+          for (var _i9 = countSorted; _i9 < end; _i9++) {
+            var o = _array[_i9];
 
             if (o !== o) {
               // array item is NaN
-              return _i5;
+              return _i9;
             }
           }
         } else {
-          for (var _i6 = countSorted; _i6 < end; _i6++) {
-            if (_array[_i6] === item) {
-              return _i6;
+          for (var _i10 = countSorted; _i10 < end; _i10++) {
+            if (_array[_i10] === item) {
+              return _i10;
             }
           }
         }
       } else {
         if (_compare) {
-          for (var _i7 = end - 1; _i7 >= countSorted; _i7--) {
-            if (_compare(_array[_i7], item) === 0) {
-              return _i7;
+          for (var _i11 = end - 1; _i11 >= countSorted; _i11--) {
+            if (_compare(_array[_i11], item) === 0) {
+              return _i11;
             }
           }
         } else if (item !== item) {
           // item is NaN
           var last = -1;
 
-          for (var _i8 = countSorted; _i8 < end; _i8++) {
-            var _o = _array[_i8];
+          for (var _i12 = countSorted; _i12 < end; _i12++) {
+            var _o = _array[_i12];
 
             if (_o !== _o) {
               // array item is NaN
-              last = _i8;
+              last = _i12;
             }
           }
 
@@ -1018,9 +981,9 @@ function (_ListChangedObject) {
         } else {
           var _last = -1;
 
-          for (var _i9 = countSorted; _i9 < end; _i9++) {
-            if (_array[_i9] === item) {
-              _last = _i9;
+          for (var _i13 = countSorted; _i13 < end; _i13++) {
+            if (_array[_i13] === item) {
+              _last = _i13;
             }
           }
 
@@ -1039,9 +1002,9 @@ function (_ListChangedObject) {
   }, {
     key: "contains",
     value: function contains(item) {
-      var _context14;
+      var _context13;
 
-      return (0, _indexOf.default)(_context14 = this).call(_context14, item) >= 0;
+      return (0, _indexOf.default)(_context13 = this).call(_context13, item) >= 0;
     }
   }, {
     key: "clear",
@@ -1113,9 +1076,9 @@ function (_ListChangedObject) {
           });
         }
       } else {
-        var _context15;
+        var _context14;
 
-        (0, _sort.default)(_context15 = this).call(_context15);
+        (0, _sort.default)(_context14 = this).call(_context14);
       }
 
       return true;
@@ -1160,9 +1123,9 @@ function (_ListChangedObject) {
           _autoSort = this._autoSort;
 
       if (_autoSort) {
-        var _context16;
+        var _context15;
 
-        (0, _sort.default)(_context16 = this).call(_context16);
+        (0, _sort.default)(_context15 = this).call(_context15);
       }
 
       start = SortedList._prepareStart(start, _size);
@@ -1199,30 +1162,30 @@ function (_ListChangedObject) {
     _regenerator.default.mark(function value() {
       var _size, _array, i;
 
-      return _regenerator.default.wrap(function value$(_context17) {
+      return _regenerator.default.wrap(function value$(_context16) {
         while (1) {
-          switch (_context17.prev = _context17.next) {
+          switch (_context16.prev = _context16.next) {
             case 0:
               _size = this._size, _array = this._array;
               i = 0;
 
             case 2:
               if (!(i < _size)) {
-                _context17.next = 8;
+                _context16.next = 8;
                 break;
               }
 
-              _context17.next = 5;
+              _context16.next = 5;
               return _array[i];
 
             case 5:
               i++;
-              _context17.next = 2;
+              _context16.next = 2;
               break;
 
             case 8:
             case "end":
-              return _context17.stop();
+              return _context16.stop();
           }
         }
       }, value, this);
@@ -1237,7 +1200,7 @@ function (_ListChangedObject) {
         return null;
       }
 
-      return this._autoSort && this._notAddIfExists && (source.constructor === Object || source[_toStringTag.default] === 'Set' || (0, _isArray.default)(source) || (0, _helpers.isIterable)(source));
+      return this._autoSort && this._notAddIfExists && (source.constructor === Object || source[_toStringTag.default] === 'Set' || (0, _isArray6.default)(source) || (0, _helpers.isIterable)(source));
     }
   }, {
     key: "_merge",
@@ -1363,9 +1326,9 @@ function (_ListChangedObject) {
           }
         }
       } else {
-        var _context18;
+        var _context17;
 
-        (0, _sort.default)(_context18 = this).call(_context18);
+        (0, _sort.default)(_context17 = this).call(_context17);
         this._autoSort = value;
       }
 
@@ -1421,9 +1384,7 @@ function (_ListChangedObject) {
       }
 
       if (index < 0 || index >= size) {
-        var _context19;
-
-        throw new Error((0, _concat.default)(_context19 = "index (".concat(index, ") is out of range [0..")).call(_context19, size - 1, "]"));
+        throw new Error("index (" + index + ") is out of range [0.." + (size - 1) + "]");
       }
 
       return index;
@@ -1440,7 +1401,7 @@ function (_ListChangedObject) {
       }
 
       if (start < 0) {
-        throw new Error("start (".concat(start, ") < 0"));
+        throw new Error("start (" + start + ") < 0");
       }
 
       return start;
@@ -1457,9 +1418,7 @@ function (_ListChangedObject) {
       }
 
       if (end > size) {
-        var _context20;
-
-        throw new Error((0, _concat.default)(_context20 = "end (".concat(end, ") > size (")).call(_context20, size, ")"));
+        throw new Error("end (" + end + ") > size (" + size + ")");
       }
 
       return end;
@@ -1480,7 +1439,7 @@ function () {
     (0, _classCallCheck2.default)(this, MergeSortedListWrapper);
 
     if (!list.autoSort || !list.notAddIfExists) {
-      throw new Error('Cannot create IMergeMapWrapper with ' + "SortedList(autoSort = ".concat(list.autoSort, " (must be true), ") + "notAddIfExists = ".concat(list.notAddIfExists, " (must be true))"));
+      throw new Error('Cannot create IMergeMapWrapper with ' + ("SortedList(autoSort = " + list.autoSort + " (must be true), ") + ("notAddIfExists = " + list.notAddIfExists + " (must be true))"));
     }
 
     this._list = list;
@@ -1494,28 +1453,20 @@ function () {
   }, {
     key: "forEachKeys",
     value: function forEachKeys(callbackfn) {
-      var _iteratorNormalCompletion5 = true;
-      var _didIteratorError5 = false;
-      var _iteratorError5 = undefined;
+      for (var _iterator5 = this._list, _isArray5 = (0, _isArray6.default)(_iterator5), _i14 = 0, _iterator5 = _isArray5 ? _iterator5 : (0, _getIterator2.default)(_iterator5);;) {
+        var _ref6;
 
-      try {
-        for (var _iterator5 = (0, _getIterator2.default)(this._list), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
-          var _key = _step5.value;
-          callbackfn(_key);
+        if (_isArray5) {
+          if (_i14 >= _iterator5.length) break;
+          _ref6 = _iterator5[_i14++];
+        } else {
+          _i14 = _iterator5.next();
+          if (_i14.done) break;
+          _ref6 = _i14.value;
         }
-      } catch (err) {
-        _didIteratorError5 = true;
-        _iteratorError5 = err;
-      } finally {
-        try {
-          if (!_iteratorNormalCompletion5 && _iterator5.return != null) {
-            _iterator5.return();
-          }
-        } finally {
-          if (_didIteratorError5) {
-            throw _iteratorError5;
-          }
-        }
+
+        var _key = _ref6;
+        callbackfn(_key);
       }
     }
   }, {
@@ -1544,7 +1495,7 @@ function createMergeSortedListWrapper(target, source, arrayOrIterableToSortedLis
     return new MergeSortedListWrapper(source);
   }
 
-  if (arrayOrIterableToSortedList && ((0, _isArray.default)(source) || (0, _helpers.isIterable)(source))) {
+  if (arrayOrIterableToSortedList && ((0, _isArray6.default)(source) || (0, _helpers.isIterable)(source))) {
     return createMergeSortedListWrapper(target, arrayOrIterableToSortedList(source), null);
   }
 
@@ -1568,27 +1519,27 @@ function createMergeSortedListWrapper(target, source, arrayOrIterableToSortedLis
     /*#__PURE__*/
     _regenerator.default.mark(function deSerialize(_deSerialize, serializedValue, valueFactory) {
       var options, value;
-      return _regenerator.default.wrap(function deSerialize$(_context21) {
+      return _regenerator.default.wrap(function deSerialize$(_context18) {
         while (1) {
-          switch (_context21.prev = _context21.next) {
+          switch (_context18.prev = _context18.next) {
             case 0:
-              _context21.next = 2;
+              _context18.next = 2;
               return _deSerialize(serializedValue.options);
 
             case 2:
-              options = _context21.sent;
-              _context21.next = 5;
+              options = _context18.sent;
+              _context18.next = 5;
               return _deSerialize(serializedValue.array);
 
             case 5:
-              options.array = _context21.sent;
+              options.array = _context18.sent;
               value = valueFactory(options); // value.deSerialize(deSerialize, serializedValue)
 
-              return _context21.abrupt("return", value);
+              return _context18.abrupt("return", value);
 
             case 8:
             case "end":
-              return _context21.stop();
+              return _context18.stop();
           }
         }
       }, deSerialize);

@@ -2,8 +2,6 @@
 
 var _interopRequireDefault = require("@babel/runtime-corejs3/helpers/interopRequireDefault");
 
-var _typeof2 = _interopRequireDefault(require("@babel/runtime-corejs3/helpers/typeof"));
-
 var _defineProperty = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/object/define-property"));
 
 var _keys = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/object/keys"));
@@ -44,7 +42,7 @@ describe('common > main > rx > observable-object-builder', function () {
     assert.deepStrictEqual((0, _keys.default)(object), ['writable', 'readable']); // tslint:disable-next-line:forin
 
     for (var key in object) {
-      assert.ok(key === 'writable' || key === 'readable', "key = ".concat(key));
+      assert.ok(key === 'writable' || key === 'readable', "key = " + key);
     }
 
     assert.ok(object.propertyChanged);
@@ -84,7 +82,7 @@ describe('common > main > rx > observable-object-builder', function () {
     assert.strictEqual(object.propertyChanged.onPropertyChanged(), object.propertyChanged);
     assert.strictEqual(object.propertyChanged.onPropertyChanged('prop'), object.propertyChanged);
     var unsubscribe = [];
-    assert.strictEqual((0, _typeof2.default)(unsubscribe[0] = object.propertyChanged.subscribe(subscriber)), 'function');
+    assert.strictEqual(typeof (unsubscribe[0] = object.propertyChanged.subscribe(subscriber)), 'function');
     assertEvents(results, []);
     assert.ok(object.propertyChangedIfCanEmit);
     assert.strictEqual(object.propertyChangedIfCanEmit.onPropertyChanged(), object.propertyChangedIfCanEmit);
@@ -216,11 +214,11 @@ describe('common > main > rx > observable-object-builder', function () {
     };
 
     var hasSubscribersUnsubscribe = [];
-    assert.strictEqual((0, _typeof2.default)(hasSubscribersUnsubscribe[0] = object.propertyChanged.hasSubscribersObservable.subscribe(hasSubscribersSubscriber)), 'function');
+    assert.strictEqual(typeof (hasSubscribersUnsubscribe[0] = object.propertyChanged.hasSubscribersObservable.subscribe(hasSubscribersSubscriber)), 'function');
     assert.deepStrictEqual(hasSubscribers, [false]);
     hasSubscribers = [];
     var unsubscribe = [];
-    assert.strictEqual((0, _typeof2.default)(unsubscribe[0] = object.propertyChanged.subscribe(subscriber)), 'function');
+    assert.strictEqual(typeof (unsubscribe[0] = object.propertyChanged.subscribe(subscriber)), 'function');
     assertEvents(results, []);
     assert.deepStrictEqual(hasSubscribers, [true]);
     hasSubscribers = [];
@@ -308,11 +306,11 @@ describe('common > main > rx > observable-object-builder', function () {
     };
 
     var hasSubscribersUnsubscribe = [];
-    assert.strictEqual((0, _typeof2.default)(hasSubscribersUnsubscribe[0] = object.propertyChanged.hasSubscribersObservable.subscribe(hasSubscribersSubscriber)), 'function');
+    assert.strictEqual(typeof (hasSubscribersUnsubscribe[0] = object.propertyChanged.hasSubscribersObservable.subscribe(hasSubscribersSubscriber)), 'function');
     assert.deepStrictEqual(hasSubscribers, [false]);
     hasSubscribers = [];
     var unsubscribe = [];
-    assert.strictEqual((0, _typeof2.default)(unsubscribe[0] = object.propertyChanged.subscribe(subscriber)), 'function');
+    assert.strictEqual(typeof (unsubscribe[0] = object.propertyChanged.subscribe(subscriber)), 'function');
     assertEvents(results, []);
     assert.deepStrictEqual(hasSubscribers, [true]);
     hasSubscribers = [];
@@ -361,6 +359,124 @@ describe('common > main > rx > observable-object-builder', function () {
       name: 'prop',
       newValue: '2',
       oldValue: 1
+    }]);
+    results = [];
+    assert.strictEqual(object.prop, '2');
+    object.prop = '2';
+    assert.deepStrictEqual(hasSubscribers, []);
+    assertEvents(results, []);
+    assert.strictEqual(object.prop, '2');
+    object.prop = 2;
+    assert.deepStrictEqual(hasSubscribers, []);
+    assertEvents(results, [{
+      name: 'prop',
+      newValue: 2,
+      oldValue: '2'
+    }]);
+    results = [];
+    assert.strictEqual(object.prop, 2);
+  });
+  it('updatable simple changed', function () {
+    var builder = new _ObservableObjectBuilder.ObservableObjectBuilder();
+    var object = builder.object;
+    var hasSubscribers = [];
+
+    var hasSubscribersSubscriber = function hasSubscribersSubscriber(value) {
+      hasSubscribers.push(value);
+    };
+
+    var results = [];
+
+    var subscriber = function subscriber(value) {
+      results.push(value);
+    };
+
+    var hasSubscribersUnsubscribe = [];
+    assert.strictEqual(typeof (hasSubscribersUnsubscribe[0] = object.propertyChanged.hasSubscribersObservable.subscribe(hasSubscribersSubscriber)), 'function');
+    assert.deepStrictEqual(hasSubscribers, [false]);
+    hasSubscribers = [];
+    var unsubscribe = [];
+    assert.strictEqual(typeof (unsubscribe[0] = object.propertyChanged.subscribe(subscriber)), 'function');
+    assertEvents(results, []);
+    assert.deepStrictEqual(hasSubscribers, [true]);
+    hasSubscribers = [];
+    assert.strictEqual(builder.updatable('prop', {
+      update: function update(v) {
+        return v;
+      }
+    }), builder);
+    assert.deepStrictEqual(hasSubscribers, []);
+    assertEvents(results, []);
+    assert.strictEqual(object.prop, undefined);
+    assert.strictEqual(builder.updatable('prop', {
+      update: function update(v) {
+        return v;
+      }
+    }, undefined), builder);
+    assert.deepStrictEqual(hasSubscribers, []);
+    assertEvents(results, []);
+    assert.strictEqual(object.prop, undefined);
+    assert.strictEqual(builder.updatable('prop', {
+      update: function update(v) {
+        return v;
+      }
+    }, null), builder);
+    assert.deepStrictEqual(hasSubscribers, []);
+    assertEvents(results, [{
+      name: 'prop',
+      newValue: null,
+      oldValue: undefined
+    }]);
+    results = [];
+    assert.strictEqual(object.prop, null);
+    unsubscribe[0]();
+    assert.strictEqual(builder.updatable('prop', {
+      update: function update(v) {
+        return v;
+      },
+      factory: function factory() {
+        return '1';
+      }
+    }, '2'), builder);
+    assert.strictEqual(typeof (unsubscribe[0] = object.propertyChanged.subscribe(subscriber)), 'function');
+    assertEvents(results, []);
+    assert.deepStrictEqual(hasSubscribers, [false, true]);
+    hasSubscribers = [];
+    object.prop = '3';
+    assert.deepStrictEqual(hasSubscribers, []);
+    assertEvents(results, []);
+    results = [];
+    assert.strictEqual(object.prop, '3');
+    assert.strictEqual(builder.updatable('prop', {
+      update: function update(v) {
+        return v;
+      }
+    }, '3'), builder);
+    assert.deepStrictEqual(hasSubscribers, []);
+    assertEvents(results, []);
+    assert.strictEqual(object.prop, '3');
+    assert.strictEqual(builder.updatable('prop', {
+      update: function update(v) {
+        return v;
+      },
+      factory: function factory() {
+        return 3;
+      }
+    }), builder);
+    assert.deepStrictEqual(hasSubscribers, []);
+    assertEvents(results, [{
+      name: 'prop',
+      newValue: 3,
+      oldValue: '3'
+    }]);
+    results = [];
+    assert.strictEqual(object.prop, 3);
+    object.prop = '2';
+    assert.deepStrictEqual(hasSubscribers, []);
+    assertEvents(results, [{
+      name: 'prop',
+      newValue: '2',
+      oldValue: 3
     }]);
     results = [];
     assert.strictEqual(object.prop, '2');

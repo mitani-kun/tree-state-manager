@@ -2,16 +2,9 @@
 
 var _interopRequireDefault = require("@babel/runtime-corejs3/helpers/interopRequireDefault");
 
-var _Object$defineProperty = require("@babel/runtime-corejs3/core-js-stable/object/define-property");
-
-_Object$defineProperty(exports, "__esModule", {
-  value: true
-});
-
+exports.__esModule = true;
 exports.subscribeDependencies = subscribeDependencies;
 exports.DependenciesBuilder = void 0;
-
-var _slicedToArray2 = _interopRequireDefault(require("@babel/runtime-corejs3/helpers/slicedToArray"));
 
 var _classCallCheck2 = _interopRequireDefault(require("@babel/runtime-corejs3/helpers/classCallCheck"));
 
@@ -41,7 +34,7 @@ function () {
       }
 
       ruleBuilder = buildRule(ruleBuilder);
-      var ruleBase = ruleBuilder && ruleBuilder.result;
+      var ruleBase = ruleBuilder && ruleBuilder.result();
 
       if (ruleBase == null) {
         throw new Error('buildRule() return null or not initialized RuleBuilder');
@@ -64,14 +57,19 @@ function subscribeDependencies(subscribeObject, actionTarget, dependencies) {
   var unsubscribers = [];
 
   var _loop = function _loop(i, len) {
-    var _dependencies$i = (0, _slicedToArray2.default)(dependencies[i], 2),
+    var _dependencies$i = dependencies[i],
         rule = _dependencies$i[0],
         action = _dependencies$i[1];
-
-    unsubscribers.push((0, _deepSubscribe.deepSubscribeRule)(subscribeObject, function (value, parent, propertyName) {
-      action(actionTarget, value, parent, propertyName);
-      return null;
-    }, true, rule));
+    unsubscribers.push((0, _deepSubscribe.deepSubscribeRule)({
+      object: subscribeObject,
+      subscribeValue: function subscribeValue(value, parent, propertyName) {
+        action(actionTarget, value, parent, propertyName);
+      },
+      unsubscribeValue: function unsubscribeValue(value, parent, propertyName) {
+        action(actionTarget, void 0, parent, propertyName);
+      },
+      rule: rule
+    }));
   };
 
   for (var i = 0, len = dependencies.length; i < len; i++) {

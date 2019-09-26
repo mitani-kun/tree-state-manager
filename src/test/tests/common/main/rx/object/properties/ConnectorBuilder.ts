@@ -3,7 +3,7 @@
 import {ObservableObject} from '../../../../../../../main/common/rx/object/ObservableObject'
 import {ObservableObjectBuilder} from '../../../../../../../main/common/rx/object/ObservableObjectBuilder'
 import {ConnectorBuilder} from '../../../../../../../main/common/rx/object/properties/ConnectorBuilder'
-import {createObject} from '../../deep-subscribe/helpers/Tester'
+import {createObject} from '../../deep-subscribe/helpers/src/TestDeepSubscribe'
 
 declare const assert: any
 
@@ -46,7 +46,7 @@ describe('common > main > rx > properties > ConnectorBuilder', function() {
 					.baseProp1))
 
 		new ConnectorBuilder<BaseClass2, BaseClass2, ValueKeys>(BaseClass2.prototype)
-			.connect('baseProp2',
+			.connectWritable('baseProp2',
 				b => b.path(o => o['@value_property'].source
 					.property['@value_property']
 					.observableMap['#observableList']
@@ -66,7 +66,7 @@ describe('common > main > rx > properties > ConnectorBuilder', function() {
 				'prop1_init')
 
 		new ConnectorBuilder<Class2, Class2, ValueKeys>(Class2.prototype)
-			.connect('prop2',
+			.connectWritable('prop2',
 				b => b.path(o => o['@value_property'].source
 					.property['@value_property']
 					.observableMap['#observableList']
@@ -116,6 +116,7 @@ describe('common > main > rx > properties > ConnectorBuilder', function() {
 		assert.strictEqual(typeof (unsubscribe1[0] = object1.propertyChanged.subscribe(subscriber1)), 'function')
 		assert.strictEqual(typeof (unsubscribe2[0] = object2.propertyChanged.subscribe(subscriber2)), 'function')
 
+		// assert.strictEqual(baseObject2.baseProp1, void 0)
 		assert.strictEqual(baseObject1.baseProp1, 'baseProp1_init_source')
 
 		source.baseProp1 = '1'
@@ -137,18 +138,67 @@ describe('common > main > rx > properties > ConnectorBuilder', function() {
 
 		assert.strictEqual(baseObject2.baseProp2, 'baseProp2_init')
 
-		source.baseProp2 = '3'
+		baseObject2.baseProp2 = '1'
+		assert.deepStrictEqual(source.baseProp2, '1')
 		assert.deepStrictEqual(baseResults1, [])
 		assert.deepStrictEqual(baseResults2, [
 			{
-				name    : 'baseProp2',
-				newValue: '3',
+				name: 'baseProp2',
+				newValue: '1',
 				oldValue: 'baseProp2_init',
 			},
 		])
 		baseResults2 = []
 		assert.deepStrictEqual(results1, [])
 		assert.deepStrictEqual(results2, [])
+		assert.deepStrictEqual((baseObject1 as any).baseProp2, undefined)
+		assert.deepStrictEqual(baseObject2.baseProp2, '1')
+		assert.deepStrictEqual((object1 as any).baseProp2, undefined)
+		assert.deepStrictEqual(object2.baseProp2, '1')
+
+		object2.baseProp2 = '2'
+		assert.deepStrictEqual(baseResults1, [])
+		assert.deepStrictEqual(baseResults2, [
+			{
+				name    : 'baseProp2',
+				newValue: '2',
+				oldValue: '1',
+			},
+		])
+		baseResults2 = []
+		assert.deepStrictEqual(results1, [])
+		assert.deepStrictEqual(results2, [
+			{
+				name    : 'baseProp2',
+				newValue: '2',
+				oldValue: '1',
+			},
+		])
+		results2 = []
+		assert.deepStrictEqual((baseObject1 as any).baseProp2, undefined)
+		assert.deepStrictEqual(baseObject2.baseProp2, '2')
+		assert.deepStrictEqual((object1 as any).baseProp2, undefined)
+		assert.deepStrictEqual(object2.baseProp2, '2')
+
+		source.baseProp2 = '3'
+		assert.deepStrictEqual(baseResults1, [])
+		assert.deepStrictEqual(baseResults2, [
+			{
+				name    : 'baseProp2',
+				newValue: '3',
+				oldValue: '2',
+			},
+		])
+		baseResults2 = []
+		assert.deepStrictEqual(results1, [])
+		assert.deepStrictEqual(results2, [
+			{
+				name    : 'baseProp2',
+				newValue: '3',
+				oldValue: '2',
+			},
+		])
+		results2 = []
 		assert.deepStrictEqual((baseObject1 as any).baseProp2, undefined)
 		assert.deepStrictEqual(baseObject2.baseProp2, '3')
 		assert.deepStrictEqual((object1 as any).baseProp2, undefined)

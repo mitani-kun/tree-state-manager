@@ -2,12 +2,7 @@
 
 var _interopRequireDefault = require("@babel/runtime-corejs3/helpers/interopRequireDefault");
 
-var _Object$defineProperty = require("@babel/runtime-corejs3/core-js-stable/object/define-property");
-
-_Object$defineProperty(exports, "__esModule", {
-  value: true
-});
-
+exports.__esModule = true;
 exports.CalcObjectBuilder = void 0;
 
 var _classCallCheck2 = _interopRequireDefault(require("@babel/runtime-corejs3/helpers/classCallCheck"));
@@ -52,11 +47,11 @@ function (_ObservableObjectBuil) {
   }, {
     key: "calcChanges",
     value: function calcChanges(name, buildRule) {
-      return this.calc(name, void 0, (0, _CalcPropertyBuilder.calcPropertyFactory)(function (input, property) {
-        property.value++;
-      }, null, null, 0, function (dependencies) {
+      return this.calc(name, void 0, (0, _CalcPropertyBuilder.calcPropertyFactory)(function (dependencies) {
         return dependencies.invalidateOn(buildRule);
-      }));
+      }, function (input, property) {
+        property.value++;
+      }, null, null, 0));
     }
   }]);
   return CalcObjectBuilder;

@@ -2,31 +2,12 @@
 
 var _interopRequireDefault = require("@babel/runtime-corejs3/helpers/interopRequireDefault");
 
-var _Object$defineProperty2 = require("@babel/runtime-corejs3/core-js-stable/object/define-property");
-
-_Object$defineProperty2(exports, "__esModule", {
-  value: true
-});
-
+exports.__esModule = true;
 exports.ObservableObjectBuilder = void 0;
 
-var _defineProperties = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/object/define-properties"));
+var _extends2 = _interopRequireDefault(require("@babel/runtime-corejs3/helpers/extends"));
 
-var _getOwnPropertyDescriptors = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/object/get-own-property-descriptors"));
-
-var _forEach = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/instance/for-each"));
-
-var _getOwnPropertyDescriptor = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/object/get-own-property-descriptor"));
-
-var _filter = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/instance/filter"));
-
-var _getOwnPropertySymbols = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/object/get-own-property-symbols"));
-
-var _keys = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/object/keys"));
-
-var _defineProperty2 = _interopRequireDefault(require("@babel/runtime-corejs3/helpers/defineProperty"));
-
-var _defineProperty3 = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/object/define-property"));
+var _defineProperty = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/object/define-property"));
 
 var _bind = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/instance/bind"));
 
@@ -41,10 +22,6 @@ require("../extensions/autoConnect");
 var _IPropertyChanged = require("./IPropertyChanged");
 
 var _ObservableObject = require("./ObservableObject");
-
-function ownKeys(object, enumerableOnly) { var keys = (0, _keys.default)(object); if (_getOwnPropertySymbols.default) { var symbols = (0, _getOwnPropertySymbols.default)(object); if (enumerableOnly) symbols = (0, _filter.default)(symbols).call(symbols, function (sym) { return (0, _getOwnPropertyDescriptor.default)(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
-
-function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { var _context; (0, _forEach.default)(_context = ownKeys(source, true)).call(_context, function (key) { (0, _defineProperty2.default)(target, key, source[key]); }); } else if (_getOwnPropertyDescriptors.default) { (0, _defineProperties.default)(target, (0, _getOwnPropertyDescriptors.default)(source)); } else { var _context2; (0, _forEach.default)(_context2 = ownKeys(source)).call(_context2, function (key) { (0, _defineProperty3.default)(target, key, (0, _getOwnPropertyDescriptor.default)(source, key)); }); } } return target; }
 
 var ObservableObjectBuilder =
 /*#__PURE__*/
@@ -71,16 +48,16 @@ function () {
       } // optimization
 
 
-      var getValue = (0, _helpers.createFunction)('o', "return o.__fields[\"".concat(name, "\"]"));
-      var setValue = (0, _helpers.createFunction)('o', 'v', "o.__fields[\"".concat(name, "\"] = v"));
+      var getValue = options && options.getValue || (0, _helpers.createFunction)("return this.__fields[\"" + name + "\"]");
+      var setValue = options && options.setValue || (0, _helpers.createFunction)('v', "this.__fields[\"" + name + "\"] = v");
 
       var _set2 = setOptions ? (0, _bind.default)(_ObservableObject._setExt).call(_ObservableObject._setExt, null, name, getValue, setValue, setOptions) : (0, _bind.default)(_ObservableObject._set).call(_ObservableObject._set, null, name, getValue, setValue);
 
-      (0, _defineProperty3.default)(object, name, {
+      (0, _defineProperty.default)(object, name, {
         configurable: true,
         enumerable: !hidden,
         get: function get() {
-          return getValue(this);
+          return getValue.call(this);
         },
         set: function set(newValue) {
           _set2(this, newValue);
@@ -88,9 +65,9 @@ function () {
       });
 
       if (__fields && typeof initValue !== 'undefined') {
-        var value = __fields[name];
+        var _value = __fields[name];
 
-        if (initValue !== value) {
+        if (initValue !== _value) {
           object[name] = initValue;
         }
       }
@@ -100,12 +77,12 @@ function () {
   }, {
     key: "readable",
     value: function readable(name, options, initValue) {
+      return this.updatable(name, options, initValue);
+    }
+  }, {
+    key: "updatable",
+    value: function updatable(name, options, initValue) {
       var hidden = options && options.hidden;
-
-      var setOptions = _objectSpread({}, options && options.setOptions, {
-        suppressPropertyChanged: true
-      });
-
       var object = this.object;
       var __fields = object.__fields;
 
@@ -119,43 +96,99 @@ function () {
         factory = function factory(o) {
           return o;
         };
-      } // optimization
+      }
 
+      var update = options && options.update; // optimization
 
-      var getValue = (0, _helpers.createFunction)('o', "return o.__fields[\"".concat(name, "\"]"));
+      var getValue = options && options.getValue || (0, _helpers.createFunction)("return this.__fields[\"" + name + "\"]");
+      var setValue;
+
+      if (update || factory) {
+        setValue = options && options.setValue || (0, _helpers.createFunction)('v', "this.__fields[\"" + name + "\"] = v");
+      }
+
+      var setOnUpdate;
+
+      if (update) {
+        // tslint:disable-next-line
+        var setOptions = options && options.setOptions;
+        setOnUpdate = setOptions ? (0, _bind.default)(_ObservableObject._setExt).call(_ObservableObject._setExt, null, name, getValue, setValue, setOptions) : (0, _bind.default)(_ObservableObject._set).call(_ObservableObject._set, null, name, getValue, setValue);
+      }
+
+      var setOnInit;
+
+      if (factory) {
+        var _setOptions = (0, _extends2.default)({}, options && options.setOptions, {
+          suppressPropertyChanged: true
+        });
+
+        setOnInit = _setOptions ? (0, _bind.default)(_ObservableObject._setExt).call(_ObservableObject._setExt, null, name, getValue, setValue, _setOptions) : (0, _bind.default)(_ObservableObject._set).call(_ObservableObject._set, null, name, getValue, setValue);
+      }
 
       var createInstanceProperty = function createInstanceProperty(instance) {
-        (0, _defineProperty3.default)(instance, name, {
+        var attributes = {
           configurable: true,
           enumerable: !hidden,
           get: function get() {
-            return getValue(this);
+            return getValue.call(this);
           }
-        });
+        };
+
+        if (update) {
+          attributes.set = function (value) {
+            var newValue = update.call(this, value);
+
+            if (typeof newValue !== 'undefined') {
+              setOnUpdate(this, newValue);
+            }
+          };
+        }
+
+        (0, _defineProperty.default)(instance, name, attributes);
       };
 
       if (factory) {
-        // optimization
-        var setValue = (0, _helpers.createFunction)('o', 'v', "o.__fields[\"".concat(name, "\"] = v"));
-        var set = setOptions ? (0, _bind.default)(_ObservableObject._setExt).call(_ObservableObject._setExt, null, name, getValue, setValue, setOptions) : (0, _bind.default)(_ObservableObject._set).call(_ObservableObject._set, null, name, getValue, setValue);
-        (0, _defineProperty3.default)(object, name, {
+        var init = function init() {
+          var factoryValue = factory.call(this, initValue);
+          createInstanceProperty(this);
+          return factoryValue;
+        };
+
+        var initAttributes = {
           configurable: true,
           enumerable: !hidden,
           get: function get() {
-            var factoryValue = factory.call(this, initValue);
-            createInstanceProperty(this);
+            var factoryValue = init.call(this);
 
             if (typeof factoryValue !== 'undefined') {
-              var oldValue = getValue(this);
+              var oldValue = getValue.call(this);
 
               if (factoryValue !== oldValue) {
-                set(this, factoryValue);
+                setOnInit(this, factoryValue);
               }
             }
 
             return factoryValue;
           }
-        });
+        };
+
+        if (update) {
+          initAttributes.set = function (value) {
+            // tslint:disable:no-dead-store
+            var factoryValue = init.call(this);
+            var newValue = update.call(this, value);
+
+            if (typeof newValue !== 'undefined') {
+              var oldValue = getValue.call(this);
+
+              if (newValue !== oldValue) {
+                setOnInit(this, newValue);
+              }
+            }
+          };
+        }
+
+        (0, _defineProperty.default)(object, name, initAttributes);
 
         if (__fields) {
           var oldValue = __fields[name];

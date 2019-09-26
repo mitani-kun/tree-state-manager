@@ -2,36 +2,11 @@
 
 var _interopRequireDefault = require("@babel/runtime-corejs3/helpers/interopRequireDefault");
 
-var _Object$defineProperty2 = require("@babel/runtime-corejs3/core-js-stable/object/define-property");
-
-_Object$defineProperty2(exports, "__esModule", {
-  value: true
-});
-
+exports.__esModule = true;
 exports.isRefer = isRefer;
 exports.TestMerger = exports.TypeMetaMergerCollectionMock = exports.NEWER = exports.OLDER = exports.BASE = exports.NONE = exports.deepCloneEqual = void 0;
 
-var _defineProperty2 = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/object/define-property"));
-
-var _defineProperties = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/object/define-properties"));
-
-var _getOwnPropertyDescriptors = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/object/get-own-property-descriptors"));
-
-var _forEach = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/instance/for-each"));
-
-var _getOwnPropertyDescriptor = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/object/get-own-property-descriptor"));
-
-var _filter = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/instance/filter"));
-
-var _getOwnPropertySymbols = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/object/get-own-property-symbols"));
-
-var _keys = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/object/keys"));
-
-var _concat = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/instance/concat"));
-
-var _typeof2 = _interopRequireDefault(require("@babel/runtime-corejs3/helpers/typeof"));
-
-var _defineProperty3 = _interopRequireDefault(require("@babel/runtime-corejs3/helpers/defineProperty"));
+var _extends2 = _interopRequireDefault(require("@babel/runtime-corejs3/helpers/extends"));
 
 var _classCallCheck2 = _interopRequireDefault(require("@babel/runtime-corejs3/helpers/classCallCheck"));
 
@@ -49,11 +24,13 @@ var _freeze = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-sta
 
 var _getIterator2 = _interopRequireDefault(require("@babel/runtime-corejs3/core-js/get-iterator"));
 
+var _isArray2 = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/array/is-array"));
+
 var _isFrozen = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/object/is-frozen"));
 
 var _mergers = require("../../../../../../../main/common/extensions/merge/mergers");
 
-var _objectUniqueId = require("../../../../../../../main/common/lists/helpers/object-unique-id");
+var _objectUniqueId = require("../../../../../../../main/common/helpers/object-unique-id");
 
 var _SortedList = require("../../../../../../../main/common/lists/SortedList");
 
@@ -63,10 +40,8 @@ var _DeepCloneEqual = require("../../../../../../../main/common/test/DeepCloneEq
 
 var _TestVariants2 = require("../../../src/helpers/TestVariants");
 
-function ownKeys(object, enumerableOnly) { var keys = (0, _keys.default)(object); if (_getOwnPropertySymbols.default) { var symbols = (0, _getOwnPropertySymbols.default)(object); if (enumerableOnly) symbols = (0, _filter.default)(symbols).call(symbols, function (sym) { return (0, _getOwnPropertyDescriptor.default)(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
-
-function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { var _context3; (0, _forEach.default)(_context3 = ownKeys(source, true)).call(_context3, function (key) { (0, _defineProperty3.default)(target, key, source[key]); }); } else if (_getOwnPropertyDescriptors.default) { (0, _defineProperties.default)(target, (0, _getOwnPropertyDescriptors.default)(source)); } else { var _context4; (0, _forEach.default)(_context4 = ownKeys(source)).call(_context4, function (key) { (0, _defineProperty2.default)(target, key, (0, _getOwnPropertyDescriptor.default)(source, key)); }); } } return target; }
-
+/* tslint:disable:no-construct use-primitive-type */
+// import clone from 'clone'
 var deepCloneEqual = new _DeepCloneEqual.DeepCloneEqual({
   commonOptions: {
     circular: true,
@@ -91,28 +66,21 @@ var deepCloneEqual = new _DeepCloneEqual.DeepCloneEqual({
           compare: o.compare
         });
         setInstance(list);
-        var _iteratorNormalCompletion = true;
-        var _didIteratorError = false;
-        var _iteratorError = undefined;
 
-        try {
-          for (var _iterator = (0, _getIterator2.default)(o), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-            var item = _step.value;
-            list.add(cloneNested(item));
+        for (var _iterator = o, _isArray = (0, _isArray2.default)(_iterator), _i = 0, _iterator = _isArray ? _iterator : (0, _getIterator2.default)(_iterator);;) {
+          var _ref;
+
+          if (_isArray) {
+            if (_i >= _iterator.length) break;
+            _ref = _iterator[_i++];
+          } else {
+            _i = _iterator.next();
+            if (_i.done) break;
+            _ref = _i.value;
           }
-        } catch (err) {
-          _didIteratorError = true;
-          _iteratorError = err;
-        } finally {
-          try {
-            if (!_iteratorNormalCompletion && _iterator.return != null) {
-              _iterator.return();
-            }
-          } finally {
-            if (_didIteratorError) {
-              throw _iteratorError;
-            }
-          }
+
+          var item = _ref;
+          list.add(cloneNested(item));
         }
 
         return list;
@@ -256,7 +224,7 @@ function resolveValue(opts, value, functions, refers) {
       i++;
 
       if (i > 10) {
-        throw new Error("Value cannot be resolved: ".concat(value));
+        throw new Error("Value cannot be resolved: " + value);
       }
 
       switch (value) {
@@ -281,7 +249,7 @@ function resolveValue(opts, value, functions, refers) {
 }
 
 function resolveOptions(optionsSource, optionsParams, functions, refers, clone) {
-  var resolvedOptions = _objectSpread({}, optionsSource);
+  var resolvedOptions = (0, _extends2.default)({}, optionsSource);
 
   if (clone) {
     if (!(0, _isFrozen.default)(resolvedOptions.base) && !isRefer(resolvedOptions.base)) {
@@ -435,7 +403,7 @@ function (_TestVariants) {
                 if (strict) {
                   assert.strictEqual(actual, expected);
                 } else {
-                  if (actual !== NONE && actual != null && (0, _typeof2.default)(actual) === 'object' && actual.constructor !== String && actual.constructor !== Number && actual.constructor !== Boolean && (0, _objectUniqueId.canHaveUniqueId)(actual) || typeof actual === 'function') {
+                  if (actual !== NONE && actual != null && typeof actual === 'object' && actual.constructor !== String && actual.constructor !== Number && actual.constructor !== Boolean && (0, _objectUniqueId.canHaveUniqueId)(actual) || typeof actual === 'function') {
                     assert.notStrictEqual(actual, expected);
                     assert.notStrictEqual(actual, options.base);
                     assert.notStrictEqual(actual, options.older);
@@ -465,12 +433,10 @@ function (_TestVariants) {
           if (_ret === "break") break;
         } catch (ex) {
           if (!debugIteration) {
-            var _context, _context2;
-
-            console.log((0, _concat.default)(_context = "Test number: ".concat(TestMerger.totalTests, "\r\nError in: ")).call(_context, initialOptions.description, "\n"), initialOptions, // ${
+            console.log("Test number: " + TestMerger.totalTests + "\r\nError in: " + initialOptions.description + "\n", initialOptions, // ${
             // JSON.stringify(initialOptions, null, 4)
             // }
-            (0, _concat.default)(_context2 = "\n".concat(initialOptions.action.toString(), "\n")).call(_context2, ex.stack));
+            "\n" + initialOptions.action.toString() + "\n" + ex.stack);
             error = ex;
           }
         } finally {

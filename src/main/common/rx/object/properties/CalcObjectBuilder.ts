@@ -39,17 +39,22 @@ export class CalcObjectBuilder<TObject extends ObservableObject, TValueKeys exte
 	}
 
 	public calcChanges<
+		TInput,
 		Name extends string | number
 	>(
 		name: Name,
-		buildRule: (builder: RuleBuilder<TObject, TValueKeys>) => RuleBuilder<any, TValueKeys>,
+		buildRule: (builder: RuleBuilder<TInput, ValueKeys>) => RuleBuilder<any, ValueKeys>,
 	) {
-		return this.calc(
+		return this.calc<number, TInput, any, Name>(
 			name,
 			void 0,
-			calcPropertyFactory((input, property) => {
-				property.value++
-			}, null, null, 0, dependencies => dependencies.invalidateOn(buildRule)),
+			calcPropertyFactory(
+				dependencies => dependencies.invalidateOn(buildRule),
+				(input, property) => {
+					property.value++
+				},
+				null, null, 0,
+			),
 		)
 	}
 }

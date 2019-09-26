@@ -2,18 +2,11 @@
 
 var _interopRequireDefault = require("@babel/runtime-corejs3/helpers/interopRequireDefault");
 
-var _Object$defineProperty = require("@babel/runtime-corejs3/core-js-stable/object/define-property");
-
-_Object$defineProperty(exports, "__esModule", {
-  value: true
-});
-
+exports.__esModule = true;
 exports.createIterableIterator = createIterableIterator;
 exports.createIterable = createIterable;
 exports.createComplexObject = createComplexObject;
 exports.CircularClass = void 0;
-
-var _typeof2 = _interopRequireDefault(require("@babel/runtime-corejs3/helpers/typeof"));
 
 var _keys = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/object/keys"));
 
@@ -31,11 +24,11 @@ var _set = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable
 
 var _assign = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/object/assign"));
 
-var _defineProperty2 = _interopRequireDefault(require("@babel/runtime-corejs3/helpers/defineProperty"));
-
 var _iterator3 = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/symbol/iterator"));
 
 var _getIterator2 = _interopRequireDefault(require("@babel/runtime-corejs3/core-js/get-iterator"));
+
+var _isArray3 = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/array/is-array"));
 
 var _from = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/array/from"));
 
@@ -224,85 +217,77 @@ CircularClass.uuid = 'e729e03fd0f449949f0f97da23c7bab8';
 new _ObservableObjectBuilder.ObservableObjectBuilder(CircularClass.prototype).writable('array');
 
 function createIterableIterator(iterable) {
-  var array, _iteratorNormalCompletion, _didIteratorError, _iteratorError, _iterator, _step, item;
+  var array, _iterator, _isArray, _i, _ref, item;
 
   return _regenerator.default.wrap(function createIterableIterator$(_context4) {
     while (1) {
       switch (_context4.prev = _context4.next) {
         case 0:
           array = (0, _from.default)(iterable);
-          _iteratorNormalCompletion = true;
-          _didIteratorError = false;
-          _iteratorError = undefined;
-          _context4.prev = 4;
-          _iterator = (0, _getIterator2.default)(array);
+          _iterator = array, _isArray = (0, _isArray3.default)(_iterator), _i = 0, _iterator = _isArray ? _iterator : (0, _getIterator2.default)(_iterator);
 
-        case 6:
-          if (_iteratorNormalCompletion = (_step = _iterator.next()).done) {
-            _context4.next = 13;
+        case 2:
+          if (!_isArray) {
+            _context4.next = 8;
             break;
           }
 
-          item = _step.value;
-          _context4.next = 10;
+          if (!(_i >= _iterator.length)) {
+            _context4.next = 5;
+            break;
+          }
+
+          return _context4.abrupt("break", 17);
+
+        case 5:
+          _ref = _iterator[_i++];
+          _context4.next = 12;
+          break;
+
+        case 8:
+          _i = _iterator.next();
+
+          if (!_i.done) {
+            _context4.next = 11;
+            break;
+          }
+
+          return _context4.abrupt("break", 17);
+
+        case 11:
+          _ref = _i.value;
+
+        case 12:
+          item = _ref;
+          _context4.next = 15;
           return item;
 
-        case 10:
-          _iteratorNormalCompletion = true;
-          _context4.next = 6;
-          break;
-
-        case 13:
-          _context4.next = 19;
-          break;
-
         case 15:
-          _context4.prev = 15;
-          _context4.t0 = _context4["catch"](4);
-          _didIteratorError = true;
-          _iteratorError = _context4.t0;
+          _context4.next = 2;
+          break;
 
-        case 19:
-          _context4.prev = 19;
-          _context4.prev = 20;
-
-          if (!_iteratorNormalCompletion && _iterator.return != null) {
-            _iterator.return();
-          }
-
-        case 22:
-          _context4.prev = 22;
-
-          if (!_didIteratorError) {
-            _context4.next = 25;
-            break;
-          }
-
-          throw _iteratorError;
-
-        case 25:
-          return _context4.finish(22);
-
-        case 26:
-          return _context4.finish(19);
-
-        case 27:
+        case 17:
         case "end":
           return _context4.stop();
       }
     }
-  }, _marked2, null, [[4, 15, 19, 27], [20,, 22, 26]]);
+  }, _marked2);
 }
 
 function createIterable(iterable) {
+  var _ref2;
+
   var array = (0, _from.default)(iterable);
-  return (0, _defineProperty2.default)({}, _iterator3.default, function () {
+  return _ref2 = {}, _ref2[_iterator3.default] = function () {
     return createIterableIterator(array);
-  });
+  }, _ref2;
 }
 
-function createComplexObject() {
-  var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+function createComplexObject(options) {
+  if (options === void 0) {
+    options = {};
+  }
+
   var array = [];
   var object = {};
   var circularClass = new CircularClass(array);
@@ -393,53 +378,45 @@ function createComplexObject() {
     }
   }
 
-  var _iteratorNormalCompletion2 = true;
-  var _didIteratorError2 = false;
-  var _iteratorError2 = undefined;
+  for (var _iterator2 = (0, _reverse.default)(_context5 = (0, _keys.default)(object)).call(_context5), _isArray2 = (0, _isArray3.default)(_iterator2), _i2 = 0, _iterator2 = _isArray2 ? _iterator2 : (0, _getIterator2.default)(_iterator2);;) {
+    var _context5;
 
-  try {
-    for (var _iterator2 = (0, _getIterator2.default)((0, _reverse.default)(_context5 = (0, _keys.default)(object)).call(_context5)), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-      var _context5;
+    var _ref3;
 
-      var _key = _step2.value;
-
-      if (Object.prototype.hasOwnProperty.call(object, _key)) {
-        var _value = object[_key];
-
-        if (!options.undefined && typeof _value === 'undefined') {
-          delete object[_key];
-        }
-
-        if (options.circular || !valueIsCollection(_value)) {
-          if (object.arraySet && _value && (0, _typeof2.default)(_value) === 'object') {
-            object.arraySet.add(_value);
-          }
-
-          if (object.objectSet) {
-            object.objectSet.add(_key);
-          }
-
-          if (object.arrayMap && _value && (0, _typeof2.default)(_value) === 'object') {
-            object.arrayMap.set(_value, _value);
-          }
-
-          if (object.objectMap) {
-            object.objectMap.set(_key, _value);
-          }
-        }
-      }
+    if (_isArray2) {
+      if (_i2 >= _iterator2.length) break;
+      _ref3 = _iterator2[_i2++];
+    } else {
+      _i2 = _iterator2.next();
+      if (_i2.done) break;
+      _ref3 = _i2.value;
     }
-  } catch (err) {
-    _didIteratorError2 = true;
-    _iteratorError2 = err;
-  } finally {
-    try {
-      if (!_iteratorNormalCompletion2 && _iterator2.return != null) {
-        _iterator2.return();
+
+    var _key = _ref3;
+
+    if (Object.prototype.hasOwnProperty.call(object, _key)) {
+      var _value = object[_key];
+
+      if (!options.undefined && typeof _value === 'undefined') {
+        delete object[_key];
       }
-    } finally {
-      if (_didIteratorError2) {
-        throw _iteratorError2;
+
+      if (options.circular || !valueIsCollection(_value)) {
+        if (object.arraySet && _value && typeof _value === 'object') {
+          object.arraySet.add(_value);
+        }
+
+        if (object.objectSet) {
+          object.objectSet.add(_key);
+        }
+
+        if (object.arrayMap && _value && typeof _value === 'object') {
+          object.arrayMap.set(_value, _value);
+        }
+
+        if (object.objectMap) {
+          object.objectMap.set(_key, _value);
+        }
       }
     }
   }

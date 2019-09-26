@@ -2,32 +2,9 @@
 
 var _interopRequireDefault = require("@babel/runtime-corejs3/helpers/interopRequireDefault");
 
-var _Object$defineProperty2 = require("@babel/runtime-corejs3/core-js-stable/object/define-property");
-
-_Object$defineProperty2(exports, "__esModule", {
-  value: true
-});
-
+exports.__esModule = true;
 exports.isPrimitiveDefault = isPrimitiveDefault;
 exports.DeepCloneEqual = void 0;
-
-var _defineProperty2 = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/object/define-property"));
-
-var _defineProperties = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/object/define-properties"));
-
-var _getOwnPropertyDescriptors = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/object/get-own-property-descriptors"));
-
-var _forEach = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/instance/for-each"));
-
-var _getOwnPropertyDescriptor = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/object/get-own-property-descriptor"));
-
-var _filter = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/instance/filter"));
-
-var _getOwnPropertySymbols = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/object/get-own-property-symbols"));
-
-var _keys = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/object/keys"));
-
-var _isArray = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/array/is-array"));
 
 var _isNan = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/number/is-nan"));
 
@@ -39,7 +16,7 @@ var _from = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stabl
 
 var _getIteratorMethod2 = _interopRequireDefault(require("@babel/runtime-corejs3/core-js/get-iterator-method"));
 
-var _defineProperty3 = _interopRequireDefault(require("@babel/runtime-corejs3/helpers/defineProperty"));
+var _extends2 = _interopRequireDefault(require("@babel/runtime-corejs3/helpers/extends"));
 
 var _classCallCheck2 = _interopRequireDefault(require("@babel/runtime-corejs3/helpers/classCallCheck"));
 
@@ -49,11 +26,9 @@ var _regenerator = _interopRequireDefault(require("@babel/runtime-corejs3/regene
 
 var _getIterator2 = _interopRequireDefault(require("@babel/runtime-corejs3/core-js/get-iterator"));
 
-var _objectUniqueId = require("../lists/helpers/object-unique-id");
+var _isArray6 = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/array/is-array"));
 
-function ownKeys(object, enumerableOnly) { var keys = (0, _keys.default)(object); if (_getOwnPropertySymbols.default) { var symbols = (0, _getOwnPropertySymbols.default)(object); if (enumerableOnly) symbols = (0, _filter.default)(symbols).call(symbols, function (sym) { return (0, _getOwnPropertyDescriptor.default)(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
-
-function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { var _context2; (0, _forEach.default)(_context2 = ownKeys(source, true)).call(_context2, function (key) { (0, _defineProperty3.default)(target, key, source[key]); }); } else if (_getOwnPropertyDescriptors.default) { (0, _defineProperties.default)(target, (0, _getOwnPropertyDescriptors.default)(source)); } else { var _context3; (0, _forEach.default)(_context3 = ownKeys(source)).call(_context3, function (key) { (0, _defineProperty2.default)(target, key, (0, _getOwnPropertyDescriptor.default)(source, key)); }); } } return target; }
+var _objectUniqueId = require("../helpers/object-unique-id");
 
 var _marked =
 /*#__PURE__*/
@@ -64,73 +39,60 @@ function isPrimitiveDefault(value) {
 }
 
 function toIterableIterator(array) {
-  var _iteratorNormalCompletion, _didIteratorError, _iteratorError, _iterator, _step, item;
+  var _iterator, _isArray, _i, _ref, item;
 
   return _regenerator.default.wrap(function toIterableIterator$(_context) {
     while (1) {
       switch (_context.prev = _context.next) {
         case 0:
-          _iteratorNormalCompletion = true;
-          _didIteratorError = false;
-          _iteratorError = undefined;
-          _context.prev = 3;
-          _iterator = (0, _getIterator2.default)(array);
+          _iterator = array, _isArray = (0, _isArray6.default)(_iterator), _i = 0, _iterator = _isArray ? _iterator : (0, _getIterator2.default)(_iterator);
 
-        case 5:
-          if (_iteratorNormalCompletion = (_step = _iterator.next()).done) {
-            _context.next = 12;
+        case 1:
+          if (!_isArray) {
+            _context.next = 7;
             break;
           }
 
-          item = _step.value;
-          _context.next = 9;
+          if (!(_i >= _iterator.length)) {
+            _context.next = 4;
+            break;
+          }
+
+          return _context.abrupt("break", 16);
+
+        case 4:
+          _ref = _iterator[_i++];
+          _context.next = 11;
+          break;
+
+        case 7:
+          _i = _iterator.next();
+
+          if (!_i.done) {
+            _context.next = 10;
+            break;
+          }
+
+          return _context.abrupt("break", 16);
+
+        case 10:
+          _ref = _i.value;
+
+        case 11:
+          item = _ref;
+          _context.next = 14;
           return item;
 
-        case 9:
-          _iteratorNormalCompletion = true;
-          _context.next = 5;
-          break;
-
-        case 12:
-          _context.next = 18;
-          break;
-
         case 14:
-          _context.prev = 14;
-          _context.t0 = _context["catch"](3);
-          _didIteratorError = true;
-          _iteratorError = _context.t0;
+          _context.next = 1;
+          break;
 
-        case 18:
-          _context.prev = 18;
-          _context.prev = 19;
-
-          if (!_iteratorNormalCompletion && _iterator.return != null) {
-            _iterator.return();
-          }
-
-        case 21:
-          _context.prev = 21;
-
-          if (!_didIteratorError) {
-            _context.next = 24;
-            break;
-          }
-
-          throw _iteratorError;
-
-        case 24:
-          return _context.finish(21);
-
-        case 25:
-          return _context.finish(18);
-
-        case 26:
+        case 16:
         case "end":
           return _context.stop();
       }
     }
-  }, _marked, null, [[3, 14, 18, 26], [19,, 21, 25]]);
+  }, _marked);
 }
 
 function toIterableIteratorGenerator(array) {
@@ -142,11 +104,11 @@ function toIterableIteratorGenerator(array) {
 var DeepCloneEqual =
 /*#__PURE__*/
 function () {
-  function DeepCloneEqual() {
-    var _ref = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
-        commonOptions = _ref.commonOptions,
-        cloneOptions = _ref.cloneOptions,
-        equalOptions = _ref.equalOptions;
+  function DeepCloneEqual(_temp) {
+    var _ref2 = _temp === void 0 ? {} : _temp,
+        commonOptions = _ref2.commonOptions,
+        cloneOptions = _ref2.cloneOptions,
+        equalOptions = _ref2.equalOptions;
 
     (0, _classCallCheck2.default)(this, DeepCloneEqual);
 
@@ -173,7 +135,7 @@ function () {
   }, {
     key: "clone",
     value: function clone(value, options, cache) {
-      options = _objectSpread({}, this.commonOptions, {}, this.cloneOptions, {}, options);
+      options = (0, _extends2.default)({}, this.commonOptions, {}, this.cloneOptions, {}, options);
       var customClone = options && options.customClone;
       var isPrimitive = options && options.customIsPrimitive || isPrimitiveDefault;
 
@@ -255,55 +217,39 @@ function () {
 
         switch (sourceTag) {
           case 'Set':
-            var _iteratorNormalCompletion2 = true;
-            var _didIteratorError2 = false;
-            var _iteratorError2 = undefined;
+            for (var _iterator2 = source, _isArray2 = (0, _isArray6.default)(_iterator2), _i2 = 0, _iterator2 = _isArray2 ? _iterator2 : (0, _getIterator2.default)(_iterator2);;) {
+              var _ref3;
 
-            try {
-              for (var _iterator2 = (0, _getIterator2.default)(source), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-                var item = _step2.value;
-                cloned.add(clone(item));
+              if (_isArray2) {
+                if (_i2 >= _iterator2.length) break;
+                _ref3 = _iterator2[_i2++];
+              } else {
+                _i2 = _iterator2.next();
+                if (_i2.done) break;
+                _ref3 = _i2.value;
               }
-            } catch (err) {
-              _didIteratorError2 = true;
-              _iteratorError2 = err;
-            } finally {
-              try {
-                if (!_iteratorNormalCompletion2 && _iterator2.return != null) {
-                  _iterator2.return();
-                }
-              } finally {
-                if (_didIteratorError2) {
-                  throw _iteratorError2;
-                }
-              }
+
+              var item = _ref3;
+              cloned.add(clone(item));
             }
 
             return cloned;
 
           case 'Map':
-            var _iteratorNormalCompletion3 = true;
-            var _didIteratorError3 = false;
-            var _iteratorError3 = undefined;
+            for (var _iterator3 = source, _isArray3 = (0, _isArray6.default)(_iterator3), _i3 = 0, _iterator3 = _isArray3 ? _iterator3 : (0, _getIterator2.default)(_iterator3);;) {
+              var _ref4;
 
-            try {
-              for (var _iterator3 = (0, _getIterator2.default)(source), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
-                var _item = _step3.value;
-                cloned.set(clone(_item[0]), clone(_item[1]));
+              if (_isArray3) {
+                if (_i3 >= _iterator3.length) break;
+                _ref4 = _iterator3[_i3++];
+              } else {
+                _i3 = _iterator3.next();
+                if (_i3.done) break;
+                _ref4 = _i3.value;
               }
-            } catch (err) {
-              _didIteratorError3 = true;
-              _iteratorError3 = err;
-            } finally {
-              try {
-                if (!_iteratorNormalCompletion3 && _iterator3.return != null) {
-                  _iterator3.return();
-                }
-              } finally {
-                if (_didIteratorError3) {
-                  throw _iteratorError3;
-                }
-              }
+
+              var _item = _ref4;
+              cloned.set(clone(_item[0]), clone(_item[1]));
             }
 
             return cloned;
@@ -327,7 +273,7 @@ function () {
   }, {
     key: "equal",
     value: function equal(obj1, obj2, options) {
-      options = _objectSpread({}, this.commonOptions, {}, this.equalOptions, {}, options);
+      options = (0, _extends2.default)({}, this.commonOptions, {}, this.equalOptions, {}, options);
       var customEqual = options && options.customEqual;
       var isPrimitive = options && options.customIsPrimitive || isPrimitiveDefault;
       var cache1;
@@ -447,7 +393,7 @@ function () {
 
         if (typeof (0, _getIteratorMethod2.default)(o1) === 'function') {
           if (typeof (0, _getIteratorMethod2.default)(o2) === 'function') {
-            if ((0, _isArray.default)(o1) && (0, _isArray.default)(o2)) {
+            if ((0, _isArray6.default)(o1) && (0, _isArray6.default)(o2)) {
               if (o1.length !== o2.length) {
                 return false;
               }
@@ -484,88 +430,74 @@ function () {
 
                   var initialCache1NewLength = cache1NewLength;
                   var initialCache2NewLength = cache2NewLength;
-                  var _iteratorNormalCompletion4 = true;
-                  var _didIteratorError4 = false;
-                  var _iteratorError4 = undefined;
 
-                  try {
-                    for (var _iterator4 = (0, _getIterator2.default)(o1), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
-                      var item1 = _step4.value;
+                  for (var _iterator4 = o1, _isArray4 = (0, _isArray6.default)(_iterator4), _i4 = 0, _iterator4 = _isArray4 ? _iterator4 : (0, _getIterator2.default)(_iterator4);;) {
+                    var _ref5;
 
-                      if (isMap && (!(0, _isArray.default)(item1) || item1.length !== 2)) {
+                    if (_isArray4) {
+                      if (_i4 >= _iterator4.length) break;
+                      _ref5 = _iterator4[_i4++];
+                    } else {
+                      _i4 = _iterator4.next();
+                      if (_i4.done) break;
+                      _ref5 = _i4.value;
+                    }
+
+                    var item1 = _ref5;
+
+                    if (isMap && (!(0, _isArray6.default)(item1) || item1.length !== 2)) {
+                      return false;
+                    }
+
+                    var found = void 0;
+
+                    for (var _iterator5 = o2, _isArray5 = (0, _isArray6.default)(_iterator5), _i5 = 0, _iterator5 = _isArray5 ? _iterator5 : (0, _getIterator2.default)(_iterator5);;) {
+                      var _ref6;
+
+                      if (_isArray5) {
+                        if (_i5 >= _iterator5.length) break;
+                        _ref6 = _iterator5[_i5++];
+                      } else {
+                        _i5 = _iterator5.next();
+                        if (_i5.done) break;
+                        _ref6 = _i5.value;
+                      }
+
+                      var item2 = _ref6;
+
+                      if (isMap && (!(0, _isArray6.default)(item2) || item2.length !== 2)) {
                         return false;
                       }
 
-                      var found = void 0;
-                      var _iteratorNormalCompletion5 = true;
-                      var _didIteratorError5 = false;
-                      var _iteratorError5 = undefined;
+                      var prevNodeId = nodeId;
+                      var prevCache1NewLength = cache1NewLength;
+                      var prevCache2NewLength = cache2NewLength;
+                      nodeId++;
 
-                      try {
-                        for (var _iterator5 = (0, _getIterator2.default)(o2), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
-                          var item2 = _step5.value;
+                      var _result = isMap ? equal(item1[0], item2[0]) && equal(item1[1], item2[1]) : equal(item1, item2);
 
-                          if (isMap && (!(0, _isArray.default)(item2) || item2.length !== 2)) {
-                            return false;
-                          }
+                      if (_result) {
+                        found = true;
+                        break;
+                      } else {
+                        nodeId = prevNodeId;
 
-                          var prevNodeId = nodeId;
-                          var prevCache1NewLength = cache1NewLength;
-                          var prevCache2NewLength = cache2NewLength;
-                          nodeId++;
-
-                          var _result = isMap ? equal(item1[0], item2[0]) && equal(item1[1], item2[1]) : equal(item1, item2);
-
-                          if (_result) {
-                            found = true;
-                            break;
-                          } else {
-                            nodeId = prevNodeId;
-
-                            for (var i = prevCache1NewLength, len = cache1NewLength; i < len; i++) {
-                              cache1[cache1New[i]] = 0;
-                            }
-
-                            cache1New.length = prevCache1NewLength;
-
-                            for (var _i = prevCache2NewLength, _len = cache2NewLength; _i < _len; _i++) {
-                              cache2[cache2New[_i]] = 0;
-                            }
-
-                            cache2New.length = prevCache2NewLength;
-                          }
+                        for (var i = prevCache1NewLength, len = cache1NewLength; i < len; i++) {
+                          cache1[cache1New[i]] = 0;
                         }
-                      } catch (err) {
-                        _didIteratorError5 = true;
-                        _iteratorError5 = err;
-                      } finally {
-                        try {
-                          if (!_iteratorNormalCompletion5 && _iterator5.return != null) {
-                            _iterator5.return();
-                          }
-                        } finally {
-                          if (_didIteratorError5) {
-                            throw _iteratorError5;
-                          }
-                        }
-                      }
 
-                      if (!found) {
-                        return false;
+                        cache1New.length = prevCache1NewLength;
+
+                        for (var _i6 = prevCache2NewLength, _len = cache2NewLength; _i6 < _len; _i6++) {
+                          cache2[cache2New[_i6]] = 0;
+                        }
+
+                        cache2New.length = prevCache2NewLength;
                       }
                     }
-                  } catch (err) {
-                    _didIteratorError4 = true;
-                    _iteratorError4 = err;
-                  } finally {
-                    try {
-                      if (!_iteratorNormalCompletion4 && _iterator4.return != null) {
-                        _iterator4.return();
-                      }
-                    } finally {
-                      if (_didIteratorError4) {
-                        throw _iteratorError4;
-                      }
+
+                    if (!found) {
+                      return false;
                     }
                   }
 

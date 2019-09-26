@@ -1,12 +1,25 @@
-import {AsyncValueOf, ThenableOrIterator} from '../../async/async'
-import {Diff, TPrimitive} from '../../helpers/typescript'
 import {VALUE_PROPERTY_DEFAULT} from '../../helpers/value-property'
 import {ANY, ANY_DISPLAY, COLLECTION_PREFIX, VALUE_PROPERTY_PREFIX} from './contracts/constants'
+import {
+	IRuleBuilder,
+	IRuleFactory,
+	IterableValueOf,
+	MapValueOf,
+	ObjectAnyValueOf,
+	ObjectValueOf,
+	PropertyValueOf,
+} from './contracts/IRuleBuilder'
 import {IRuleSubscribe} from './contracts/rule-subscribe'
-import {IRule} from './contracts/rules'
+import {IRepeatCondition, IRule, RuleRepeatAction} from './contracts/rules'
 import {getFuncPropertiesPath} from './helpers/func-properties-path'
-import {RuleAny, RuleNothing, RuleRepeat} from './rules'
-import {RuleSubscribeCollection, RuleSubscribeMap, RuleSubscribeObject, SubscribeObjectType} from './rules-subscribe'
+import {RuleAny, RuleIf, RuleNever, RuleNothing, RuleRepeat} from './rules'
+import {
+	hasDefaultProperty,
+	RuleSubscribeCollection,
+	RuleSubscribeMap,
+	RuleSubscribeObject,
+	SubscribeObjectType,
+} from './rules-subscribe'
 
 const RuleSubscribeObjectPropertyNames = RuleSubscribeObject.bind(null, SubscribeObjectType.Property, null)
 const RuleSubscribeObjectValuePropertyNames = RuleSubscribeObject.bind(null, SubscribeObjectType.ValueProperty, null)
@@ -15,82 +28,23 @@ const RuleSubscribeMapKeys = RuleSubscribeMap.bind(null, null)
 // const UNSUBSCRIBE_PROPERTY_PREFIX = Math.random().toString(36)
 // let nextUnsubscribePropertyId = 0
 
-export type MapValueOf<TMap>
-	= TMap extends Map<any, infer TValue>
-		? AsyncValueOf<TValue>
-		: never
-export type IterableValueOf<TIterable>
-	= TIterable extends Iterable<infer TValue>
-		? AsyncValueOf<TValue>
-		: never
-export type ObjectAnyValueOf<TObject>
-	= TObject extends { [key in keyof TObject]: infer TValue }
-		? AsyncValueOf<TValue>
-		: never
-export type ObjectValueOf<TObject, TKeys extends keyof TObject>
-	= TObject extends { [key in TKeys]: infer TValue }
-		? AsyncValueOf<TValue>
-		: never
+export class RuleBuilder<TObject = any, TValueKeys extends string | number = never>
+	implements IRuleBuilder<TObject, TValueKeys>
+{
+	public ruleFirst: IRule
+	public ruleLast: IRule
+	public autoInsertValuePropertyDefault: boolean
 
-export type PropertyValueOf<TObject>
-	= TObject extends { [VALUE_PROPERTY_DEFAULT]: infer TValue }
-		? AsyncValueOf<TValue>
-		: TObject
-
-export type RULE_PATH_OBJECT_VALUE = '46007c49df234a768d312f74c892f0b1'
-
-export type TRulePathSubObject<TObject, TValueKeys extends string | number> =
-	TObject
-	& {
-		[key in TValueKeys]: TRulePathObject<TObject, TValueKeys>
-	}
-	& (TObject extends TPrimitive
-		? {}
-		: {
-			[key in Diff<keyof TObject, TValueKeys>]
-				: TRulePathObject<
-					TObject[key] extends ThenableOrIterator<infer V> ? V : TObject[key],
-					TValueKeys
-				>
-		}
-		& {
-			[key in ANY]: TRulePathObject<AsyncValueOf<TObject[any]>, TValueKeys>
-		}
-	)
-	& (TObject extends Iterable<infer TItem>
-		? {
-			[key in COLLECTION_PREFIX]: TRulePathObject<AsyncValueOf<TItem>, TValueKeys>
-		} : {}
-	)
-	& (TObject extends Map<string | number, infer TItem>
-		? {
-			[key in Diff<any, TObject>]: TRulePathObject<AsyncValueOf<TItem>, TValueKeys>
-		} : {}
-	)
-
-export type TRulePathObject<TObject, TValueKeys extends string | number> =
-	(TObject extends { [VALUE_PROPERTY_DEFAULT]: infer TValue }
-		? TRulePathSubObject<AsyncValueOf<TValue>, TValueKeys>
-		: TRulePathSubObject<TObject, TValueKeys>)
-	& {
-		[key in RULE_PATH_OBJECT_VALUE]: TObject
-	}
-
-export type TRulePathObjectValueOf<TObject extends TRulePathObject<any, any>>
-	= TObject extends { [key in RULE_PATH_OBJECT_VALUE]: any }
-		? TObject[RULE_PATH_OBJECT_VALUE]
-		: never
-
-export type RuleGetValueFunc<TObject, TValue, TValueKeys extends string | number>
-	= (o: TRulePathObject<TObject, TValueKeys>) => TValue
-
-export class RuleBuilder<TObject = any, TValueKeys extends string | number = never> {
-	public result: IRule
-	private _ruleLast: IRule
-
-	constructor(rule?: IRule) {
+	constructor({
+		rule,
+		autoInsertValuePropertyDefault = true, // TODO - should be true
+	}: {
+		rule?: IRule,
+		autoInsertValuePropertyDefault?: boolean,
+	} = {}) {
+		this.autoInsertValuePropertyDefault = autoInsertValuePropertyDefault
 		if (rule != null) {
-			this.result = rule
+			this.ruleFirst = rule
 
 			let ruleLast
 			do {
@@ -98,27 +52,45 @@ export class RuleBuilder<TObject = any, TValueKeys extends string | number = nev
 				rule = rule.next
 			} while (rule != null)
 
-			this._ruleLast = ruleLast
+			this.ruleLast = ruleLast
 		}
 	}
 
+	public result(): IRule {
+		return (this.autoInsertValuePropertyDefault
+			? this.valuePropertyDefault()
+			: this).ruleFirst
+	}
+
+	public valuePropertyDefault<TValue>(): RuleBuilder<TValue, TValueKeys> {
+		return this
+			.repeat(
+				0,
+				10,
+				(o: any) => hasDefaultProperty(o) ? RuleRepeatAction.Next : RuleRepeatAction.Fork,
+				b => b.ruleSubscribe<TValue>(
+					new RuleSubscribeObjectPropertyNames(VALUE_PROPERTY_DEFAULT as any),
+					VALUE_PROPERTY_DEFAULT as any,
+				))
+	}
+
 	public rule<TValue>(rule: IRule): RuleBuilder<TValue, TValueKeys> {
-		const {_ruleLast: ruleLast} = this
+		const {ruleLast} = this
 
 		if (ruleLast) {
 			ruleLast.next = rule
 		} else {
-			this.result = rule
+			this.ruleFirst = rule
 		}
 
-		this._ruleLast = rule
+		this.ruleLast = rule
 
 		return this as unknown as RuleBuilder<TValue, TValueKeys>
 	}
 
 	public ruleSubscribe<TValue>(
 		ruleSubscribe: IRuleSubscribe<TObject, TValue>,
-		description: string,
+		description?: string,
 	): RuleBuilder<TValue, TValueKeys> {
 		if (description) {
 			ruleSubscribe.description = description
@@ -128,15 +100,8 @@ export class RuleBuilder<TObject = any, TValueKeys extends string | number = nev
 			throw new Error('You should not add duplicate IRuleSubscribe instances. Clone rule before add.')
 		}
 
-		// !Warning defineProperty is slow
-		// Object.defineProperty(ruleSubscribe, 'unsubscribePropertyName', {
-		// 	configurable: true,
-		// 	enumerable: false,
-		// 	writable: false,
-		// 	value: UNSUBSCRIBE_PROPERTY_PREFIX + (nextUnsubscribePropertyId++),
-		// })
-
-		ruleSubscribe.unsubscribers = [] // UNSUBSCRIBE_PROPERTY_PREFIX + (nextUnsubscribePropertyId++)
+		ruleSubscribe.unsubscribers = []
+		ruleSubscribe.unsubscribersCount = []
 
 		return this.rule<TValue>(ruleSubscribe)
 	}
@@ -145,14 +110,26 @@ export class RuleBuilder<TObject = any, TValueKeys extends string | number = nev
 		return this.rule<TObject>(new RuleNothing())
 	}
 
+	public never(): RuleBuilder<any, TValueKeys> {
+		return this.rule<TObject>(RuleNever.instance)
+	}
+
 	/**
 	 * Object property, Array index
 	 */
 	public valuePropertyName<TValue = PropertyValueOf<TObject>>(propertyName: string): RuleBuilder<TValue, TValueKeys> {
-		return this.ruleSubscribe<TValue>(
-			new RuleSubscribeObjectValuePropertyNames(propertyName),
-			VALUE_PROPERTY_PREFIX + propertyName,
-		)
+		return this
+			.if([
+				o => typeof o === 'undefined',
+				b => b.never(),
+			], [
+				o => (o instanceof Object) && o.constructor !== Object && !Array.isArray(o),
+				b => b.ruleSubscribe<TValue>(
+					new RuleSubscribeObjectValuePropertyNames(propertyName),
+					VALUE_PROPERTY_PREFIX + propertyName,
+				),
+			])
+
 	}
 
 	/**
@@ -161,10 +138,26 @@ export class RuleBuilder<TObject = any, TValueKeys extends string | number = nev
 	public valuePropertyNames<TValue = PropertyValueOf<TObject>>(
 		...propertiesNames: string[]
 	): RuleBuilder<TValue, TValueKeys> {
-		return this.ruleSubscribe<TValue>(
-			new RuleSubscribeObjectValuePropertyNames(...propertiesNames),
-			VALUE_PROPERTY_PREFIX + propertiesNames.join('|'),
-		)
+		return this
+			.if([
+				o => typeof o === 'undefined',
+				b => b.never(),
+			], [
+				o => (o instanceof Object) && o.constructor !== Object && !Array.isArray(o),
+				b => b.ruleSubscribe<TValue>(
+					new RuleSubscribeObjectValuePropertyNames(...propertiesNames),
+					VALUE_PROPERTY_PREFIX + propertiesNames.join('|'),
+				),
+			])
+	}
+
+	/**
+	 * valuePropertyNames - Object property, Array index
+	 */
+	public v<TValue = PropertyValueOf<TObject>>(
+		...propertiesNames: string[]
+	): RuleBuilder<TValue, TValueKeys> {
+		return this.valuePropertyNames<TValue>(...propertiesNames)
 	}
 
 	/**
@@ -174,36 +167,55 @@ export class RuleBuilder<TObject = any, TValueKeys extends string | number = nev
 		propertyName: TKeys,
 	): RuleBuilder<TValue, TValueKeys>
 	public propertyName<TValue>(propertyName: string): RuleBuilder<TValue, TValueKeys> {
-		return this.ruleSubscribe<TValue>(
-			new RuleSubscribeObjectPropertyNames(propertyName),
-			propertyName,
-		)
+		return (this.autoInsertValuePropertyDefault
+			? this.valuePropertyDefault()
+			: this)
+			.ruleSubscribe<TValue>(
+				new RuleSubscribeObjectPropertyNames(propertyName),
+				propertyName,
+			)
 	}
 
 	/**
 	 * Object property, Array index
 	 */
-	public propertyNames<
-		TKeys extends keyof TObject | ANY,
-		TValue = ObjectValueOf<TObject, TKeys extends ANY ? any : TKeys>
-	>(
+	public propertyNames<TKeys extends keyof TObject | ANY,
+		TValue = ObjectValueOf<TObject, TKeys extends ANY ? any : TKeys>>(
 		...propertiesNames: TKeys[]
 	): RuleBuilder<TValue, TValueKeys>
 	public propertyNames<TValue>(...propertiesNames: string[]): RuleBuilder<TValue, TValueKeys> {
-		return this.ruleSubscribe<TValue>(
-			new RuleSubscribeObjectPropertyNames(...propertiesNames),
-			propertiesNames.join('|'),
-		)
+		return (this.autoInsertValuePropertyDefault
+			? this.valuePropertyDefault()
+			: this)
+			.ruleSubscribe<TValue>(
+				new RuleSubscribeObjectPropertyNames(...propertiesNames),
+				propertiesNames.join('|'),
+			)
+	}
+
+	/**
+	 * propertyNames
+	 * @param propertiesNames
+	 */
+	public p<TKeys extends keyof TObject | ANY,
+		TValue = ObjectValueOf<TObject, TKeys extends ANY ? any : TKeys>>(
+		...propertiesNames: TKeys[]
+	): RuleBuilder<TValue, TValueKeys>
+	public p<TValue>(...propertiesNames: string[]): RuleBuilder<TValue, TValueKeys> {
+		return this.propertyNames(...propertiesNames as any)
 	}
 
 	/**
 	 * Object property, Array index
 	 */
-	public propertyAll<TValue = ObjectAnyValueOf<TObject>>(): RuleBuilder<TValue, TValueKeys> {
-		return this.ruleSubscribe<TValue>(
-			new RuleSubscribeObjectPropertyNames(),
-			ANY_DISPLAY,
-		)
+	public propertyAny<TValue = ObjectAnyValueOf<TObject>>(): RuleBuilder<TValue, TValueKeys> {
+		return (this.autoInsertValuePropertyDefault
+			? this.valuePropertyDefault()
+			: this)
+			.ruleSubscribe<TValue>(
+				new RuleSubscribeObjectPropertyNames(),
+				ANY_DISPLAY,
+			)
 	}
 
 	/**
@@ -213,10 +225,13 @@ export class RuleBuilder<TObject = any, TValueKeys extends string | number = nev
 		predicate: (propertyName: string, object) => boolean,
 		description: string,
 	): RuleBuilder<TValue, TValueKeys> {
-		return this.ruleSubscribe<TValue>(
-			new RuleSubscribeObject(SubscribeObjectType.Property, predicate),
-			description,
-		)
+		return (this.autoInsertValuePropertyDefault
+			? this.valuePropertyDefault()
+			: this)
+			.ruleSubscribe<TValue>(
+				new RuleSubscribeObject(SubscribeObjectType.Property, predicate),
+				description,
+			)
 	}
 
 	/**
@@ -237,40 +252,52 @@ export class RuleBuilder<TObject = any, TValueKeys extends string | number = nev
 	 * IListChanged & Iterable, ISetChanged & Iterable, IMapChanged & Iterable, Iterable
 	 */
 	public collection<TValue = IterableValueOf<TObject>>(): RuleBuilder<TValue, TValueKeys> {
-		return this.ruleSubscribe<TValue>(
-			new RuleSubscribeCollection<any, TValue>(),
-			COLLECTION_PREFIX,
-		)
+		return (this.autoInsertValuePropertyDefault
+			? this.valuePropertyDefault()
+			: this)
+			.ruleSubscribe<TValue>(
+				new RuleSubscribeCollection<any, TValue>(),
+				COLLECTION_PREFIX,
+			)
 	}
 
 	/**
 	 * IMapChanged & Map, Map
 	 */
 	public mapKey<TKey, TValue = MapValueOf<TObject>>(key: TKey): RuleBuilder<TValue, TValueKeys> {
-		return this.ruleSubscribe<TValue>(
-			new RuleSubscribeMapKeys(key),
-			COLLECTION_PREFIX + key,
-		)
+		return (this.autoInsertValuePropertyDefault
+			? this.valuePropertyDefault()
+			: this)
+			.ruleSubscribe<TValue>(
+				new RuleSubscribeMapKeys(key),
+				COLLECTION_PREFIX + key,
+			)
 	}
 
 	/**
 	 * IMapChanged & Map, Map
 	 */
 	public mapKeys<TKey, TValue = MapValueOf<TObject>>(...keys: TKey[]): RuleBuilder<TValue, TValueKeys> {
-		return this.ruleSubscribe<TValue>(
-			new RuleSubscribeMapKeys(...keys),
-			COLLECTION_PREFIX + keys.join('|'),
-		)
+		return (this.autoInsertValuePropertyDefault
+			? this.valuePropertyDefault()
+			: this)
+			.ruleSubscribe<TValue>(
+				new RuleSubscribeMapKeys(...keys),
+				COLLECTION_PREFIX + keys.join('|'),
+			)
 	}
 
 	/**
 	 * IMapChanged & Map, Map
 	 */
-	public mapAll<TValue = MapValueOf<TObject>>(): RuleBuilder<TValue, TValueKeys> {
-		return this.ruleSubscribe<TValue>(
-			new RuleSubscribeMap() as any,
-			COLLECTION_PREFIX,
-		)
+	public mapAny<TValue = MapValueOf<TObject>>(): RuleBuilder<TValue, TValueKeys> {
+		return (this.autoInsertValuePropertyDefault
+			? this.valuePropertyDefault()
+			: this)
+			.ruleSubscribe<TValue>(
+				new RuleSubscribeMap() as any,
+				COLLECTION_PREFIX,
+			)
 	}
 
 	/**
@@ -280,10 +307,13 @@ export class RuleBuilder<TObject = any, TValueKeys extends string | number = nev
 		keyPredicate: (key: TKey, object) => boolean,
 		description: string,
 	): RuleBuilder<TValue, TValueKeys> {
-		return this.ruleSubscribe<TValue>(
-			new RuleSubscribeMap(keyPredicate) as any,
-			description,
-		)
+		return (this.autoInsertValuePropertyDefault
+			? this.valuePropertyDefault()
+			: this)
+			.ruleSubscribe<TValue>(
+				new RuleSubscribeMap(keyPredicate) as any,
+				description,
+			)
 	}
 
 	/**
@@ -303,8 +333,10 @@ export class RuleBuilder<TObject = any, TValueKeys extends string | number = nev
 	/**
 	 * @deprecated because babel transform object.map property to unparseable code
 	 */
-	public path<TValue>(getValueFunc: RuleGetValueFunc<TObject, TValue, TValueKeys>)
-		: RuleBuilder<TRulePathObjectValueOf<TValue>, TValueKeys>
+	public path<TValue>(getValueFunc: (o: TObject) => TValue)
+		: RuleBuilder<any, TValueKeys>
+	// public path<TValue>(getValueFunc: RuleGetValueFunc<TObject, TValue, TValueKeys>)
+	// 	: RuleBuilder<TRulePathObjectValueOf<TValue>, TValueKeys>
 	{
 		for (const propertyNames of getFuncPropertiesPath(getValueFunc as any)) {
 			if (propertyNames.startsWith(COLLECTION_PREFIX)) {
@@ -329,15 +361,36 @@ export class RuleBuilder<TObject = any, TValueKeys extends string | number = nev
 		return this as any
 	}
 
+	public if<TValue>(
+		...exclusiveConditionRules: Array<[
+			(value: TValue) => boolean,
+			IRuleFactory<TObject, TValue, TValueKeys>
+		] | IRuleFactory<TObject, TValue, TValueKeys>>
+	): RuleBuilder<TValue, TValueKeys> {
+		if (exclusiveConditionRules.length === 0) {
+			throw new Error('if() parameters is empty')
+		}
+
+		const rule = new RuleIf<TValue>(exclusiveConditionRules.map(o => {
+			if (Array.isArray(o)) {
+				return [o[0], o[1](this.clone(true)).ruleFirst]
+			} else {
+				return o(this.clone(true)).ruleFirst
+			}
+		}))
+
+		return this.rule<TValue>(rule)
+	}
+
 	public any<TValue>(
-		...getChilds: Array<(builder: RuleBuilder<TObject, TValueKeys>) => RuleBuilder<TValue, TValueKeys>>
+		...getChilds: Array<IRuleFactory<TObject, TValue, TValueKeys>>
 	): RuleBuilder<TValue, TValueKeys> {
 		if (getChilds.length === 0) {
 			throw new Error('any() parameters is empty')
 		}
 
 		const rule = new RuleAny(getChilds.map((o: any) => {
-			const subRule = o(new RuleBuilder<TObject, TValueKeys>()).result
+			const subRule = o(this.clone(true)).result()
 			if (!subRule) {
 				throw new Error(`Any subRule=${rule}`)
 			}
@@ -350,9 +403,10 @@ export class RuleBuilder<TObject = any, TValueKeys extends string | number = nev
 	public repeat<TValue>(
 		countMin: number,
 		countMax: number,
-		getChild: (builder: RuleBuilder<TObject, TValueKeys>) => RuleBuilder<TValue, TValueKeys>,
+		condition: IRepeatCondition<TValue>,
+		getChild: IRuleFactory<TObject, TValue, TValueKeys>,
 	): RuleBuilder<TValue, TValueKeys> {
-		const subRule = getChild(new RuleBuilder<TObject, TValueKeys>()).result
+		const subRule = getChild(this.clone(true)).ruleFirst
 		if (!subRule) {
 			throw new Error(`getChild(...).rule = ${subRule}`)
 		}
@@ -365,48 +419,33 @@ export class RuleBuilder<TObject = any, TValueKeys extends string | number = nev
 			countMin = 0
 		}
 
-		if (countMax < countMin || countMax <= 0) {
-			return this as unknown as RuleBuilder<TValue, TValueKeys>
-		}
+		// if (countMax < countMin || countMax <= 0) {
+		// 	return this as unknown as RuleBuilder<TValue, TValueKeys>
+		// }
 
 		let rule: IRule
-		if (countMax === countMin && countMax === 1) {
+		if (countMax === countMin && countMax === 1 && !condition) {
 			rule = subRule
 		} else {
 			rule = new RuleRepeat(
 				countMin,
 				countMax,
-				getChild(new RuleBuilder<TObject, TValueKeys>()).result,
+				condition,
+				getChild(this.clone(true)).ruleFirst,
 			)
 		}
 
 		return this.rule<TValue>(rule)
 	}
 
-	public clone() {
-		return new RuleBuilder<TObject, TValueKeys>(cloneRule(this.result))
+	public clone(optionsOnly?: boolean) {
+		return new RuleBuilder<TObject, TValueKeys>({
+			rule: optionsOnly || !this.ruleFirst
+				? null
+				: this.ruleFirst.clone(),
+			autoInsertValuePropertyDefault: this.autoInsertValuePropertyDefault,
+		})
 	}
-}
-
-export function cloneRule(rule: IRule) {
-	if (rule == null) {
-		return rule
-	}
-
-	const clone = {
-		...rule,
-	}
-
-	const {unsubscribers, next} = rule as any
-	if (unsubscribers != null) {
-		(clone as any).unsubscribers = []
-	}
-
-	if (next != null) {
-		clone.next = cloneRule(next)
-	}
-
-	return clone
 }
 
 // Test:

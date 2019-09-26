@@ -10,17 +10,15 @@ var _sort = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stabl
 
 var _from = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/array/from"));
 
-var _getIterator2 = _interopRequireDefault(require("@babel/runtime-corejs3/core-js/get-iterator"));
-
 var _keys = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/instance/keys"));
 
 var _regenerator = _interopRequireDefault(require("@babel/runtime-corejs3/regenerator"));
 
 var _keys2 = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/object/keys"));
 
-var _defineProperty2 = _interopRequireDefault(require("@babel/runtime-corejs3/helpers/defineProperty"));
-
 var _assign = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/object/assign"));
+
+var _getIterator2 = _interopRequireDefault(require("@babel/runtime-corejs3/core-js/get-iterator"));
 
 var _iterateRule = require("../../../../../../main/common/rx/deep-subscribe/iterate-rule");
 
@@ -60,8 +58,13 @@ describe('common > main > rx > deep-subscribe > iterate-rule', function () {
   // 		.map(o => ruleToString(o)).join('\n')
   // }
   // const endObject = { _end: true }
-  function rulesToObject(ruleIterator) {
-    var obj = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+  var testObject = {};
+
+  function rulesToObject(ruleIterator, obj) {
+    if (obj === void 0) {
+      obj = {};
+    }
+
     var iteration;
 
     if (!ruleIterator || (iteration = ruleIterator.next()).done) {
@@ -73,25 +76,25 @@ describe('common > main > rx > deep-subscribe > iterate-rule', function () {
 
     return (0, _iterateRule.subscribeNextRule)(ruleIterator, iteration, function (nextRuleIterator) {
       return rulesToObject(nextRuleIterator, obj);
-    }, function (rule, getRuleIterator) {
+    }, function (rule, getRuleIterable) {
+      var _Object$assign2;
+
       var newObj = {};
-      var unsubscribe = rulesToObject(getRuleIterator ? getRuleIterator() : null, newObj);
-      (0, _assign.default)(obj, (0, _defineProperty2.default)({}, rule.description, newObj));
+      var unsubscribe = rulesToObject(getRuleIterable ? (0, _getIterator2.default)(getRuleIterable(testObject)) : null, newObj);
+      (0, _assign.default)(obj, (_Object$assign2 = {}, _Object$assign2[rule.description] = newObj, _Object$assign2));
       return unsubscribe;
     });
   }
 
-  function objectToPaths(obj, endValue) {
-    var parentPath,
-        keys,
-        count,
-        key,
-        _args = arguments;
+  function objectToPaths(obj, endValue, parentPath) {
+    var keys, count, key;
     return _regenerator.default.wrap(function objectToPaths$(_context) {
       while (1) {
         switch (_context.prev = _context.next) {
           case 0:
-            parentPath = _args.length > 2 && _args[2] !== undefined ? _args[2] : '';
+            if (parentPath === void 0) {
+              parentPath = '';
+            }
 
             _Assert.assert.ok(obj, parentPath);
 
@@ -154,7 +157,9 @@ describe('common > main > rx > deep-subscribe > iterate-rule', function () {
   }
 
   function testIterateRule(buildRule) {
-    var result = (0, _iterateRule.iterateRule)(buildRule(new _RuleBuilder.RuleBuilder()).result);
+    var result = (0, _iterateRule.iterateRule)(testObject, buildRule(new _RuleBuilder.RuleBuilder({
+      autoInsertValuePropertyDefault: false
+    })).result());
 
     _Assert.assert.ok(result);
 
@@ -264,36 +269,36 @@ describe('common > main > rx > deep-subscribe > iterate-rule', function () {
   });
   it('repeat', function () {
     testIterateRule(function (b) {
-      return (0, _repeat.default)(b).call(b, 1, 1, function (b) {
+      return (0, _repeat.default)(b).call(b, 1, 1, null, function (b) {
         return b.path(function (o) {
           return o.a;
         });
       });
     }, 'a');
     testIterateRule(function (b) {
-      return (0, _repeat.default)(b).call(b, 2, 2, function (b) {
+      return (0, _repeat.default)(b).call(b, 2, 2, null, function (b) {
         return b.path(function (o) {
           return o.a;
         });
       });
     }, 'a.a');
     testIterateRule(function (b) {
-      return (0, _repeat.default)(b).call(b, 1, 2, function (b) {
+      return (0, _repeat.default)(b).call(b, 1, 2, null, function (b) {
         return b.path(function (o) {
           return o.a;
         });
       });
     }, 'a', 'a.a');
     testIterateRule(function (b) {
-      return (0, _repeat.default)(b).call(b, 0, 2, function (b) {
+      return (0, _repeat.default)(b).call(b, 0, 2, null, function (b) {
         return b.path(function (o) {
           return o.a;
         });
       });
     }, '', 'a', 'a.a');
     testIterateRule(function (b) {
-      return (0, _repeat.default)(b).call(b, 0, 2, function (b) {
-        return (0, _repeat.default)(b).call(b, 0, 2, function (b) {
+      return (0, _repeat.default)(b).call(b, 0, 2, null, function (b) {
+        return (0, _repeat.default)(b).call(b, 0, 2, null, function (b) {
           return b.path(function (o) {
             return o.a;
           });
@@ -303,9 +308,9 @@ describe('common > main > rx > deep-subscribe > iterate-rule', function () {
       });
     }, '', 'b', 'a.b', 'a.a.b', 'b.b', 'b.a.b', 'b.a.a.b', 'a.b.b', 'a.b.a.b', 'a.b.a.a.b', 'a.a.b.b', 'a.a.b.a.b', 'a.a.b.a.a.b');
     testIterateRule(function (b) {
-      return (0, _repeat.default)(b).call(b, 1, 2, function (b) {
+      return (0, _repeat.default)(b).call(b, 1, 2, null, function (b) {
         return b.any(function (b) {
-          return (0, _repeat.default)(b).call(b, 1, 2, function (b) {
+          return (0, _repeat.default)(b).call(b, 1, 2, null, function (b) {
             return b.path(function (o) {
               return o.a;
             });
@@ -323,7 +328,7 @@ describe('common > main > rx > deep-subscribe > iterate-rule', function () {
     'a.a.a.a.d', 'a.a.b.c.d', 'b.c.a.d', 'b.c.a.a.d', 'b.c.b.c.d');
     testIterateRule(function (b) {
       return b.any(function (b) {
-        return (0, _repeat.default)(b).call(b, 2, 2, function (b) {
+        return (0, _repeat.default)(b).call(b, 2, 2, null, function (b) {
           return b.any(function (b) {
             return b.path(function (o) {
               return o.a;
@@ -344,22 +349,26 @@ describe('common > main > rx > deep-subscribe > iterate-rule', function () {
     }, 'a.a.d', 'a.b.d', 'b.a.d', 'b.b.d', 'c.d');
   });
   it('throws', function () {
-    (0, _from.default)((0, _iterateRule.iterateRule)(new _rules.Rule(0)));
+    (0, _from.default)((0, _iterateRule.iterateRule)(testObject, new _rules.Rule(0)));
 
     _Assert.assert.throws(function () {
-      return (0, _from.default)((0, _iterateRule.iterateRule)(new _rules.Rule(-1)), Error);
+      return (0, _from.default)((0, _iterateRule.iterateRule)(testObject, new _rules.Rule(-1)), Error);
     });
 
     _Assert.assert.throws(function () {
       var _context2;
 
-      return (0, _repeat.default)(_context2 = new _RuleBuilder.RuleBuilder()).call(_context2, 1, 2, function (b) {
+      return (0, _repeat.default)(_context2 = new _RuleBuilder.RuleBuilder({
+        autoInsertValuePropertyDefault: false
+      })).call(_context2, 1, 2, null, function (b) {
         return b;
       });
     }, Error);
 
     _Assert.assert.throws(function () {
-      return new _RuleBuilder.RuleBuilder().any();
+      return new _RuleBuilder.RuleBuilder({
+        autoInsertValuePropertyDefault: false
+      }).any();
     }, Error);
   });
   it('specific', function () {
@@ -369,7 +378,7 @@ describe('common > main > rx > deep-subscribe > iterate-rule', function () {
           return o.a;
         });
       }, function (b) {
-        return (0, _repeat.default)(b).call(b, 0, 0, function (b) {
+        return (0, _repeat.default)(b).call(b, 0, 0, null, function (b) {
           return b.path(function (o) {
             return o.b;
           });

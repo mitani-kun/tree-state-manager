@@ -8,7 +8,6 @@ import {
 } from '../../../../../../main/common/rx/deep-subscribe/iterate-rule'
 import {RuleBuilder} from '../../../../../../main/common/rx/deep-subscribe/RuleBuilder'
 import {Rule} from '../../../../../../main/common/rx/deep-subscribe/rules'
-import {subscribeDefaultProperty} from '../../../../../../main/common/rx/deep-subscribe/rules-subscribe'
 import {IUnsubscribe} from '../../../../../../main/common/rx/subjects/observable'
 import {assert} from '../../../../../../main/common/test/Assert'
 
@@ -39,6 +38,8 @@ describe('common > main > rx > deep-subscribe > iterate-rule', function() {
 
 	// const endObject = { _end: true }
 
+	const testObject = {}
+
 	function rulesToObject(ruleIterator: IRuleIterator, obj: any = {}): IUnsubscribe {
 		let iteration
 		if (!ruleIterator || (iteration = ruleIterator.next()).done) {
@@ -53,11 +54,11 @@ describe('common > main > rx > deep-subscribe > iterate-rule', function() {
 			ruleIterator,
 			iteration,
 			nextRuleIterator => rulesToObject(nextRuleIterator, obj),
-			(rule, getRuleIterator) => {
+			(rule, getRuleIterable) => {
 				const newObj = {}
 				const unsubscribe = rulesToObject(
-					getRuleIterator
-						? getRuleIterator()
+					getRuleIterable
+						? getRuleIterable(testObject)[Symbol.iterator]()
 						: null, newObj)
 				Object.assign(obj, {[rule.description]: newObj})
 				return unsubscribe
@@ -91,7 +92,9 @@ describe('common > main > rx > deep-subscribe > iterate-rule', function() {
 	}
 
 	function testIterateRule(buildRule: (builder: RuleBuilder<any>) => RuleBuilder<any>, ...expectedPaths: string[]) {
-		const result = iterateRule(buildRule(new RuleBuilder<any>()).result)
+		const result = iterateRule(testObject, buildRule(new RuleBuilder<any>({
+			autoInsertValuePropertyDefault: false,
+		})).result())
 		assert.ok(result)
 		const object = {}
 		const unsubscribe = rulesToObject(result[Symbol.iterator](), object)
@@ -190,7 +193,7 @@ describe('common > main > rx > deep-subscribe > iterate-rule', function() {
 	it('repeat', function() {
 		testIterateRule(
 			b => b
-				.repeat(1, 1,
+				.repeat(1, 1, null,
 					b => b.path(o => o.a),
 				),
 			'a',
@@ -198,7 +201,7 @@ describe('common > main > rx > deep-subscribe > iterate-rule', function() {
 
 		testIterateRule(
 			b => b
-				.repeat(2, 2,
+				.repeat(2, 2, null,
 					b => b.path(o => o.a),
 				),
 			'a.a',
@@ -206,7 +209,7 @@ describe('common > main > rx > deep-subscribe > iterate-rule', function() {
 
 		testIterateRule(
 			b => b
-				.repeat(1, 2,
+				.repeat(1, 2, null,
 					b => b.path(o => o.a),
 				),
 			'a',
@@ -215,7 +218,7 @@ describe('common > main > rx > deep-subscribe > iterate-rule', function() {
 
 		testIterateRule(
 			b => b
-				.repeat(0, 2,
+				.repeat(0, 2, null,
 					b => b.path(o => o.a),
 				),
 			'',
@@ -225,9 +228,9 @@ describe('common > main > rx > deep-subscribe > iterate-rule', function() {
 
 		testIterateRule(
 			b => b
-				.repeat(0, 2,
+				.repeat(0, 2, null,
 					b => b
-						.repeat(0, 2,
+						.repeat(0, 2, null,
 							b => b.path(o => o.a),
 						)
 						.path(o => o.b),
@@ -249,10 +252,10 @@ describe('common > main > rx > deep-subscribe > iterate-rule', function() {
 
 		testIterateRule(
 			b => b
-				.repeat(1, 2,
+				.repeat(1, 2, null,
 					b => b
 						.any(
-							b => b.repeat(1, 2,
+							b => b.repeat(1, 2, null,
 								b => b.path(o => o.a),
 							),
 							b => b.path(o => o.b.c),
@@ -280,7 +283,7 @@ describe('common > main > rx > deep-subscribe > iterate-rule', function() {
 			b => b
 				.any(
 					b => b
-						.repeat(2, 2,
+						.repeat(2, 2, null,
 							b => b.any(
 								b => b.path(o => o.a),
 								b => b.path(o => o.b),
@@ -298,13 +301,17 @@ describe('common > main > rx > deep-subscribe > iterate-rule', function() {
 	})
 
 	it('throws', function() {
-		Array.from(iterateRule(new Rule(0 as RuleType)))
+		Array.from(iterateRule(testObject, new Rule(0 as RuleType)))
 
-		assert.throws(() => Array.from(iterateRule(new Rule(-1 as RuleType)), Error))
+		assert.throws(() => Array.from(iterateRule(testObject, new Rule(-1 as RuleType)), Error))
 
-		assert.throws(() => new RuleBuilder().repeat(1, 2, b => b), Error)
+		assert.throws(() => new RuleBuilder({
+			autoInsertValuePropertyDefault: false,
+		}).repeat(1, 2, null, b => b), Error)
 
-		assert.throws(() => new RuleBuilder().any<any>(), Error)
+		assert.throws(() => new RuleBuilder({
+			autoInsertValuePropertyDefault: false,
+		}).any<any>(), Error)
 	})
 
 	it('specific', function() {
@@ -312,7 +319,7 @@ describe('common > main > rx > deep-subscribe > iterate-rule', function() {
 			b => b
 				.any(
 					b => b.path(o => o.a),
-					b => b.repeat(0, 0, b => b.path(o => o.b)).path(o => o.c),
+					b => b.repeat(0, 0, null, b => b.path(o => o.b)).path(o => o.c),
 				),
 			'a',
 			'c',

@@ -2,14 +2,8 @@
 
 var _interopRequireDefault = require("@babel/runtime-corejs3/helpers/interopRequireDefault");
 
-var _Object$defineProperty = require("@babel/runtime-corejs3/core-js-stable/object/define-property");
-
-_Object$defineProperty(exports, "__esModule", {
-  value: true
-});
-
+exports.__esModule = true;
 exports.hasDefaultProperty = hasDefaultProperty;
-exports.subscribeDefaultProperty = subscribeDefaultProperty;
 exports.RuleSubscribeCollection = exports.RuleSubscribeMap = exports.RuleSubscribeObject = exports.RuleSubscribe = exports.SubscribeObjectType = void 0;
 
 var _indexOf = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/instance/index-of"));
@@ -34,9 +28,9 @@ var _set = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable
 
 var _toStringTag = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/symbol/to-string-tag"));
 
-var _isArray = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/array/is-array"));
-
 var _getIterator2 = _interopRequireDefault(require("@babel/runtime-corejs3/core-js/get-iterator"));
+
+var _isArray4 = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/array/is-array"));
 
 var _helpers = require("../../helpers/helpers");
 
@@ -56,37 +50,29 @@ var _rules2 = require("./rules");
 
 /* tslint:disable:no-identical-functions */
 function forEachSimple(iterable, callbackfn) {
-  var _iteratorNormalCompletion = true;
-  var _didIteratorError = false;
-  var _iteratorError = undefined;
+  for (var _iterator = iterable, _isArray = (0, _isArray4.default)(_iterator), _i = 0, _iterator = _isArray ? _iterator : (0, _getIterator2.default)(_iterator);;) {
+    var _ref;
 
-  try {
-    for (var _iterator = (0, _getIterator2.default)(iterable), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-      var _item = _step.value;
-      callbackfn(_item, _constants.COLLECTION_PREFIX);
+    if (_isArray) {
+      if (_i >= _iterator.length) break;
+      _ref = _iterator[_i++];
+    } else {
+      _i = _iterator.next();
+      if (_i.done) break;
+      _ref = _i.value;
     }
-  } catch (err) {
-    _didIteratorError = true;
-    _iteratorError = err;
-  } finally {
-    try {
-      if (!_iteratorNormalCompletion && _iterator.return != null) {
-        _iterator.return();
-      }
-    } finally {
-      if (_didIteratorError) {
-        throw _iteratorError;
-      }
-    }
+
+    var _item = _ref;
+    callbackfn(_item, _constants.COLLECTION_PREFIX);
   }
-} // region subscribeObject
+} // region subscribeObjectValue
 
 
 function getFirstExistProperty(object, propertyNames) {
   for (var i = 0, len = propertyNames.length; i < len; i++) {
     var _propertyName = propertyNames[i];
 
-    if (Object.prototype.hasOwnProperty.call(object, _propertyName)) {
+    if (allowSubscribePrototype ? _propertyName in object : Object.prototype.hasOwnProperty.call(object, _propertyName)) {
       return _propertyName;
     }
   }
@@ -95,7 +81,12 @@ function getFirstExistProperty(object, propertyNames) {
 }
 
 function subscribeObjectValue(propertyNames, object, immediateSubscribe, subscribeItem, unsubscribeItem) {
-  if (!(object instanceof Object) || object.constructor === Object || (0, _isArray.default)(object)) {
+  if (!(object instanceof Object)) {
+    subscribeItem(object, null);
+    return null;
+  }
+
+  if (object.constructor === Object || (0, _isArray4.default)(object)) {
     subscribeItem(object, null);
     return function () {
       unsubscribeItem(object, null);
@@ -105,7 +96,7 @@ function subscribeObjectValue(propertyNames, object, immediateSubscribe, subscri
   var subscribePropertyName;
 
   var getSubscribePropertyName = function getSubscribePropertyName() {
-    if (!Object.prototype.hasOwnProperty.call(object, _valueProperty.VALUE_PROPERTY_DEFAULT)) {
+    if (allowSubscribePrototype ? !(_valueProperty.VALUE_PROPERTY_DEFAULT in object) : !Object.prototype.hasOwnProperty.call(object, _valueProperty.VALUE_PROPERTY_DEFAULT)) {
       return null;
     }
 
@@ -118,21 +109,37 @@ function subscribeObjectValue(propertyNames, object, immediateSubscribe, subscri
     return propertyName;
   };
 
-  var subscribeProperty = function subscribeProperty(propertyName) {
+  var subscribeProperty = function subscribeProperty(propertyName, isFirst) {
     subscribePropertyName = propertyName;
 
     if (propertyName == null) {
       subscribeItem(object, null);
     } else {
-      subscribeItem(object[propertyName], _constants.VALUE_PROPERTY_PREFIX + propertyName);
+      var value = object[propertyName];
+
+      if (typeof value !== 'undefined') {
+        subscribeItem(value, _constants.VALUE_PROPERTY_PREFIX + propertyName);
+      }
+
+      if (isFirst) {
+        subscribeItem(void 0, _constants.VALUE_PROPERTY_PREFIX + propertyName);
+      }
     }
   };
 
-  var unsubscribeProperty = function unsubscribeProperty() {
+  var unsubscribeProperty = function unsubscribeProperty(isLast) {
     if (subscribePropertyName == null) {
       unsubscribeItem(object, null);
     } else {
-      unsubscribeItem(object[subscribePropertyName], _constants.VALUE_PROPERTY_PREFIX + subscribePropertyName);
+      if (isLast) {
+        unsubscribeItem(void 0, _constants.VALUE_PROPERTY_PREFIX + subscribePropertyName);
+      }
+
+      var value = object[subscribePropertyName];
+
+      if (typeof value !== 'undefined') {
+        unsubscribeItem(object[subscribePropertyName], _constants.VALUE_PROPERTY_PREFIX + subscribePropertyName);
+      }
     }
 
     subscribePropertyName = null;
@@ -142,9 +149,15 @@ function subscribeObjectValue(propertyNames, object, immediateSubscribe, subscri
   var unsubscribe;
 
   if (propertyChanged) {
-    unsubscribe = (0, _helpers.checkIsFuncOrNull)(propertyChanged.subscribe(function (_ref) {
-      var name = _ref.name,
-          oldValue = _ref.oldValue;
+    unsubscribe = (0, _helpers.checkIsFuncOrNull)(propertyChanged.subscribe(function (_ref2) {
+      var name = _ref2.name,
+          oldValue = _ref2.oldValue,
+          newValue = _ref2.newValue;
+
+      if (!unsubscribe && oldValue === newValue) {
+        return;
+      }
+
       var newSubscribePropertyName = getSubscribePropertyName();
 
       if (name === subscribePropertyName) {
@@ -152,17 +165,19 @@ function subscribeObjectValue(propertyNames, object, immediateSubscribe, subscri
           unsubscribeItem(oldValue, _constants.VALUE_PROPERTY_PREFIX + subscribePropertyName);
         }
       } else if (subscribePropertyName !== newSubscribePropertyName) {
-        unsubscribeProperty();
+        unsubscribeProperty(false);
+      } else {
+        return;
       }
 
       if (unsubscribe != null) {
-        subscribeProperty(newSubscribePropertyName);
+        subscribeProperty(newSubscribePropertyName, false);
       }
     }));
   }
 
   if (immediateSubscribe) {
-    subscribeProperty(getSubscribePropertyName());
+    subscribeProperty(getSubscribePropertyName(), true);
   } else if (unsubscribe == null) {
     return null;
   }
@@ -173,7 +188,7 @@ function subscribeObjectValue(propertyNames, object, immediateSubscribe, subscri
       unsubscribe = null;
     }
 
-    unsubscribeProperty();
+    unsubscribeProperty(true);
   };
 } // endregion
 // region subscribeObject
@@ -182,48 +197,75 @@ function subscribeObjectValue(propertyNames, object, immediateSubscribe, subscri
 var allowSubscribePrototype = true;
 
 function hasDefaultProperty(object) {
-  return object instanceof Object && (allowSubscribePrototype ? _valueProperty.VALUE_PROPERTY_DEFAULT in object : Object.prototype.hasOwnProperty.call(object, _valueProperty.VALUE_PROPERTY_DEFAULT)) && object.constructor !== Object && !(0, _isArray.default)(object);
-}
+  return object instanceof Object && (allowSubscribePrototype ? _valueProperty.VALUE_PROPERTY_DEFAULT in object : Object.prototype.hasOwnProperty.call(object, _valueProperty.VALUE_PROPERTY_DEFAULT)) && object.constructor !== Object && !(0, _isArray4.default)(object);
+} // export function subscribeDefaultProperty<TValue>(
+// 	object: IPropertyChanged,
+// 	immediateSubscribe: boolean,
+// 	subscribeItem: (item: TValue, debugPropertyName: string) => IUnsubscribeOrVoid,
+// ) {
+// 	let unsubscribers: IUnsubscribe[]
+// 	return subscribeObject<TValue>(
+// 		VALUE_PROPERTY_DEFAULT,
+// 		o => o === VALUE_PROPERTY_DEFAULT,
+// 		object,
+// 		immediateSubscribe,
+// 		(item, debugPropertyName) => {
+// 			const unsubscriber = subscribeItem(item, debugPropertyName)
+// 			if (unsubscriber) {
+// 				if (!unsubscribers) {
+// 					unsubscribers = []
+// 				}
+// 				unsubscribers.push(unsubscriber)
+// 			}
+// 		},
+// 		() => {
+// 			if (unsubscribers) {
+// 				const _unsubscribers = unsubscribers
+// 				unsubscribers = null
+// 				for (let i = 0, len = _unsubscribers.length; i < len; i++) {
+// 					_unsubscribers[i]()
+// 				}
+// 			}
+// 		})
+// }
 
-function subscribeDefaultProperty(object, immediateSubscribe, subscribeItem) {
-  var unsubscribe;
-  return subscribeObject(_valueProperty.VALUE_PROPERTY_DEFAULT, function (o) {
-    return o === _valueProperty.VALUE_PROPERTY_DEFAULT;
-  }, object, immediateSubscribe, function (item, debugPropertyName) {
-    unsubscribe = subscribeItem(item, debugPropertyName);
-  }, function () {
-    if (unsubscribe) {
-      unsubscribe();
-    }
-  });
-}
 
 function subscribeObject(propertyNames, propertyPredicate, object, immediateSubscribe, subscribeItem, unsubscribeItem) {
   if (!(object instanceof Object)) {
     return null;
   }
 
-  var unsubscribe;
-
-  if (propertyNames !== _valueProperty.VALUE_PROPERTY_DEFAULT && hasDefaultProperty(object)) {
-    unsubscribe = subscribeDefaultProperty(object, immediateSubscribe, function (item) {
-      return subscribeObject(propertyNames, propertyPredicate, item, immediateSubscribe, subscribeItem, unsubscribeItem);
-    });
-
-    if (unsubscribe) {
-      return unsubscribe;
-    }
-  }
+  var unsubscribe; // if (propertyNames !== VALUE_PROPERTY_DEFAULT && hasDefaultProperty(object)) {
+  // 	unsubscribe = subscribeDefaultProperty(
+  // 		object,
+  // 		immediateSubscribe,
+  // 		item => subscribeObject(
+  // 			propertyNames,
+  // 			propertyPredicate,
+  // 			item as any,
+  // 			immediateSubscribe,
+  // 			subscribeItem,
+  // 			unsubscribeItem),
+  // 	)
+  //
+  // 	if (unsubscribe) {
+  // 		return unsubscribe
+  // 	}
+  // }
 
   var propertyChanged = object.propertyChanged;
 
   if (propertyChanged) {
-    unsubscribe = (0, _helpers.checkIsFuncOrNull)(propertyChanged.subscribe(function (_ref2) {
-      var name = _ref2.name,
-          oldValue = _ref2.oldValue,
-          newValue = _ref2.newValue;
+    unsubscribe = (0, _helpers.checkIsFuncOrNull)(propertyChanged.subscribe(function (_ref3) {
+      var name = _ref3.name,
+          oldValue = _ref3.oldValue,
+          newValue = _ref3.newValue;
 
-      // PROF: 623 - 1.3%
+      if (!unsubscribe && oldValue === newValue) {
+        return;
+      } // PROF: 623 - 1.3%
+
+
       if (!propertyPredicate || propertyPredicate(name, object)) {
         if (typeof oldValue !== 'undefined') {
           unsubscribeItem(oldValue, name + '');
@@ -236,32 +278,56 @@ function subscribeObject(propertyNames, propertyPredicate, object, immediateSubs
     }));
   }
 
-  var forEach = function forEach(callbackfn) {
-    if (propertyNames) {
-      if ((0, _isArray.default)(propertyNames)) {
-        for (var i = 0, len = propertyNames.length; i < len; i++) {
-          var _propertyName2 = propertyNames[i];
-
-          if (allowSubscribePrototype ? _propertyName2 in object : Object.prototype.hasOwnProperty.call(object, _propertyName2)) {
-            callbackfn(object[_propertyName2], _propertyName2);
-          }
-        }
-      } else {
-        if (allowSubscribePrototype ? propertyNames in object : Object.prototype.hasOwnProperty.call(object, propertyNames)) {
-          callbackfn(object[propertyNames], propertyNames);
+  var forEach = function forEach(callbackfn, isSubscribe) {
+    if (propertyNames == null) {
+      for (var _propertyName2 in object) {
+        if ((allowSubscribePrototype || Object.prototype.hasOwnProperty.call(object, _propertyName2)) && (!propertyPredicate || propertyPredicate(_propertyName2, object))) {
+          callbackfn(object[_propertyName2], _propertyName2);
         }
       }
     } else {
-      for (var _propertyName3 in object) {
-        if ((allowSubscribePrototype || Object.prototype.hasOwnProperty.call(object, _propertyName3)) && (!propertyPredicate || propertyPredicate(_propertyName3, object))) {
-          callbackfn(object[_propertyName3], _propertyName3);
+      if ((0, _isArray4.default)(propertyNames)) {
+        for (var i = 0, len = propertyNames.length; i < len; i++) {
+          var _propertyName3 = propertyNames[i];
+
+          if (!isSubscribe) {
+            callbackfn(void 0, _propertyName3);
+          }
+
+          if (allowSubscribePrototype ? _propertyName3 in object : Object.prototype.hasOwnProperty.call(object, _propertyName3)) {
+            var value = object[_propertyName3];
+
+            if (typeof value !== 'undefined') {
+              callbackfn(value, _propertyName3);
+            }
+          }
+
+          if (isSubscribe) {
+            callbackfn(void 0, _propertyName3);
+          }
+        }
+      } else {
+        if (!isSubscribe) {
+          callbackfn(void 0, propertyNames);
+        }
+
+        if (allowSubscribePrototype ? propertyNames in object : Object.prototype.hasOwnProperty.call(object, propertyNames)) {
+          var _value = object[propertyNames];
+
+          if (typeof _value !== 'undefined') {
+            callbackfn(_value, propertyNames);
+          }
+        }
+
+        if (isSubscribe) {
+          callbackfn(void 0, propertyNames);
         }
       }
     }
   };
 
   if (immediateSubscribe) {
-    forEach(subscribeItem);
+    forEach(subscribeItem, true);
   } else if (unsubscribe == null) {
     return null;
   }
@@ -272,40 +338,32 @@ function subscribeObject(propertyNames, propertyPredicate, object, immediateSubs
       unsubscribe = null;
     }
 
-    forEach(unsubscribeItem);
+    forEach(unsubscribeItem, false);
   };
 } // endregion
 // region subscribeIterable
 
 
 function subscribeIterable(object, immediateSubscribe, subscribeItem, unsubscribeItem) {
-  if (!object || !(0, _helpers.isIterable)(object)) {
+  if (!object || typeof object === 'string' || !(0, _helpers.isIterable)(object)) {
     return null;
   }
 
   var forEach = function forEach(callbackfn) {
-    var _iteratorNormalCompletion2 = true;
-    var _didIteratorError2 = false;
-    var _iteratorError2 = undefined;
+    for (var _iterator2 = object, _isArray2 = (0, _isArray4.default)(_iterator2), _i2 = 0, _iterator2 = _isArray2 ? _iterator2 : (0, _getIterator2.default)(_iterator2);;) {
+      var _ref4;
 
-    try {
-      for (var _iterator2 = (0, _getIterator2.default)(object), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-        var _item2 = _step2.value;
-        callbackfn(_item2, _constants.COLLECTION_PREFIX);
+      if (_isArray2) {
+        if (_i2 >= _iterator2.length) break;
+        _ref4 = _iterator2[_i2++];
+      } else {
+        _i2 = _iterator2.next();
+        if (_i2.done) break;
+        _ref4 = _i2.value;
       }
-    } catch (err) {
-      _didIteratorError2 = true;
-      _iteratorError2 = err;
-    } finally {
-      try {
-        if (!_iteratorNormalCompletion2 && _iterator2.return != null) {
-          _iterator2.return();
-        }
-      } finally {
-        if (_didIteratorError2) {
-          throw _iteratorError2;
-        }
-      }
+
+      var _item2 = _ref4;
+      callbackfn(_item2, _constants.COLLECTION_PREFIX);
     }
   };
 
@@ -331,10 +389,10 @@ function subscribeList(object, immediateSubscribe, subscribeItem, unsubscribeIte
   var unsubscribe;
 
   if (listChanged) {
-    unsubscribe = (0, _helpers.checkIsFuncOrNull)(listChanged.subscribe(function (_ref3) {
-      var type = _ref3.type,
-          oldItems = _ref3.oldItems,
-          newItems = _ref3.newItems;
+    unsubscribe = (0, _helpers.checkIsFuncOrNull)(listChanged.subscribe(function (_ref5) {
+      var type = _ref5.type,
+          oldItems = _ref5.oldItems,
+          newItems = _ref5.newItems;
 
       switch (type) {
         case _IListChanged.ListChangedType.Added:
@@ -347,14 +405,16 @@ function subscribeList(object, immediateSubscribe, subscribeItem, unsubscribeIte
           break;
 
         case _IListChanged.ListChangedType.Removed:
-          for (var _i = 0, _len = oldItems.length; _i < _len; _i++) {
-            unsubscribeItem(oldItems[_i], _constants.COLLECTION_PREFIX);
+          for (var _i3 = 0, _len = oldItems.length; _i3 < _len; _i3++) {
+            unsubscribeItem(oldItems[_i3], _constants.COLLECTION_PREFIX);
           }
 
           break;
 
         case _IListChanged.ListChangedType.Set:
-          unsubscribeItem(oldItems[0], _constants.COLLECTION_PREFIX);
+          if (unsubscribe || oldItems[0] !== newItems[0]) {
+            unsubscribeItem(oldItems[0], _constants.COLLECTION_PREFIX);
+          }
 
           if (unsubscribe) {
             subscribeItem(newItems[0], _constants.COLLECTION_PREFIX);
@@ -392,10 +452,10 @@ function subscribeSet(object, immediateSubscribe, subscribeItem, unsubscribeItem
   var unsubscribe;
 
   if (setChanged) {
-    unsubscribe = (0, _helpers.checkIsFuncOrNull)(setChanged.subscribe(function (_ref4) {
-      var type = _ref4.type,
-          oldItems = _ref4.oldItems,
-          newItems = _ref4.newItems;
+    unsubscribe = (0, _helpers.checkIsFuncOrNull)(setChanged.subscribe(function (_ref6) {
+      var type = _ref6.type,
+          oldItems = _ref6.oldItems,
+          newItems = _ref6.newItems;
 
       switch (type) {
         case _ISetChanged.SetChangedType.Added:
@@ -408,8 +468,8 @@ function subscribeSet(object, immediateSubscribe, subscribeItem, unsubscribeItem
           break;
 
         case _ISetChanged.SetChangedType.Removed:
-          for (var _i2 = 0, _len2 = oldItems.length; _i2 < _len2; _i2++) {
-            unsubscribeItem(oldItems[_i2], _constants.COLLECTION_PREFIX);
+          for (var _i4 = 0, _len2 = oldItems.length; _i4 < _len2; _i4++) {
+            unsubscribeItem(oldItems[_i4], _constants.COLLECTION_PREFIX);
           }
 
           break;
@@ -444,11 +504,15 @@ function subscribeMap(keys, keyPredicate, object, immediateSubscribe, subscribeI
   var unsubscribe;
 
   if (mapChanged) {
-    unsubscribe = (0, _helpers.checkIsFuncOrNull)(mapChanged.subscribe(function (_ref5) {
-      var type = _ref5.type,
-          key = _ref5.key,
-          oldValue = _ref5.oldValue,
-          newValue = _ref5.newValue;
+    unsubscribe = (0, _helpers.checkIsFuncOrNull)(mapChanged.subscribe(function (_ref7) {
+      var type = _ref7.type,
+          key = _ref7.key,
+          oldValue = _ref7.oldValue,
+          newValue = _ref7.newValue;
+
+      if (!unsubscribe && oldValue === newValue) {
+        return;
+      }
 
       if (!keyPredicate || keyPredicate(key, object)) {
         switch (type) {
@@ -476,47 +540,47 @@ function subscribeMap(keys, keyPredicate, object, immediateSubscribe, subscribeI
     }));
   }
 
-  var forEach = function forEach(callbackfn) {
+  var forEach = function forEach(callbackfn, isSubscribe) {
     if (keys) {
       for (var i = 0, len = keys.length; i < len; i++) {
         var _key = keys[i];
 
+        if (!isSubscribe) {
+          callbackfn(void 0, _constants.COLLECTION_PREFIX + _key);
+        }
+
         if (object.has(_key)) {
           callbackfn(object.get(_key), _constants.COLLECTION_PREFIX + _key);
         }
+
+        if (isSubscribe) {
+          callbackfn(void 0, _constants.COLLECTION_PREFIX + _key);
+        }
       }
     } else {
-      var _iteratorNormalCompletion3 = true;
-      var _didIteratorError3 = false;
-      var _iteratorError3 = undefined;
+      for (var _iterator3 = object, _isArray3 = (0, _isArray4.default)(_iterator3), _i5 = 0, _iterator3 = _isArray3 ? _iterator3 : (0, _getIterator2.default)(_iterator3);;) {
+        var _ref8;
 
-      try {
-        for (var _iterator3 = (0, _getIterator2.default)(object), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
-          var entry = _step3.value;
-
-          if (!keyPredicate || keyPredicate(entry[0], object)) {
-            callbackfn(entry[1], _constants.COLLECTION_PREFIX + entry[0]);
-          }
+        if (_isArray3) {
+          if (_i5 >= _iterator3.length) break;
+          _ref8 = _iterator3[_i5++];
+        } else {
+          _i5 = _iterator3.next();
+          if (_i5.done) break;
+          _ref8 = _i5.value;
         }
-      } catch (err) {
-        _didIteratorError3 = true;
-        _iteratorError3 = err;
-      } finally {
-        try {
-          if (!_iteratorNormalCompletion3 && _iterator3.return != null) {
-            _iterator3.return();
-          }
-        } finally {
-          if (_didIteratorError3) {
-            throw _iteratorError3;
-          }
+
+        var entry = _ref8;
+
+        if (!keyPredicate || keyPredicate(entry[0], object)) {
+          callbackfn(entry[1], _constants.COLLECTION_PREFIX + entry[0]);
         }
       }
     }
   };
 
   if (immediateSubscribe) {
-    forEach(subscribeItem);
+    forEach(subscribeItem, true);
   } else if (unsubscribe == null) {
     return null;
   }
@@ -527,7 +591,7 @@ function subscribeMap(keys, keyPredicate, object, immediateSubscribe, subscribeI
       unsubscribe = null;
     }
 
-    forEach(unsubscribeItem);
+    forEach(unsubscribeItem, false);
   };
 } // endregion
 // region subscribeCollection
@@ -636,6 +700,14 @@ function (_Rule) {
         clone.subscribe = subscribe;
       }
 
+      if (this.unsubscribers) {
+        clone.unsubscribers = [];
+      }
+
+      if (this.unsubscribersCount) {
+        clone.unsubscribersCount = [];
+      }
+
       return clone;
     }
   }]);
@@ -665,7 +737,7 @@ function (_RuleSubscribe) {
 
     if (propertyPredicate) {
       if (typeof propertyPredicate !== 'function') {
-        throw new Error("propertyPredicate (".concat(propertyPredicate, ") is not a function"));
+        throw new Error("propertyPredicate (" + propertyPredicate + ") is not a function");
       }
     } else if (type === SubscribeObjectType.Property) {
       propertyPredicate = createPropertyPredicate(propertyNames);
@@ -677,15 +749,18 @@ function (_RuleSubscribe) {
 
     switch (type) {
       case SubscribeObjectType.Property:
+        // @ts-ignore
         _this.subscribe = (0, _bind.default)(subscribeObject).call(subscribeObject, null, propertyNames, propertyPredicate);
         break;
 
       case SubscribeObjectType.ValueProperty:
+        _this.subType = type; // @ts-ignore
+
         _this.subscribe = (0, _bind.default)(subscribeObjectValue).call(subscribeObjectValue, null, propertyNames);
         break;
 
       default:
-        throw new Error("Unknown SubscribeObjectType: ".concat(type));
+        throw new Error("Unknown SubscribeObjectType: " + type);
     }
 
     return _this;
@@ -749,7 +824,7 @@ function (_RuleSubscribe2) {
 
     if (keyPredicate) {
       if (typeof keyPredicate !== 'function') {
-        throw new Error("keyPredicate (".concat(keyPredicate, ") is not a function"));
+        throw new Error("keyPredicate (" + keyPredicate + ") is not a function");
       }
     } else {
       keyPredicate = createKeyPredicate(keys);
@@ -757,7 +832,8 @@ function (_RuleSubscribe2) {
       if (!keyPredicate) {
         keys = null;
       }
-    }
+    } // @ts-ignore
+
 
     _this2.subscribe = (0, _bind.default)(subscribeMap).call(subscribeMap, null, keys, keyPredicate);
     return _this2;
@@ -779,7 +855,8 @@ function (_RuleSubscribe3) {
     var _this3;
 
     (0, _classCallCheck2.default)(this, RuleSubscribeCollection);
-    _this3 = (0, _possibleConstructorReturn2.default)(this, (0, _getPrototypeOf2.default)(RuleSubscribeCollection).call(this));
+    _this3 = (0, _possibleConstructorReturn2.default)(this, (0, _getPrototypeOf2.default)(RuleSubscribeCollection).call(this)); // @ts-ignore
+
     _this3.subscribe = subscribeCollection;
     return _this3;
   }

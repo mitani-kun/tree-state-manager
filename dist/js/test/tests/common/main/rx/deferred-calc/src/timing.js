@@ -2,12 +2,7 @@
 
 var _interopRequireDefault = require("@babel/runtime-corejs3/helpers/interopRequireDefault");
 
-var _Object$defineProperty = require("@babel/runtime-corejs3/core-js-stable/object/define-property");
-
-_Object$defineProperty(exports, "__esModule", {
-  value: true
-});
-
+exports.__esModule = true;
 exports.TestTiming = void 0;
 
 var _classCallCheck2 = _interopRequireDefault(require("@babel/runtime-corejs3/helpers/classCallCheck"));
@@ -53,7 +48,7 @@ function () {
     key: "setTime",
     value: function setTime(time) {
       if (time <= 0) {
-        throw new Error("time (".concat(time, " should be > 0)"));
+        throw new Error("time (" + time + " should be > 0)");
       }
 
       var _handlers = this._handlers,

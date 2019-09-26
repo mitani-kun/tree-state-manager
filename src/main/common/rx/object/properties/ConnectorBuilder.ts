@@ -1,6 +1,6 @@
 import {createFunction} from '../../../helpers/helpers'
 import {deepSubscribeRule} from '../../deep-subscribe/deep-subscribe'
-import {cloneRule, RuleBuilder} from '../../deep-subscribe/RuleBuilder'
+import {RuleBuilder} from '../../deep-subscribe/RuleBuilder'
 import {_set, _setExt, ObservableObject} from '../ObservableObject'
 import {IWritableFieldOptions, ObservableObjectBuilder} from '../ObservableObjectBuilder'
 import {CalcObjectDebugger} from './CalcObjectDebugger'
@@ -31,6 +31,25 @@ export class ConnectorBuilder<
 		buildRule: (builder: RuleBuilder<TSource, TValueKeys>) => RuleBuilder<TValue, TValueKeys>,
 		options?: IWritableFieldOptions,
 		initValue?: TValue,
+	): this & { object: { readonly [newProp in Name]: TValue } } {
+		return this._connect(false, name, buildRule, options, initValue)
+	}
+
+	public connectWritable<TValue, Name extends string | number>(
+		name: Name,
+		buildRule: (builder: RuleBuilder<TSource, TValueKeys>) => RuleBuilder<TValue, TValueKeys>,
+		options?: IWritableFieldOptions,
+		initValue?: TValue,
+	): this & { object: { readonly [newProp in Name]: TValue } } {
+		return this._connect(true, name, buildRule, options, initValue)
+	}
+
+	private _connect<TValue, Name extends string | number>(
+		writable: boolean,
+		name: Name,
+		buildRule: (builder: RuleBuilder<TSource, TValueKeys>) => RuleBuilder<TValue, TValueKeys>,
+		options?: IWritableFieldOptions,
+		initValue?: TValue,
 	): this & { object: { [newProp in Name]: TValue } } {
 		const {object, buildSourceRule} = this
 
@@ -40,7 +59,7 @@ export class ConnectorBuilder<
 		}
 		ruleBuilder = buildRule(ruleBuilder as any)
 
-		const ruleBase = ruleBuilder && ruleBuilder.result
+		const ruleBase = ruleBuilder && ruleBuilder.result()
 		if (ruleBase == null) {
 			throw new Error('buildRule() return null or not initialized RuleBuilder')
 		}
@@ -48,45 +67,73 @@ export class ConnectorBuilder<
 		const setOptions = options && options.setOptions
 
 		// optimization
-		const getValue = createFunction('o', `return o.__fields["${name}"]`) as any
-		const setValue = createFunction('o', 'v', `o.__fields["${name}"] = v`) as any
+		const baseGetValue = options && options.getValue || createFunction(`return this.__fields["${name}"]`) as any
+		const baseSetValue = options && options.setValue || createFunction('v', `this.__fields["${name}"] = v`) as any
+
+		const getValue = !writable ? baseGetValue : function(): TValue {
+			return baseGetValue.call(this).value
+		}
+		const setValue = !writable ? baseSetValue : function(value: TValue) {
+			const baseValue = baseGetValue.call(this)
+			baseValue.value = value
+		}
+
 		const set = setOptions
 			? _setExt.bind(null, name, getValue, setValue, setOptions)
 			: _set.bind(null, name, getValue, setValue)
 
-		return this.readable(
+		return this.updatable(
 			name,
 			{
 				setOptions,
 				hidden: options && options.hidden,
 				// tslint:disable-next-line:no-shadowed-variable
 				factory(this: ObservableObject, initValue: TValue) {
+					if (writable) {
+						baseSetValue.call(this, {value: initValue, parent: null, propertyName: null})
+					}
+
 					let setVal = (obj, value: TValue): void => {
 						if (typeof value !== 'undefined') {
 							initValue = value
 						}
 					}
 
-					const receiveValue = (value: TValue, parent: any, propertyName: string) => {
-						CalcObjectDebugger.Instance.onConnectorChanged(this, value, parent, propertyName)
-						setVal(this, value)
-						return null
-					}
+					const receiveValue = writable
+						? (value: TValue, parent: any, propertyName: string) => {
+							CalcObjectDebugger.Instance.onConnectorChanged(this, value, parent, propertyName)
+
+							const baseValue = baseGetValue.call(this)
+							baseValue.parent = parent
+							baseValue.propertyName = propertyName
+
+							setVal(this, value)
+							return null
+						}
+						: (value: TValue, parent: any, propertyName: string) => {
+							CalcObjectDebugger.Instance.onConnectorChanged(this, value, parent, propertyName)
+							setVal(this, value)
+							return null
+						}
 
 					const rule = this === object
 						? ruleBase
-						: cloneRule(ruleBase)
+						: ruleBase.clone()
 
 					this.propertyChanged.hasSubscribersObservable
 						.subscribe(hasSubscribers => {
 							this._setUnsubscriber(name, null)
 
 							if (hasSubscribers) {
-								const unsubscribe = deepSubscribeRule<TValue>(
-									this, receiveValue, true, rule,
-								)
+								const unsubscribe = deepSubscribeRule<TValue>({
+									object: this,
+									lastValue: receiveValue,
+									rule,
+								})
 
-								this._setUnsubscriber(name, unsubscribe)
+								if (unsubscribe) {
+									this._setUnsubscriber(name, unsubscribe)
+								}
 							}
 						})
 
@@ -94,6 +141,15 @@ export class ConnectorBuilder<
 
 					return initValue
 				},
+				update: writable && function(value: any): TValue|void {
+					const baseValue = baseGetValue.call(this)
+					if (baseValue.parent != null) {
+						baseValue.parent[baseValue.propertyName] = value
+					}
+					// return value
+				},
+				getValue,
+				setValue,
 			},
 			initValue,
 		)
@@ -119,9 +175,9 @@ export function connectorClass<
 
 export function connectorFactory<
 	TSource extends ObservableObject,
-	TConnector extends ObservableObject,
+	TConnector extends Connector<TSource>,
 >(
-	build: (connectorBuilder: ConnectorBuilder<ObservableObject, TSource>) => { object: TConnector },
+	build: (connectorBuilder: ConnectorBuilder<Connector<TSource>, TSource>) => { object: TConnector },
 	baseClass?: new (source: TSource) => Connector<TSource>,
 ): (source: TSource) => TConnector {
 	const NewConnector = connectorClass(build, baseClass)

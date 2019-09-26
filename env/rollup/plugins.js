@@ -1,4 +1,4 @@
-const path = require('path')
+/* eslint-disable object-curly-newline */
 const {terser} = require('rollup-plugin-terser')
 const istanbul = require('rollup-plugin-istanbul')
 // const globals = require('rollup-plugin-node-globals')
@@ -13,8 +13,8 @@ const babel = require('./babel')
 const dedupe = importee => /^(@babel|core-js[^\\/]*|regenerator-runtime)([\\/]|$)/.test(importee)
 
 const plugins = {
-	babel     : babel.rollup,
-	istanbul  : (options = {}) => istanbul({
+	babel   : babel.rollup,
+	istanbul: (options = {}) => istanbul({
 		...nycrc,
 		...options
 	}),
@@ -65,6 +65,19 @@ module.exports = {
 			}),
 			plugins.commonjs(),
 			legacy && plugins.babel.browser(),
+			!dev && plugins.terser(),
+		]
+	},
+	watch({dev = false, legacy = true, coverage = false, getFileCodePlugins = []}) {
+		return [
+			plugins.babel.minimal(),
+			coverage && plugins.istanbul(),
+			plugins.resolve({
+				browser: true,
+			}),
+			plugins.commonjs(),
+			legacy && plugins.babel.browser(),
+			...getFileCodePlugins,
 			!dev && plugins.terser(),
 		]
 	},

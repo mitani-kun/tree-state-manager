@@ -2,32 +2,11 @@
 
 var _interopRequireDefault = require("@babel/runtime-corejs3/helpers/interopRequireDefault");
 
-var _Object$defineProperty2 = require("@babel/runtime-corejs3/core-js-stable/object/define-property");
-
-_Object$defineProperty2(exports, "__esModule", {
-  value: true
-});
-
+exports.__esModule = true;
 exports.registerMergeable = registerMergeable;
 exports.registerMerger = registerMerger;
 exports.registerMergerPrimitive = registerMergerPrimitive;
 exports.ObjectMerger = exports.TypeMetaMergerCollection = exports.MergerVisitor = void 0;
-
-var _defineProperty2 = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/object/define-property"));
-
-var _defineProperties = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/object/define-properties"));
-
-var _getOwnPropertyDescriptors = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/object/get-own-property-descriptors"));
-
-var _forEach = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/instance/for-each"));
-
-var _getOwnPropertyDescriptor = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/object/get-own-property-descriptor"));
-
-var _filter = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/instance/filter"));
-
-var _getOwnPropertySymbols = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/object/get-own-property-symbols"));
-
-var _keys = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/object/keys"));
 
 var _map = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/map"));
 
@@ -41,7 +20,7 @@ var _isFrozen = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-s
 
 var _bind = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/instance/bind"));
 
-var _defineProperty3 = _interopRequireDefault(require("@babel/runtime-corejs3/helpers/defineProperty"));
+var _extends2 = _interopRequireDefault(require("@babel/runtime-corejs3/helpers/extends"));
 
 var _possibleConstructorReturn2 = _interopRequireDefault(require("@babel/runtime-corejs3/helpers/possibleConstructorReturn"));
 
@@ -49,15 +28,13 @@ var _getPrototypeOf2 = _interopRequireDefault(require("@babel/runtime-corejs3/he
 
 var _inherits2 = _interopRequireDefault(require("@babel/runtime-corejs3/helpers/inherits"));
 
-var _concat = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/instance/concat"));
-
 var _classCallCheck2 = _interopRequireDefault(require("@babel/runtime-corejs3/helpers/classCallCheck"));
 
 var _createClass2 = _interopRequireDefault(require("@babel/runtime-corejs3/helpers/createClass"));
 
 var _helpers = require("../../helpers/helpers");
 
-var _objectUniqueId = require("../../lists/helpers/object-unique-id");
+var _objectUniqueId = require("../../helpers/object-unique-id");
 
 var _set2 = require("../../lists/helpers/set");
 
@@ -67,11 +44,7 @@ var _mergeMaps = require("./merge-maps");
 
 var _mergeSets = require("./merge-sets");
 
-function ownKeys(object, enumerableOnly) { var keys = (0, _keys.default)(object); if (_getOwnPropertySymbols.default) { var symbols = (0, _getOwnPropertySymbols.default)(object); if (enumerableOnly) symbols = (0, _filter.default)(symbols).call(symbols, function (sym) { return (0, _getOwnPropertyDescriptor.default)(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
-
-function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { var _context3; (0, _forEach.default)(_context3 = ownKeys(source, true)).call(_context3, function (key) { (0, _defineProperty3.default)(target, key, source[key]); }); } else if (_getOwnPropertyDescriptors.default) { (0, _defineProperties.default)(target, (0, _getOwnPropertyDescriptors.default)(source)); } else { var _context4; (0, _forEach.default)(_context4 = ownKeys(source)).call(_context4, function (key) { (0, _defineProperty2.default)(target, key, (0, _getOwnPropertyDescriptor.default)(source, key)); }); } } return target; }
-
-// region MergerVisitor
+/* tslint:disable:no-nested-switch ban-types use-primitive-type */
 var ValueState =
 /*#__PURE__*/
 function () {
@@ -156,9 +129,7 @@ function () {
         }
 
         if (typeof result !== 'boolean') {
-          var _context;
-
-          throw new Error((0, _concat.default)(_context = "Unknown canMerge() result (".concat(result.constructor.name, ") for ")).call(_context, this.type.name));
+          throw new Error("Unknown canMerge() result (" + result.constructor.name + ") for " + this.type.name);
         }
 
         return result;
@@ -181,7 +152,7 @@ function () {
         _meta = this.mergerState.mergerVisitor.typeMeta.getMeta(this.type);
 
         if (!_meta) {
-          throw new Error("Class (".concat(this.type && this.type.name, ") have no type meta"));
+          throw new Error("Class (" + (this.type && this.type.name) + ") have no type meta");
         }
 
         this._meta = _meta;
@@ -199,7 +170,7 @@ function () {
         _merger = meta.merger;
 
         if (!_merger) {
-          throw new Error("Class (".concat(this.type && this.type.name, ") type meta have no merger"));
+          throw new Error("Class (" + (this.type && this.type.name) + ") type meta have no merger");
         }
 
         this._merger = _merger;
@@ -213,7 +184,7 @@ function () {
       var merger = this.merger;
 
       if (!merger.merge) {
-        throw new Error("Class (".concat(this.type && this.type.name, ") merger have no merge method"));
+        throw new Error("Class (" + (this.type && this.type.name) + ") merger have no merge method");
       }
 
       return merger.merge;
@@ -254,15 +225,15 @@ function () {
         })(target);
 
         if (!_cloneInstance) {
-          throw new Error("Class (".concat((0, _helpers.typeToDebugString)(type), ") cannot be clone"));
+          throw new Error("Class (" + (0, _helpers.typeToDebugString)(type) + ") cannot be clone");
         }
 
         if (_cloneInstance === target) {
-          throw new Error("Clone result === Source for (".concat((0, _helpers.typeToDebugString)(type), ")"));
+          throw new Error("Clone result === Source for (" + (0, _helpers.typeToDebugString)(type) + ")");
         }
 
         if (_cloneInstance.constructor !== type) {
-          throw new Error("Clone type !== (".concat((0, _helpers.typeToDebugString)(type), ")"));
+          throw new Error("Clone type !== (" + (0, _helpers.typeToDebugString)(type) + ")");
         }
 
         this._cloneInstance = _cloneInstance;
@@ -297,13 +268,13 @@ function () {
               var preferClone = this.preferClone,
                   refs = this.refs;
               this.merge(mergerVisitor.getNextMerge(preferClone, preferClone, refs, refs, refs, options), _clone, target, target, function () {
-                throw new Error("Class (".concat(_this2.type.name, ") cannot be merged with clone"));
+                throw new Error("Class (" + _this2.type.name + ") cannot be merged with clone");
               }, preferClone, preferClone, options);
               break;
 
             case false:
               if (this.merger.merge) {
-                throw new Error("Class (".concat(this.type.name, ") cannot be merged with clone"));
+                throw new Error("Class (" + this.type.name + ") cannot be merged with clone");
               }
 
               break;
@@ -366,7 +337,7 @@ function () {
         set(o);
         isSet = true;
       } : function () {
-        throw new Error("Class ".concat(olderState.type.name, " does not need cloning.") + 'You should use "preferClone: false" in merger options for this class');
+        throw new Error("Class " + olderState.type.name + " does not need cloning." + 'You should use "preferClone: false" in merger options for this class');
       }, preferCloneNewer, preferCloneNewer, options);
 
       if (isSet) {
@@ -405,7 +376,7 @@ function () {
         isSet = true;
       } : function () {
         if (baseState.mustBeCloned) {
-          throw new Error("Class ".concat(baseState.type.name, " does not need cloning.") + 'You should use "preferClone: false" in merger options for this class');
+          throw new Error("Class " + baseState.type.name + " does not need cloning." + 'You should use "preferClone: false" in merger options for this class');
         } else {
           isSet = true;
         }
@@ -510,7 +481,7 @@ function () {
       var id = (0, _objectUniqueId.getObjectUniqueId)(object);
 
       if (id == null) {
-        throw new Error("object is primitive: ".concat(object));
+        throw new Error("object is primitive: " + object);
       }
 
       return statuses[id];
@@ -527,7 +498,7 @@ function () {
       var id = (0, _objectUniqueId.getObjectUniqueId)(object);
 
       if (id == null) {
-        throw new Error("object is primitive: ".concat(object));
+        throw new Error("object is primitive: " + object);
       }
 
       statuses[id] = status;
@@ -789,12 +760,12 @@ function (_TypeMetaCollection) {
   }], [{
     key: "makeTypeMetaMerger",
     value: function makeTypeMetaMerger(type, meta) {
-      return _objectSpread({
+      return (0, _extends2.default)({
         valueFactory: function valueFactory() {
           return new type();
         }
       }, meta, {
-        merger: _objectSpread({
+        merger: (0, _extends2.default)({
           canMerge: function canMerge(target, source) {
             return target._canMerge ? target._canMerge(source) : target.constructor === source.constructor;
           },
@@ -820,10 +791,10 @@ function registerMerger(type, meta) {
 }
 
 function registerMergerPrimitive(type, meta) {
-  registerMerger(type, _objectSpread({
+  registerMerger(type, (0, _extends2.default)({
     preferClone: false
   }, meta, {
-    merger: _objectSpread({
+    merger: (0, _extends2.default)({
       merge: function merge(_merge2, base, older, newer, set) {
         set(newer.valueOf());
         return true;
@@ -838,11 +809,11 @@ var ObjectMerger =
 /*#__PURE__*/
 function () {
   function ObjectMerger(typeMeta) {
-    var _context2;
+    var _context;
 
     (0, _classCallCheck2.default)(this, ObjectMerger);
     this.typeMeta = new TypeMetaMergerCollection(typeMeta);
-    this.merge = (0, _bind.default)(_context2 = this.merge).call(_context2, this);
+    this.merge = (0, _bind.default)(_context = this.merge).call(_context, this);
   }
 
   (0, _createClass2.default)(ObjectMerger, [{

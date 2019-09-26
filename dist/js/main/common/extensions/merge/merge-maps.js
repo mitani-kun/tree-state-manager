@@ -2,26 +2,19 @@
 
 var _interopRequireDefault = require("@babel/runtime-corejs3/helpers/interopRequireDefault");
 
-var _Object$defineProperty = require("@babel/runtime-corejs3/core-js-stable/object/define-property");
-
-_Object$defineProperty(exports, "__esModule", {
-  value: true
-});
-
+exports.__esModule = true;
 exports.mergeMapWrappers = mergeMapWrappers;
 exports.createMergeMapWrapper = createMergeMapWrapper;
 exports.mergeMaps = mergeMaps;
 exports.MergeMapWrapper = exports.MergeObjectWrapper = void 0;
 
-var _concat = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/instance/concat"));
-
-var _isArray = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/array/is-array"));
-
 var _toStringTag = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/symbol/to-string-tag"));
 
-var _keys = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/instance/keys"));
-
 var _getIterator2 = _interopRequireDefault(require("@babel/runtime-corejs3/core-js/get-iterator"));
+
+var _isArray2 = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/array/is-array"));
+
+var _keys = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/instance/keys"));
 
 var _classCallCheck2 = _interopRequireDefault(require("@babel/runtime-corejs3/helpers/classCallCheck"));
 
@@ -172,30 +165,22 @@ function () {
   }, {
     key: "forEachKeys",
     value: function forEachKeys(callbackfn) {
-      var _iteratorNormalCompletion = true;
-      var _didIteratorError = false;
-      var _iteratorError = undefined;
+      for (var _iterator = (0, _keys.default)(_context = this._map).call(_context), _isArray = (0, _isArray2.default)(_iterator), _i2 = 0, _iterator = _isArray ? _iterator : (0, _getIterator2.default)(_iterator);;) {
+        var _context;
 
-      try {
-        for (var _iterator = (0, _getIterator2.default)((0, _keys.default)(_context = this._map).call(_context)), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-          var _context;
+        var _ref;
 
-          var _key2 = _step.value;
-          callbackfn(_key2);
+        if (_isArray) {
+          if (_i2 >= _iterator.length) break;
+          _ref = _iterator[_i2++];
+        } else {
+          _i2 = _iterator.next();
+          if (_i2.done) break;
+          _ref = _i2.value;
         }
-      } catch (err) {
-        _didIteratorError = true;
-        _iteratorError = err;
-      } finally {
-        try {
-          if (!_iteratorNormalCompletion && _iterator.return != null) {
-            _iterator.return();
-          }
-        } finally {
-          if (_didIteratorError) {
-            throw _iteratorError;
-          }
-        }
+
+        var _key2 = _ref;
+        callbackfn(_key2);
       }
     }
   }, {
@@ -220,13 +205,11 @@ function () {
 exports.MergeMapWrapper = MergeMapWrapper;
 
 function createMergeMapWrapper(target, source, arrayOrIterableToMap) {
-  var _context2;
-
   if (source[_toStringTag.default] === 'Map') {
     return new MergeMapWrapper(source);
   }
 
-  if (arrayOrIterableToMap && ((0, _isArray.default)(source) || (0, _helpers.isIterable)(source))) {
+  if (arrayOrIterableToMap && ((0, _isArray2.default)(source) || (0, _helpers.isIterable)(source))) {
     return createMergeMapWrapper(target, arrayOrIterableToMap(source), null);
   }
 
@@ -234,7 +217,7 @@ function createMergeMapWrapper(target, source, arrayOrIterableToMap) {
     return new MergeObjectWrapper(source);
   }
 
-  throw new Error((0, _concat.default)(_context2 = "".concat(target.constructor.name, " cannot be merge with ")).call(_context2, source.constructor.name));
+  throw new Error(target.constructor.name + " cannot be merge with " + source.constructor.name);
 } // 10039 cycles
 
 

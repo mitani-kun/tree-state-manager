@@ -2,12 +2,7 @@
 
 var _interopRequireDefault = require("@babel/runtime-corejs3/helpers/interopRequireDefault");
 
-var _Object$defineProperty = require("@babel/runtime-corejs3/core-js-stable/object/define-property");
-
-_Object$defineProperty(exports, "__esModule", {
-  value: true
-});
-
+exports.__esModule = true;
 exports.hasSubscribers = hasSubscribers;
 exports.HasSubscribersBehaviorSubject = exports.HasSubscribersSubject = void 0;
 
@@ -35,8 +30,11 @@ function createHasSubscribersSubjectDefault(hasSubscribers) {
   return subject;
 }
 
-function hasSubscribers(base) {
-  var createHasSubscribersSubject = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : createHasSubscribersSubjectDefault;
+function hasSubscribers(base, createHasSubscribersSubject) {
+  if (createHasSubscribersSubject === void 0) {
+    createHasSubscribersSubject = createHasSubscribersSubjectDefault;
+  }
+
   return (
     /*#__PURE__*/
     function (_base) {

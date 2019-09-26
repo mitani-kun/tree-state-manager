@@ -2,12 +2,7 @@
 
 var _interopRequireDefault = require("@babel/runtime-corejs3/helpers/interopRequireDefault");
 
-var _Object$defineProperty = require("@babel/runtime-corejs3/core-js-stable/object/define-property");
-
-_Object$defineProperty(exports, "__esModule", {
-  value: true
-});
-
+exports.__esModule = true;
 exports.CalcProperty = exports.CalcPropertyValue = void 0;
 
 var _createClass2 = _interopRequireDefault(require("@babel/runtime-corejs3/helpers/createClass"));
@@ -58,7 +53,7 @@ function (_ObservableObject) {
     _this = (0, _possibleConstructorReturn2.default)(this, (0, _getPrototypeOf2.default)(CalcProperty).call(this));
 
     if (typeof calcFunc !== 'function') {
-      throw new Error("calcFunc must be a function: ".concat(calcFunc));
+      throw new Error("calcFunc must be a function: " + calcFunc);
     }
 
     if (typeof initValue !== 'function') {
@@ -109,7 +104,8 @@ function (_ObservableObject) {
 
       if (propertyChangedIfCanEmit) {
         var oldValue = this._valueProperty.value;
-        var newValue = new CalcPropertyValue(this);
+        var newValue = this.last; // new CalcPropertyValue(this)
+
         propertyChangedIfCanEmit.onPropertyChanged({
           name: _valueProperty.VALUE_PROPERTY_DEFAULT,
           oldValue: oldValue,
@@ -136,7 +132,8 @@ function (_ObservableObject) {
 
       if (propertyChangedIfCanEmit) {
         var oldValue = this._valueProperty.value;
-        var newValue = new CalcPropertyValue(this);
+        var newValue = this.last; // new CalcPropertyValue(this)
+
         propertyChangedIfCanEmit.onPropertyChanged({
           name: 'last',
           oldValue: oldValue,

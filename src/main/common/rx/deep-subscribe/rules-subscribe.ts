@@ -5,7 +5,7 @@ import {IListChanged, ListChangedType} from '../../lists/contracts/IListChanged'
 import {IMapChanged, MapChangedType} from '../../lists/contracts/IMapChanged'
 import {ISetChanged, SetChangedType} from '../../lists/contracts/ISetChanged'
 import {IPropertyChanged} from '../object/IPropertyChanged'
-import {IUnsubscribe} from '../subjects/observable'
+import {IUnsubscribe, IUnsubscribeOrVoid} from '../subjects/observable'
 import {ANY, COLLECTION_PREFIX, VALUE_PROPERTY_PREFIX} from './contracts/constants'
 import {IRuleSubscribe, ISubscribeObject} from './contracts/rule-subscribe'
 import {RuleType} from './contracts/rules'
@@ -17,12 +17,15 @@ function forEachSimple<TItem>(iterable: Iterable<TItem>, callbackfn: (item: TIte
 	}
 }
 
-// region subscribeObject
+// region subscribeObjectValue
 
 function getFirstExistProperty(object: object, propertyNames: string[]) {
 	for (let i = 0, len = propertyNames.length; i < len; i++) {
 		const propertyName = propertyNames[i]
-		if (Object.prototype.hasOwnProperty.call(object, propertyName)) {
+		if (allowSubscribePrototype
+			? propertyName in object
+			: Object.prototype.hasOwnProperty.call(object, propertyName)
+		) {
 			return propertyName
 		}
 	}
@@ -35,9 +38,13 @@ function subscribeObjectValue<TValue>(
 	immediateSubscribe: boolean,
 	subscribeItem: (item: TValue, debugPropertyName: string) => void,
 	unsubscribeItem: (item: TValue, debugPropertyName: string) => void,
-): IUnsubscribe {
-	if (!(object instanceof Object)
-		|| object.constructor === Object
+): IUnsubscribeOrVoid {
+	if (!(object instanceof Object)) {
+		subscribeItem(object as any, null)
+		return null
+	}
+
+	if (object.constructor === Object
 		|| Array.isArray(object)
 	) {
 		subscribeItem(object as any, null)
@@ -49,7 +56,10 @@ function subscribeObjectValue<TValue>(
 	let subscribePropertyName
 
 	const getSubscribePropertyName = () => {
-		if (!Object.prototype.hasOwnProperty.call(object, VALUE_PROPERTY_DEFAULT)) {
+		if (allowSubscribePrototype
+			? !(VALUE_PROPERTY_DEFAULT in object)
+			: !Object.prototype.hasOwnProperty.call(object, VALUE_PROPERTY_DEFAULT)
+		) {
 			return null
 		}
 
@@ -61,20 +71,32 @@ function subscribeObjectValue<TValue>(
 		return propertyName
 	}
 
-	const subscribeProperty = propertyName => {
+	const subscribeProperty = (propertyName, isFirst: boolean) => {
 		subscribePropertyName = propertyName
 		if (propertyName == null) {
 			subscribeItem(object as any, null)
 		} else {
-			subscribeItem(object[propertyName], VALUE_PROPERTY_PREFIX + propertyName)
+			const value = object[propertyName]
+			if (typeof value !== 'undefined') {
+				subscribeItem(value, VALUE_PROPERTY_PREFIX + propertyName)
+			}
+			if (isFirst) {
+				subscribeItem(void 0, VALUE_PROPERTY_PREFIX + propertyName)
+			}
 		}
 	}
 
-	const unsubscribeProperty = () => {
+	const unsubscribeProperty = (isLast: boolean) => {
 		if (subscribePropertyName == null) {
 			unsubscribeItem(object as any, null)
 		} else {
-			unsubscribeItem(object[subscribePropertyName], VALUE_PROPERTY_PREFIX + subscribePropertyName)
+			if (isLast) {
+				unsubscribeItem(void 0, VALUE_PROPERTY_PREFIX + subscribePropertyName)
+			}
+			const value = object[subscribePropertyName]
+			if (typeof value !== 'undefined') {
+				unsubscribeItem(object[subscribePropertyName], VALUE_PROPERTY_PREFIX + subscribePropertyName)
+			}
 		}
 		subscribePropertyName = null
 	}
@@ -84,7 +106,11 @@ function subscribeObjectValue<TValue>(
 
 	if (propertyChanged) {
 		unsubscribe = checkIsFuncOrNull(propertyChanged
-			.subscribe(({name, oldValue}) => {
+			.subscribe(({name, oldValue, newValue}) => {
+				if (!unsubscribe && oldValue === newValue) {
+					return
+				}
+
 				const newSubscribePropertyName = getSubscribePropertyName()
 
 				if (name === subscribePropertyName) {
@@ -92,17 +118,19 @@ function subscribeObjectValue<TValue>(
 						unsubscribeItem(oldValue, VALUE_PROPERTY_PREFIX + subscribePropertyName)
 					}
 				} else if (subscribePropertyName !== newSubscribePropertyName) {
-					unsubscribeProperty()
+					unsubscribeProperty(false)
+				} else {
+					return
 				}
 
 				if (unsubscribe != null) {
-					subscribeProperty(newSubscribePropertyName)
+					subscribeProperty(newSubscribePropertyName, false)
 				}
 			}))
 	}
 
 	if (immediateSubscribe) {
-		subscribeProperty(getSubscribePropertyName())
+		subscribeProperty(getSubscribePropertyName(), true)
 	} else if (unsubscribe == null) {
 		return null
 	}
@@ -112,7 +140,7 @@ function subscribeObjectValue<TValue>(
 			unsubscribe()
 			unsubscribe = null
 		}
-		unsubscribeProperty()
+		unsubscribeProperty(true)
 	}
 }
 
@@ -133,26 +161,36 @@ export function hasDefaultProperty(object: object) {
 		&& !Array.isArray(object)
 }
 
-export function subscribeDefaultProperty<TValue>(
-	object: IPropertyChanged,
-	immediateSubscribe: boolean,
-	subscribeItem: (item: TValue, debugPropertyName: string) => IUnsubscribe,
-) {
-	let unsubscribe
-	return subscribeObject<TValue>(
-		VALUE_PROPERTY_DEFAULT,
-		o => o === VALUE_PROPERTY_DEFAULT,
-		object,
-		immediateSubscribe,
-		(item, debugPropertyName) => {
-			unsubscribe = subscribeItem(item, debugPropertyName)
-		},
-		() => {
-			if (unsubscribe) {
-				unsubscribe()
-			}
-		})
-}
+// export function subscribeDefaultProperty<TValue>(
+// 	object: IPropertyChanged,
+// 	immediateSubscribe: boolean,
+// 	subscribeItem: (item: TValue, debugPropertyName: string) => IUnsubscribeOrVoid,
+// ) {
+// 	let unsubscribers: IUnsubscribe[]
+// 	return subscribeObject<TValue>(
+// 		VALUE_PROPERTY_DEFAULT,
+// 		o => o === VALUE_PROPERTY_DEFAULT,
+// 		object,
+// 		immediateSubscribe,
+// 		(item, debugPropertyName) => {
+// 			const unsubscriber = subscribeItem(item, debugPropertyName)
+// 			if (unsubscriber) {
+// 				if (!unsubscribers) {
+// 					unsubscribers = []
+// 				}
+// 				unsubscribers.push(unsubscriber)
+// 			}
+// 		},
+// 		() => {
+// 			if (unsubscribers) {
+// 				const _unsubscribers = unsubscribers
+// 				unsubscribers = null
+// 				for (let i = 0, len = _unsubscribers.length; i < len; i++) {
+// 					_unsubscribers[i]()
+// 				}
+// 			}
+// 		})
+// }
 
 function subscribeObject<TValue>(
 	propertyNames: string|string[],
@@ -161,35 +199,39 @@ function subscribeObject<TValue>(
 	immediateSubscribe: boolean,
 	subscribeItem: (item: TValue, debugPropertyName: string) => void,
 	unsubscribeItem: (item: TValue, debugPropertyName: string) => void,
-): IUnsubscribe {
+): IUnsubscribeOrVoid {
 	if (!(object instanceof Object)) {
 		return null
 	}
 
 	let unsubscribe
-	if (propertyNames !== VALUE_PROPERTY_DEFAULT && hasDefaultProperty(object)) {
-		unsubscribe = subscribeDefaultProperty(
-			object,
-			immediateSubscribe,
-			item => subscribeObject(
-				propertyNames,
-				propertyPredicate,
-				item as any,
-				immediateSubscribe,
-				subscribeItem,
-				unsubscribeItem),
-		)
-
-		if (unsubscribe) {
-			return unsubscribe
-		}
-	}
+	// if (propertyNames !== VALUE_PROPERTY_DEFAULT && hasDefaultProperty(object)) {
+	// 	unsubscribe = subscribeDefaultProperty(
+	// 		object,
+	// 		immediateSubscribe,
+	// 		item => subscribeObject(
+	// 			propertyNames,
+	// 			propertyPredicate,
+	// 			item as any,
+	// 			immediateSubscribe,
+	// 			subscribeItem,
+	// 			unsubscribeItem),
+	// 	)
+	//
+	// 	if (unsubscribe) {
+	// 		return unsubscribe
+	// 	}
+	// }
 
 	const {propertyChanged} = object
 
 	if (propertyChanged) {
 		unsubscribe = checkIsFuncOrNull(propertyChanged
 			.subscribe(({name, oldValue, newValue}) => {
+				if (!unsubscribe && oldValue === newValue) {
+					return
+				}
+
 				 // PROF: 623 - 1.3%
 				if (!propertyPredicate || propertyPredicate(name, object)) {
 					if (typeof oldValue !== 'undefined') {
@@ -202,25 +244,8 @@ function subscribeObject<TValue>(
 			}))
 	}
 
-	const forEach = (callbackfn: (item: TValue, debugPropertyName: string) => void) => {
-		if (propertyNames) {
-			if (Array.isArray(propertyNames)) {
-				for (let i = 0, len = propertyNames.length; i < len; i++) {
-					const propertyName = propertyNames[i]
-					if (allowSubscribePrototype
-						? propertyName in object
-						: Object.prototype.hasOwnProperty.call(object, propertyName)) {
-						callbackfn(object[propertyName], propertyName)
-					}
-				}
-			} else {
-				if (allowSubscribePrototype
-					? propertyNames in object
-					: Object.prototype.hasOwnProperty.call(object, propertyNames)) {
-					callbackfn(object[propertyNames], propertyNames)
-				}
-			}
-		} else {
+	const forEach = (callbackfn: (item: TValue, debugPropertyName: string) => void, isSubscribe: boolean) => {
+		if (propertyNames == null) {
 			for (const propertyName in object) {
 				if ((allowSubscribePrototype || Object.prototype.hasOwnProperty.call(object, propertyName))
 					&& (!propertyPredicate || propertyPredicate(propertyName, object))
@@ -228,11 +253,48 @@ function subscribeObject<TValue>(
 					callbackfn(object[propertyName], propertyName)
 				}
 			}
+		} else {
+			if (Array.isArray(propertyNames)) {
+				for (let i = 0, len = propertyNames.length; i < len; i++) {
+					const propertyName = propertyNames[i]
+					if (!isSubscribe) {
+						callbackfn(void 0, propertyName)
+					}
+					if ((allowSubscribePrototype
+						? propertyName in object
+						: Object.prototype.hasOwnProperty.call(object, propertyName))
+					) {
+						const value = object[propertyName]
+						if (typeof value !== 'undefined') {
+							callbackfn(value, propertyName)
+						}
+					}
+					if (isSubscribe) {
+						callbackfn(void 0, propertyName)
+					}
+				}
+			} else {
+				if (!isSubscribe) {
+					callbackfn(void 0, propertyNames)
+				}
+				if ((allowSubscribePrototype
+					? propertyNames in object
+					: Object.prototype.hasOwnProperty.call(object, propertyNames))
+				) {
+					const value = object[propertyNames]
+					if (typeof value !== 'undefined') {
+						callbackfn(value, propertyNames)
+					}
+				}
+				if (isSubscribe) {
+					callbackfn(void 0, propertyNames)
+				}
+			}
 		}
 	}
 	
 	if (immediateSubscribe) {
-		forEach(subscribeItem)
+		forEach(subscribeItem, true)
 	} else if (unsubscribe == null) {
 		return null
 	}
@@ -242,7 +304,7 @@ function subscribeObject<TValue>(
 			unsubscribe()
 			unsubscribe = null
 		}
-		forEach(unsubscribeItem)
+		forEach(unsubscribeItem, false)
 	}
 }
 
@@ -255,8 +317,8 @@ function subscribeIterable<TItem>(
 	immediateSubscribe: boolean,
 	subscribeItem: (item: TItem, debugPropertyName: string) => void,
 	unsubscribeItem: (item: TItem, debugPropertyName: string) => void,
-): IUnsubscribe {
-	if (!object || !isIterable(object)) {
+): IUnsubscribeOrVoid {
+	if (!object || typeof object === 'string' || !isIterable(object)) {
 		return null
 	}
 
@@ -286,7 +348,7 @@ function subscribeList<TItem>(
 	immediateSubscribe: boolean,
 	subscribeItem: (item: TItem, debugPropertyName: string) => void,
 	unsubscribeItem: (item: TItem, debugPropertyName: string) => void,
-): IUnsubscribe {
+): IUnsubscribeOrVoid {
 	if (!object || object[Symbol.toStringTag] !== 'List') {
 		return null
 	}
@@ -310,7 +372,9 @@ function subscribeList<TItem>(
 						}
 						break
 					case ListChangedType.Set:
-						unsubscribeItem(oldItems[0], COLLECTION_PREFIX)
+						if (unsubscribe || oldItems[0] !== newItems[0]) {
+							unsubscribeItem(oldItems[0], COLLECTION_PREFIX)
+						}
 						if (unsubscribe) {
 							subscribeItem(newItems[0], COLLECTION_PREFIX)
 						}
@@ -343,7 +407,7 @@ function subscribeSet<TItem>(
 	immediateSubscribe: boolean,
 	subscribeItem: (item: TItem, debugPropertyName: string) => void,
 	unsubscribeItem: (item: TItem, debugPropertyName: string) => void,
-): IUnsubscribe {
+): IUnsubscribeOrVoid {
 	if (!object || object[Symbol.toStringTag] !== 'Set' && !(object instanceof Set)) {
 		return null
 	}
@@ -396,7 +460,7 @@ function subscribeMap<K, V>(
 	immediateSubscribe: boolean,
 	subscribeItem: (item: V, debugPropertyName: string) => void,
 	unsubscribeItem: (item: V, debugPropertyName: string) => void,
-): IUnsubscribe {
+): IUnsubscribeOrVoid {
 	if (!object || object[Symbol.toStringTag] !== 'Map' && !(object instanceof Map)) {
 		return null
 	}
@@ -407,6 +471,10 @@ function subscribeMap<K, V>(
 	if (mapChanged) {
 		unsubscribe = checkIsFuncOrNull(mapChanged
 			.subscribe(({type, key, oldValue, newValue}) => {
+				if (!unsubscribe && oldValue === newValue) {
+					return
+				}
+
 				if (!keyPredicate || keyPredicate(key, object)) {
 					switch (type) {
 						case MapChangedType.Added:
@@ -428,12 +496,18 @@ function subscribeMap<K, V>(
 			}))
 	}
 
-	const forEach = (callbackfn: (item: V, debugPropertyName: string) => void) => {
+	const forEach = (callbackfn: (item: V, debugPropertyName: string) => void, isSubscribe: boolean) => {
 		if (keys) {
 			for (let i = 0, len = keys.length; i < len; i++) {
 				const key = keys[i]
+				if (!isSubscribe) {
+					callbackfn(void 0, COLLECTION_PREFIX + key)
+				}
 				if (object.has(key)) {
 					callbackfn(object.get(key), COLLECTION_PREFIX + key)
+				}
+				if (isSubscribe) {
+					callbackfn(void 0, COLLECTION_PREFIX + key)
 				}
 			}
 		} else {
@@ -446,7 +520,7 @@ function subscribeMap<K, V>(
 	}
 
 	if (immediateSubscribe) {
-		forEach(subscribeItem)
+		forEach(subscribeItem, true)
 	} else if (unsubscribe == null) {
 		return null
 	}
@@ -456,7 +530,7 @@ function subscribeMap<K, V>(
 			unsubscribe()
 			unsubscribe = null
 		}
-		forEach(unsubscribeItem)
+		forEach(unsubscribeItem, false)
 	}
 }
 
@@ -469,7 +543,7 @@ function subscribeCollection<TItem>(
 	immediateSubscribe: boolean,
 	subscribeItem: (item: TItem, debugPropertyName: string) => void,
 	unsubscribeItem: (item: TItem, debugPropertyName: string) => void,
-): IUnsubscribe {
+): IUnsubscribeOrVoid {
 	if (!object) {
 		return null
 	}
@@ -550,8 +624,9 @@ export abstract class RuleSubscribe<TObject = any, TChild = any>
 	extends Rule
 	implements IRuleSubscribe<TObject, TChild>
 {
-	public subscribe: ISubscribeObject<TObject, TChild>
+	public readonly subscribe: ISubscribeObject<TObject, TChild>
 	public readonly unsubscribers: IUnsubscribe[]
+	public readonly unsubscribersCount: number[]
 
 	protected constructor() {
 		super(RuleType.Action)
@@ -563,6 +638,12 @@ export abstract class RuleSubscribe<TObject = any, TChild = any>
 
 		if (subscribe != null) {
 			(clone as any).subscribe = subscribe
+		}
+		if (this.unsubscribers) {
+			(clone as any).unsubscribers = []
+		}
+		if (this.unsubscribersCount) {
+			(clone as any).unsubscribersCount = []
 		}
 
 		return clone
@@ -597,6 +678,7 @@ export class RuleSubscribeObject<TObject, TValue>
 
 		switch (type) {
 			case SubscribeObjectType.Property:
+				// @ts-ignore
 				this.subscribe = subscribeObject.bind(
 					null,
 					propertyNames,
@@ -604,6 +686,8 @@ export class RuleSubscribeObject<TObject, TValue>
 				)
 				break
 			case SubscribeObjectType.ValueProperty:
+				this.subType = type
+				// @ts-ignore
 				this.subscribe = subscribeObjectValue.bind(
 					null,
 					propertyNames,
@@ -675,6 +759,7 @@ export class RuleSubscribeMap<TObject extends Map<K, V>, K, V>
 			}
 		}
 
+		// @ts-ignore
 		this.subscribe = subscribeMap.bind(
 			null,
 			keys,
@@ -694,6 +779,7 @@ export class RuleSubscribeCollection<TObject extends Iterable<TItem>, TItem>
 	constructor() {
 		super()
 
+		// @ts-ignore
 		this.subscribe = subscribeCollection
 	}
 }

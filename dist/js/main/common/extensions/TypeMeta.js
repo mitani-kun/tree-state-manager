@@ -2,17 +2,8 @@
 
 var _interopRequireDefault = require("@babel/runtime-corejs3/helpers/interopRequireDefault");
 
-var _Object$defineProperty2 = require("@babel/runtime-corejs3/core-js-stable/object/define-property");
-
-_Object$defineProperty2(exports, "__esModule", {
-  value: true
-});
-
+exports.__esModule = true;
 exports.TypeMetaCollectionWithId = exports.TypeMetaCollection = void 0;
-
-var _typeof2 = _interopRequireDefault(require("@babel/runtime-corejs3/helpers/typeof"));
-
-var _concat = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/instance/concat"));
 
 var _possibleConstructorReturn2 = _interopRequireDefault(require("@babel/runtime-corejs3/helpers/possibleConstructorReturn"));
 
@@ -70,7 +61,7 @@ function () {
     key: "putType",
     value: function putType(type, meta) {
       if (!type || typeof type !== 'function') {
-        throw new Error("type (".concat(type, ") should be function"));
+        throw new Error("type (" + type + ") should be function");
       }
 
       var _typeMetaPropertyName = this._typeMetaPropertyName;
@@ -143,15 +134,13 @@ function (_TypeMetaCollection) {
       var uuid = meta && meta.uuid;
 
       if (!uuid || typeof uuid !== 'string') {
-        throw new Error("meta.uuid (".concat(uuid, ") should be a string with length > 0"));
+        throw new Error("meta.uuid (" + uuid + ") should be a string with length > 0");
       }
 
       var prevType = this._typeMap[uuid];
 
       if (prevType && prevType !== type) {
-        var _context;
-
-        throw new Error("Same uuid (".concat(uuid, ") used for different types: ") + (0, _concat.default)(_context = "".concat((0, _helpers.typeToDebugString)(prevType), ", ")).call(_context, (0, _helpers.typeToDebugString)(type)));
+        throw new Error("Same uuid (" + uuid + ") used for different types: " + ((0, _helpers.typeToDebugString)(prevType) + ", " + (0, _helpers.typeToDebugString)(type)));
       }
 
       var prevMeta = (0, _get2.default)((0, _getPrototypeOf2.default)(TypeMetaCollectionWithId.prototype), "putType", this).call(this, type, meta);
@@ -173,7 +162,7 @@ function (_TypeMetaCollection) {
         type = this.getType(typeOrUuid);
         uuid = typeOrUuid;
       } else {
-        throw new Error("typeOrUuid (".concat(typeOrUuid == null ? typeOrUuid : (0, _typeof2.default)(typeOrUuid), ") is not a Function or String"));
+        throw new Error("typeOrUuid (" + (typeOrUuid == null ? typeOrUuid : typeof typeOrUuid) + ") is not a Function or String");
       }
 
       var prevMeta = (0, _get2.default)((0, _getPrototypeOf2.default)(TypeMetaCollectionWithId.prototype), "deleteType", this).call(this, type);

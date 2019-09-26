@@ -1,11 +1,6 @@
 "use strict";
 
-var _Object$defineProperty = require("@babel/runtime-corejs3/core-js-stable/object/define-property");
-
-_Object$defineProperty(exports, "__esModule", {
-  value: true
-});
-
+exports.__esModule = true;
 exports.calcPropertyFactory = calcPropertyFactory;
 
 var _CalcProperty = require("./CalcProperty");
@@ -14,12 +9,12 @@ var _CalcPropertyDependenciesBuilder = require("./CalcPropertyDependenciesBuilde
 
 var _DependenciesBuilder = require("./DependenciesBuilder");
 
-function calcPropertyFactory(calcFunc, calcOptions, valueOptions, initValue, buildDependencies) {
+function calcPropertyFactory(buildDependencies, calcFunc, calcOptions, valueOptions, initValue) {
   var dependencies;
 
   if (buildDependencies) {
     var _dependenciesBuilder = new _CalcPropertyDependenciesBuilder.CalcPropertyDependenciesBuilder(function (b) {
-      return b.propertyName('input');
+      return b.valuePropertyName('input');
     });
 
     buildDependencies(_dependenciesBuilder);
