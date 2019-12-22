@@ -64,10 +64,14 @@ function () {
 
       this._pulse();
 
-      this._calcFunc.call(this, function (value) {
+      this._calcFunc.call(this, function () {
         _this._timeCalcEnd = _this._timing.now();
 
-        _this._calcCompletedCallback.call(_this, value);
+        for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+          args[_key] = arguments[_key];
+        }
+
+        _this._calcCompletedCallback.apply(_this, args);
 
         _this._pulse();
       });
@@ -123,7 +127,7 @@ function () {
 
         if (autoInvalidateTime <= now) {
           this._invalidate();
-        } else if (autoInvalidateTime > timeNextPulse) {
+        } else if (timeNextPulse <= now || autoInvalidateTime < timeNextPulse) {
           timeNextPulse = autoInvalidateTime;
         }
       } // endregion
@@ -139,7 +143,7 @@ function () {
           this._pulse();
 
           return;
-        } else if (canBeCalcTime > timeNextPulse) {
+        } else if (timeNextPulse <= now || canBeCalcTime < timeNextPulse) {
           timeNextPulse = canBeCalcTime;
         }
       } // endregion
@@ -153,7 +157,7 @@ function () {
           this._calc();
 
           return;
-        } else if (calcTime > timeNextPulse) {
+        } else if (timeNextPulse <= now || calcTime < timeNextPulse) {
           timeNextPulse = calcTime;
         }
       } // endregion

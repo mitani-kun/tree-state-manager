@@ -14,13 +14,14 @@ import {ArraySet} from '../../../main/common/lists/ArraySet'
 import {binarySearch} from '../../../main/common/lists/helpers/array'
 import {SortedList} from '../../../main/common/lists/SortedList'
 import {deepSubscribe} from '../../../main/common/rx/deep-subscribe/deep-subscribe'
-import {ObservableObject} from '../../../main/common/rx/object/ObservableObject'
+import {ObservableClass} from '../../../main/common/rx/object/ObservableClass'
 import {ObservableObjectBuilder} from '../../../main/common/rx/object/ObservableObjectBuilder'
+import {assert} from '../../../main/common/test/Assert'
+import {describe, it, xit} from '../../../main/common/test/Mocha'
 import {createObject, TestDeepSubscribe} from '../../tests/common/main/rx/deep-subscribe/helpers/src/TestDeepSubscribe'
 
 const SetNative = Set
 require('./src/SetPolyfill')
-declare const assert: any
 declare const SetPolyfill: any
 
 export function compareDefault(o1, o2) {
@@ -1898,8 +1899,8 @@ describe('fundamental-operations', function() {
 				// getValue: (o: { [newProp in Name]: T }) => T,
 				// setValue: (o: { [newProp in Name]: T }, v: T) => void,
 			): this & { object: { [newProp in Name]: T } } {
-				const getValue = createFunction('o', `return o.__fields["${name}"]`)
-				const setValue = createFunction('o', 'v', `o.__fields["${name}"] = v`)
+				const getValue = createFunction(() => (function() { return this.__fields[name] }), 'o', `return o.__fields["${name}"]`)
+				const setValue = createFunction(() => (function(v) { this.__fields[name] = v }), 'o', 'v', `o.__fields["${name}"] = v`)
 				// let getValue = createGetFunction(name, o => { getValue = o as any }) as (o: { [newProp in Name]: T }) => T
 				// const getValue = getValueBase.bind(null, name)
 				// const setValue = createSetFunction(name) as (o: { [newProp in Name]: T }, v: T) => void

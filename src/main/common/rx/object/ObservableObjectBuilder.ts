@@ -1,39 +1,43 @@
 import {createFunction} from '../../helpers/helpers'
+import {webrainOptions} from '../../helpers/webrainOptions'
 import '../extensions/autoConnect'
 import {PropertyChangedEvent} from './IPropertyChanged'
-import {_set, _setExt, ISetOptions, ObservableObject} from './ObservableObject'
+import {_set, _setExt, ISetOptions, ObservableClass} from './ObservableClass'
 
-export interface IFieldOptions {
+export interface IFieldOptions<TObject, TValue> {
 	hidden?: boolean,
-	getValue?: () => any
-	setValue?: (value: any) => void
+	getValue?: (this: TObject) => TValue
+	setValue?: (this: TObject, value: TValue) => void
 }
 
-export interface IWritableFieldOptions extends IFieldOptions {
-	setOptions?: ISetOptions,
+export interface IWritableFieldOptions<TObject, TValue> extends IFieldOptions<TObject, TValue> {
+	setOptions?: ISetOptions<TObject, TValue>,
 }
 
-export interface IReadableFieldOptions<T> extends IWritableFieldOptions {
-	factory?: (initValue: T) => T
+export interface IReadableFieldOptions<TObject, TValue> extends IWritableFieldOptions<TObject, TValue> {
+	factory?: (this: TObject, initValue: TValue) => TValue
+	init?: (this: TObject, initValue: TValue) => void
 }
 
-export interface IUpdatableFieldOptions<T> extends IWritableFieldOptions {
-	factory?: (initValue: T) => T
-	update?: (value: any) => T|void
+export interface IUpdatableFieldOptions<TObject, TValue> extends IReadableFieldOptions<TObject, TValue> {
+	update?: (this: TObject, value: any) => TValue|void
 }
 
-export class ObservableObjectBuilder<TObject extends ObservableObject> {
+export class ObservableObjectBuilder<TObject extends ObservableClass> {
 	public object: TObject
 
 	constructor(object?: TObject) {
-		this.object = object || new ObservableObject() as TObject
+		this.object = object || new ObservableClass() as TObject
 	}
 
-	public writable<T, Name extends string | number>(
+	public writable<
+		Name extends string | number = Extract<keyof TObject, string|number>,
+		TValue = Name extends keyof TObject ? TObject[Name] : any,
+	>(
 		name: Name,
-		options?: IWritableFieldOptions,
-		initValue?: T,
-	): this & { object: { [newProp in Name]: T } } {
+		options?: IWritableFieldOptions<TObject, TValue>,
+		initValue?: TValue,
+	): this & { object: { [newProp in Name]: TValue } } {
 		const {
 			setOptions,
 			hidden,
@@ -50,8 +54,10 @@ export class ObservableObjectBuilder<TObject extends ObservableObject> {
 		}
 
 		// optimization
-		const getValue = options && options.getValue || createFunction(`return this.__fields["${name}"]`) as any
-		const setValue = options && options.setValue || createFunction('v', `this.__fields["${name}"] = v`) as any
+		const getValue = options && options.getValue
+			|| createFunction(() => (function() { return this.__fields[name] }), `return this.__fields["${name}"]`) as any
+		const setValue = options && options.setValue
+			|| createFunction(() => (function(v) { this.__fields[name] = v }), 'v', `this.__fields["${name}"] = v`) as any
 		const set = setOptions
 			? _setExt.bind(null, name, getValue, setValue, setOptions)
 			: _set.bind(null, name, getValue, setValue)
@@ -69,7 +75,7 @@ export class ObservableObjectBuilder<TObject extends ObservableObject> {
 
 		if (__fields && typeof initValue !== 'undefined') {
 			const value = __fields[name]
-			if (initValue !== value) {
+			if (webrainOptions.equalsFunc ? !webrainOptions.equalsFunc.call(object, value, initValue) : value !== initValue) {
 				object[name as any] = initValue
 			}
 		}
@@ -77,19 +83,22 @@ export class ObservableObjectBuilder<TObject extends ObservableObject> {
 		return this as any
 	}
 
-	public readable<T, Name extends string | number>(
+	public readable<
+		Name extends string | number = Extract<keyof TObject, string|number>,
+		TValue = Name extends keyof TObject ? TObject[Name] : any,
+	>(
 		name: Name,
-		options?: IReadableFieldOptions<T>,
-		initValue?: T,
-	): this & { object: { readonly [newProp in Name]: T } } {
+		options?: IReadableFieldOptions<TObject, TValue>,
+		initValue?: TValue,
+	): this & { object: { readonly [newProp in Name]: TValue } } {
 		return this.updatable(name, options, initValue)
 	}
 
-	public updatable<T, Name extends string | number>(
+	public updatable<TValue, Name extends string | number>(
 		name: Name,
-		options?: IUpdatableFieldOptions<T>,
-		initValue?: T,
-	): this & { object: { [newProp in Name]: T } } {
+		options?: IUpdatableFieldOptions<TObject, TValue>,
+		initValue?: TValue,
+	): this & { object: { [newProp in Name]: TValue } } {
 		const hidden = options && options.hidden
 
 		const {object} = this
@@ -108,10 +117,12 @@ export class ObservableObjectBuilder<TObject extends ObservableObject> {
 		const update = options && options.update
 
 		// optimization
-		const getValue = options && options.getValue || createFunction(`return this.__fields["${name}"]`) as any
+		const getValue = options && options.getValue
+			|| createFunction(() => (function() { return this.__fields[name] }), `return this.__fields["${name}"]`) as any
 		let setValue
 		if (update || factory) {
-			setValue = options && options.setValue || createFunction('v', `this.__fields["${name}"] = v`) as any
+			setValue = options && options.setValue
+				|| createFunction(() => (function(v) { this.__fields[name] = v }), 'v', `this.__fields["${name}"] = v`) as any
 		}
 
 		let setOnUpdate
@@ -153,10 +164,14 @@ export class ObservableObjectBuilder<TObject extends ObservableObject> {
 			Object.defineProperty(instance, name, attributes)
 		}
 
+		const initializeValue = options && options.init
 		if (factory) {
 			const init = function(this: TObject) {
 				const factoryValue = factory.call(this, initValue)
 				createInstanceProperty(this)
+				if (initializeValue) {
+					initializeValue.call(this, factoryValue)
+				}
 				return factoryValue
 			}
 
@@ -167,7 +182,10 @@ export class ObservableObjectBuilder<TObject extends ObservableObject> {
 					const factoryValue = init.call(this)
 					if (typeof factoryValue !== 'undefined') {
 						const oldValue = getValue.call(this)
-						if (factoryValue !== oldValue) {
+						if (webrainOptions.equalsFunc
+							? !webrainOptions.equalsFunc.call(this, oldValue, factoryValue)
+							: oldValue !== factoryValue
+						) {
 							setOnInit(this, factoryValue)
 						}
 					}
@@ -181,7 +199,10 @@ export class ObservableObjectBuilder<TObject extends ObservableObject> {
 					const newValue = update.call(this, value)
 					if (typeof newValue !== 'undefined') {
 						const oldValue = getValue.call(this)
-						if (newValue !== oldValue) {
+						if (webrainOptions.equalsFunc
+							? !webrainOptions.equalsFunc.call(this, oldValue, newValue)
+							: oldValue !== newValue
+						) {
 							setOnInit(this, newValue)
 						}
 					}
@@ -207,7 +228,14 @@ export class ObservableObjectBuilder<TObject extends ObservableObject> {
 			if (__fields && typeof initValue !== 'undefined') {
 				const oldValue = __fields[name]
 
-				if (initValue !== oldValue) {
+				if (initializeValue) {
+					initializeValue.call(this, initValue)
+				}
+
+				if (webrainOptions.equalsFunc
+					? !webrainOptions.equalsFunc.call(object, oldValue, initValue)
+					: oldValue !== initValue
+				) {
 					__fields[name] = initValue
 					const {propertyChangedIfCanEmit} = object
 					if (propertyChangedIfCanEmit) {
@@ -224,7 +252,9 @@ export class ObservableObjectBuilder<TObject extends ObservableObject> {
 		return this as any
 	}
 
-	public delete<Name extends string | number>(name: Name)
+	public delete<
+		Name extends string | number = Extract<keyof TObject, string|number>
+	>(name: Name)
 		: this & { object: { readonly [newProp in Name]: never } }
 	{
 		const {object} = this
@@ -268,7 +298,7 @@ export class ObservableObjectBuilder<TObject extends ObservableObject> {
 // 	options?: IWritableFieldOptions,
 // 	initValue?: T,
 // ) {
-// 	return (target: ObservableObject, propertyKey: string, descriptor: PropertyDescriptor) => {
+// 	return (target: ObservableClass, propertyKey: string, descriptor: PropertyDescriptor) => {
 // 		builder.object = target
 // 		builder.writable(propertyKey, options, initValue)
 // 	}
@@ -278,13 +308,13 @@ export class ObservableObjectBuilder<TObject extends ObservableObject> {
 // 	options?: IReadableFieldOptions<T>,
 // 	initValue?: T,
 // ) {
-// 	return (target: ObservableObject, propertyKey: string) => {
+// 	return (target: ObservableClass, propertyKey: string) => {
 // 		builder.object = target
 // 		builder.readable(propertyKey, options, initValue)
 // 	}
 // }
 
-// class Class extends ObservableObject {
+// class Class extends ObservableClass {
 // 	@writable()
 // 	public prop: number
 //

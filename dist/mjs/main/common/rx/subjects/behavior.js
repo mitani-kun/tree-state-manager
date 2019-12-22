@@ -9,9 +9,13 @@ export function behavior(base) {
       }
     }
 
-    subscribe(subscriber) {
+    subscribe(subscriber, description) {
       if (!subscriber) {
         return null;
+      }
+
+      if (description) {
+        subscriber.description = description;
       }
 
       let unsubscribe = super.subscribe(subscriber);
@@ -24,9 +28,13 @@ export function behavior(base) {
       }
 
       return () => {
-        if (!unsubscribe) {
+        const _unsubscribe = unsubscribe;
+
+        if (!_unsubscribe) {
           return;
         }
+
+        unsubscribe = null;
 
         try {
           // eslint-disable-next-line no-shadow
@@ -40,8 +48,7 @@ export function behavior(base) {
             subscriber(unsubscribeValue);
           }
         } finally {
-          unsubscribe();
-          unsubscribe = null;
+          _unsubscribe();
         }
       };
     }

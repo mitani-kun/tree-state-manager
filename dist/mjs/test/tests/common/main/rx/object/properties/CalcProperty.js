@@ -1,6 +1,7 @@
 /* tslint:disable:no-duplicate-string */
 
 /* eslint-disable guard-for-in */
+import { xdescribe } from '../../../../../../../main/common/test/Mocha';
 xdescribe('common > main > rx > properties > CalcProperty', function () {// it('connect', function() {
   // 	const source: any = createObject().observableObject
   // 	new ObservableObjectBuilder(source)
@@ -11,7 +12,7 @@ xdescribe('common > main > rx > properties > CalcProperty', function () {// it('
   //
   // 	source.baseProp1 = 'baseProp1_init_source'
   //
-  // 	class BaseClass1 extends ObservableObject {
+  // 	class BaseClass1 extends ObservableClass {
   // 		public readonly source = source
   // 		public baseProp1
   // 	}

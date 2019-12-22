@@ -18,7 +18,7 @@ var _rdtsc = require("rdtsc");
 
 var _ThenableSync = require("../../../main/common/async/ThenableSync");
 
-var _ObservableObject2 = require("../../../main/common/rx/object/ObservableObject");
+var _ObservableClass2 = require("../../../main/common/rx/object/ObservableClass");
 
 var _CalcObjectBuilder = require("../../../main/common/rx/object/properties/CalcObjectBuilder");
 
@@ -26,14 +26,16 @@ var _CalcPropertyBuilder = require("../../../main/common/rx/object/properties/Ca
 
 var _helpers = require("../../../main/common/rx/object/properties/helpers");
 
+var _Mocha = require("../../../main/common/test/Mocha");
+
 /* tslint:disable:no-empty */
-describe('resolvePath', function () {
+(0, _Mocha.describe)('resolvePath', function () {
   this.timeout(300000);
 
   var Class =
   /*#__PURE__*/
-  function (_ObservableObject) {
-    (0, _inherits2.default)(Class, _ObservableObject);
+  function (_ObservableClass) {
+    (0, _inherits2.default)(Class, _ObservableClass);
 
     function Class() {
       var _getPrototypeOf2, _context;
@@ -54,17 +56,20 @@ describe('resolvePath', function () {
     }
 
     return Class;
-  }(_ObservableObject2.ObservableObject);
+  }(_ObservableClass2.ObservableClass);
 
   var simple = {};
-  new _CalcObjectBuilder.CalcObjectBuilder(Class.prototype).writable('observable').calc('calc', simple, (0, _CalcPropertyBuilder.calcPropertyFactory)(null, function (input, property) {
-    property.value = input.value;
-    return _ThenableSync.ThenableSync.createResolved(null);
+  new _CalcObjectBuilder.CalcObjectBuilder(Class.prototype).writable('observable').calc('calc', simple, (0, _CalcPropertyBuilder.calcPropertyFactory)({
+    dependencies: null,
+    calcFunc: function calcFunc(state) {
+      state.value = state.input.value;
+      return _ThenableSync.ThenableSync.createResolved(null);
+    }
   }));
   var object = new Class();
   object.simple = simple;
   simple.value = object;
-  it('simple', function () {
+  (0, _Mocha.it)('simple', function () {
     var test = (0, _helpers.resolvePath)(object)();
     var result = (0, _rdtsc.calcPerformance)(20000, function () {}, function () {
       return (0, _helpers.resolvePath)(true)();

@@ -1,5 +1,6 @@
 /* tslint:disable:no-construct use-primitive-type */
 import { assert } from '../../../../../main/common/test/Assert';
+import { describe, it } from '../../../../../main/common/test/Mocha';
 import { iterablesToArrays, treeToSequenceVariants } from '../../../../../main/common/test/Variants';
 describe('common > test > Variants', function () {
   function iterablesToString(iterables) {
@@ -10,8 +11,8 @@ describe('common > test > Variants', function () {
 
   function testTree(tree, resultArrays) {
     const iterables = treeToSequenceVariants(tree);
-    let arrays = iterablesToArrays(iterables);
-    console.log(iterablesToString(arrays));
+    let arrays = iterablesToArrays(iterables); // console.log(iterablesToString(arrays))
+
     assert.deepStrictEqual(arrays, resultArrays);
     arrays = iterablesToArrays(iterables);
     assert.deepStrictEqual(arrays, resultArrays);

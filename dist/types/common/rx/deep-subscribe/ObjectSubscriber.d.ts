@@ -1,15 +1,15 @@
-import { IUnsubscribe } from '../subjects/observable';
-import { ILastValue, ISubscribeValue, IUnsubscribeValue, IValueSubscriber } from './contracts/common';
+import { IUnsubscribeOrVoid } from '../subjects/observable';
+import { IChangeValue, ILastValue, IPropertiesPath, IValueSubscriber, ValueChangeType, ValueKeyType } from './contracts/common';
+import { IRule } from './contracts/rules';
 export declare class ObjectSubscriber<TObject> implements IValueSubscriber<TObject> {
-    private readonly _subscribe;
-    private readonly _unsubscribe;
+    readonly debugTarget: any;
+    private readonly _changeValue;
     private readonly _lastValue;
     private _unsubscribers;
     private _unsubscribersCount;
     private _subscribedValues;
-    constructor(subscribe?: ISubscribeValue<TObject>, unsubscribe?: IUnsubscribeValue<TObject>, lastValue?: ILastValue<TObject>);
+    constructor(changeValue?: IChangeValue<TObject>, lastValue?: ILastValue<TObject>, debugTarget?: any);
     private insertSubscribed;
     private removeSubscribed;
-    subscribe(value: TObject, parent: any, propertyName: string, propertiesPath: () => string, ruleDescription: string): IUnsubscribe;
-    unsubscribe(value: TObject, parent: any, propertyName: string): void;
+    change(key: any, oldValue: TObject, newValue: TObject, parent: any, changeType: ValueChangeType, keyType: ValueKeyType, propertiesPath: IPropertiesPath, rule: IRule): IUnsubscribeOrVoid;
 }

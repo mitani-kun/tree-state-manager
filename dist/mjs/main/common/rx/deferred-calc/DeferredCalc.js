@@ -107,10 +107,10 @@ export class DeferredCalc {
 
     this._pulse();
 
-    this._calcFunc.call(this, value => {
+    this._calcFunc.call(this, (...args) => {
       this._timeCalcEnd = this._timing.now();
 
-      this._calcCompletedCallback.call(this, value);
+      this._calcCompletedCallback.apply(this, args);
 
       this._pulse();
     });
@@ -169,7 +169,7 @@ export class DeferredCalc {
 
       if (autoInvalidateTime <= now) {
         this._invalidate();
-      } else if (autoInvalidateTime > timeNextPulse) {
+      } else if (timeNextPulse <= now || autoInvalidateTime < timeNextPulse) {
         timeNextPulse = autoInvalidateTime;
       }
     } // endregion
@@ -185,7 +185,7 @@ export class DeferredCalc {
         this._pulse();
 
         return;
-      } else if (canBeCalcTime > timeNextPulse) {
+      } else if (timeNextPulse <= now || canBeCalcTime < timeNextPulse) {
         timeNextPulse = canBeCalcTime;
       }
     } // endregion
@@ -199,7 +199,7 @@ export class DeferredCalc {
         this._calc();
 
         return;
-      } else if (calcTime > timeNextPulse) {
+      } else if (timeNextPulse <= now || calcTime < timeNextPulse) {
         timeNextPulse = calcTime;
       }
     } // endregion

@@ -1,14 +1,17 @@
 import { createFunction } from '../../../helpers/helpers';
+import { Debugger } from '../../Debugger';
 import { deepSubscribeRule } from '../../deep-subscribe/deep-subscribe';
+import { setObjectValue } from '../../deep-subscribe/helpers/common';
 import { RuleBuilder } from '../../deep-subscribe/RuleBuilder';
-import { _set, _setExt } from '../ObservableObject';
+import { _set, _setExt } from '../ObservableClass';
 import { ObservableObjectBuilder } from '../ObservableObjectBuilder';
-import { CalcObjectDebugger } from './CalcObjectDebugger';
 import { Connector } from './Connector';
+
+const buildSourceRule = b => b.p('source');
+
 export class ConnectorBuilder extends ObservableObjectBuilder {
-  constructor(object, buildSourceRule) {
+  constructor(object) {
     super(object);
-    this.buildSourceRule = buildSourceRule;
   }
 
   connect(name, buildRule, options, initValue) {
@@ -21,12 +24,13 @@ export class ConnectorBuilder extends ObservableObjectBuilder {
 
   _connect(writable, name, buildRule, options, initValue) {
     const {
-      object,
-      buildSourceRule
+      object
     } = this;
-    let ruleBuilder = new RuleBuilder();
+    let ruleBuilder = new RuleBuilder({
+      valuePropertyDefaultName: 'last'
+    });
 
-    if (buildSourceRule) {
+    if (object instanceof Connector) {
       ruleBuilder = buildSourceRule(ruleBuilder);
     }
 
@@ -39,8 +43,12 @@ export class ConnectorBuilder extends ObservableObjectBuilder {
 
     const setOptions = options && options.setOptions; // optimization
 
-    const baseGetValue = options && options.getValue || createFunction(`return this.__fields["${name}"]`);
-    const baseSetValue = options && options.setValue || createFunction('v', `this.__fields["${name}"] = v`);
+    const baseGetValue = options && options.getValue || createFunction(() => function () {
+      return this.__fields[name];
+    }, `return this.__fields["${name}"]`);
+    const baseSetValue = options && options.setValue || createFunction(() => function (v) {
+      this.__fields[name] = v;
+    }, 'v', `this.__fields["${name}"] = v`);
     const getValue = !writable ? baseGetValue : function () {
       return baseGetValue.call(this).value;
     };
@@ -59,7 +67,8 @@ export class ConnectorBuilder extends ObservableObjectBuilder {
           baseSetValue.call(this, {
             value: initValue,
             parent: null,
-            propertyName: null
+            key: null,
+            keyType: null
           });
         }
 
@@ -69,15 +78,16 @@ export class ConnectorBuilder extends ObservableObjectBuilder {
           }
         };
 
-        const receiveValue = writable ? (value, parent, propertyName) => {
-          CalcObjectDebugger.Instance.onConnectorChanged(this, value, parent, propertyName);
+        const receiveValue = writable ? (value, parent, key, keyType) => {
+          Debugger.Instance.onConnectorChanged(this, name, value, parent, key, keyType);
           const baseValue = baseGetValue.call(this);
           baseValue.parent = parent;
-          baseValue.propertyName = propertyName;
+          baseValue.key = key;
+          baseValue.keyType = keyType;
           setVal(this, value);
           return null;
-        } : (value, parent, propertyName) => {
-          CalcObjectDebugger.Instance.onConnectorChanged(this, value, parent, propertyName);
+        } : (value, parent, key, keyType) => {
+          Debugger.Instance.onConnectorChanged(this, name, value, parent, key, keyType);
           setVal(this, value);
           return null;
         };
@@ -87,8 +97,9 @@ export class ConnectorBuilder extends ObservableObjectBuilder {
 
           if (hasSubscribers) {
             const unsubscribe = deepSubscribeRule({
-              object: this,
+              object: this instanceof Connector ? this.connectorState : this,
               lastValue: receiveValue,
+              debugTarget: this,
               rule
             });
 
@@ -96,7 +107,7 @@ export class ConnectorBuilder extends ObservableObjectBuilder {
               this._setUnsubscriber(name, unsubscribe);
             }
           }
-        });
+        }, `Connector.${name}.hasSubscribersObservable for deepSubscribe`);
         setVal = set;
         return initValue;
       },
@@ -105,7 +116,7 @@ export class ConnectorBuilder extends ObservableObjectBuilder {
         const baseValue = baseGetValue.call(this);
 
         if (baseValue.parent != null) {
-          baseValue.parent[baseValue.propertyName] = value;
+          setObjectValue(baseValue.parent, baseValue.key, baseValue.keyType, value);
         } // return value
 
       },
@@ -115,18 +126,28 @@ export class ConnectorBuilder extends ObservableObjectBuilder {
   }
 
 }
-export function connectorClass(build, baseClass) {
+export function connectorClass({
+  buildRule,
+  baseClass
+}) {
   class NewConnector extends (baseClass || Connector) {}
 
-  build(new ConnectorBuilder(NewConnector.prototype, b => b.propertyName('connectorSource')));
+  buildRule(new ConnectorBuilder(NewConnector.prototype));
   return NewConnector;
 }
-export function connectorFactory(build, baseClass) {
-  const NewConnector = connectorClass(build, baseClass);
-  return source => new NewConnector(source);
+export function connectorFactory({
+  name,
+  buildRule,
+  baseClass
+}) {
+  const NewConnector = connectorClass({
+    buildRule,
+    baseClass
+  });
+  return (source, sourceName) => new NewConnector(source, name || sourceName);
 } // const builder = new ConnectorBuilder(true as any)
 //
-// export function connect<TObject extends ObservableObject, TValue = any>(
+// export function connect<TObject extends ObservableClass, TValue = any>(
 // 	options?: IConnectFieldOptions<TObject, TValue>,
 // 	initValue?: TValue,
 // ) {
@@ -135,7 +156,7 @@ export function connectorFactory(build, baseClass) {
 // 		builder.connect(propertyKey, options, initValue)
 // 	}
 // }
-// class Class1 extends ObservableObject {
+// class Class1 extends ObservableClass {
 // }
 // class Class extends Class1 {
 // 	@connect()

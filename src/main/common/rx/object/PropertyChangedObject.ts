@@ -85,19 +85,21 @@ export class PropertyChangedObject implements IPropertyChangedObject {
 	public _setUnsubscriber(propertyName: string | number, unsubscribe: IUnsubscribe) {
 		const {__meta} = this
 
-		let {unsubscribers} = __meta
+		const {unsubscribers} = __meta
 		if (unsubscribers) {
 			const oldUnsubscribe = unsubscribers[propertyName]
-			if (oldUnsubscribe) {
-				oldUnsubscribe()
+			if (unsubscribe !== oldUnsubscribe) {
+				if (oldUnsubscribe) {
+					unsubscribers[propertyName] = unsubscribe
+					oldUnsubscribe()
+				} else if (unsubscribe) {
+					unsubscribers[propertyName] = unsubscribe
+				}
 			}
-		}
-
-		if (unsubscribe) {
-			if (!unsubscribers) {
-				__meta.unsubscribers = unsubscribers = {}
+		} else if (unsubscribe) {
+			__meta.unsubscribers = {
+				[propertyName]: unsubscribe,
 			}
-			unsubscribers[propertyName] = unsubscribe
 		}
 	}
 

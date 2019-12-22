@@ -50,9 +50,11 @@ var _ObservableSet = require("../../../../../../../../main/common/lists/Observab
 
 var _SortedList = require("../../../../../../../../main/common/lists/SortedList");
 
+var _common = require("../../../../../../../../main/common/rx/deep-subscribe/contracts/common");
+
 var _deepSubscribe = require("../../../../../../../../main/common/rx/deep-subscribe/deep-subscribe");
 
-var _ObservableObject2 = require("../../../../../../../../main/common/rx/object/ObservableObject");
+var _ObservableClass2 = require("../../../../../../../../main/common/rx/object/ObservableClass");
 
 var _ObservableObjectBuilder = require("../../../../../../../../main/common/rx/object/ObservableObjectBuilder");
 
@@ -85,25 +87,25 @@ function createObject() {
   var set = new _set.default();
   var map2 = new _map2.default();
 
-  var ObservableClass =
+  var ObservableClasss =
   /*#__PURE__*/
-  function (_ObservableObject) {
-    (0, _inherits2.default)(ObservableClass, _ObservableObject);
+  function (_ObservableClass) {
+    (0, _inherits2.default)(ObservableClasss, _ObservableClass);
 
-    function ObservableClass() {
-      (0, _classCallCheck2.default)(this, ObservableClass);
-      return (0, _possibleConstructorReturn2.default)(this, (0, _getPrototypeOf3.default)(ObservableClass).apply(this, arguments));
+    function ObservableClasss() {
+      (0, _classCallCheck2.default)(this, ObservableClasss);
+      return (0, _possibleConstructorReturn2.default)(this, (0, _getPrototypeOf3.default)(ObservableClasss).apply(this, arguments));
     }
 
-    return ObservableClass;
-  }(_ObservableObject2.ObservableObject);
+    return ObservableClasss;
+  }(_ObservableClass2.ObservableClass);
 
-  var observableObjectPrototype = new ObservableClass();
-  var observableObject = new _ObservableObject2.ObservableObject();
+  var observableObjectPrototype = new ObservableClasss();
+  var observableObject = new _ObservableClass2.ObservableClass();
   var observableList = new _SortedList.SortedList();
   var observableSet = new _ObservableSet.ObservableSet();
   var observableMap = new _ObservableMap.ObservableMap();
-  var property = new _ObservableObject2.ObservableObject();
+  var property = new _ObservableClass2.ObservableClass();
   (0, _assign.default)(object, (_Object$assign2 = {}, _Object$assign2[_valueProperty.VALUE_PROPERTY_DEFAULT] = 'nothing', _Object$assign2.observableObjectPrototype = observableObjectPrototype, _Object$assign2.observableObject = observableObject, _Object$assign2.observableList = observableList, _Object$assign2.observableSet = observableSet, _Object$assign2.observableMap = observableMap, _Object$assign2.object = object, _Object$assign2.property = property, _Object$assign2.list = list, _Object$assign2.set = set, _Object$assign2.map2 = map2, _Object$assign2.valueUndefined = void 0, _Object$assign2.value = 'value', _Object$assign2.valueArray = ['value1', 'value2'], _Object$assign2.valueObject = new String('value'), _Object$assign2.promiseSync = {
     then: function then(resolve) {
       return resolve(observableObject);
@@ -115,7 +117,7 @@ function createObject() {
       }, 0);
     }
   }, _Object$assign2));
-  var observableObjectBuilderPrototype = new _ObservableObjectBuilder.ObservableObjectBuilder(ObservableClass.prototype);
+  var observableObjectBuilderPrototype = new _ObservableObjectBuilder.ObservableObjectBuilder(ObservableClasss.prototype);
   var observableObjectBuilder = new _ObservableObjectBuilder.ObservableObjectBuilder(observableObject);
   var propertyBuilder = new _ObservableObjectBuilder.ObservableObjectBuilder(property);
   (0, _forEach.default)(_context = (0, _keys.default)(object)).call(_context, function (key) {
@@ -179,7 +181,7 @@ function () {
         useIncorrectUnsubscribe = _ref.useIncorrectUnsubscribe,
         shouldNeverSubscribe = _ref.shouldNeverSubscribe,
         _ref$asyncDelay = _ref.asyncDelay,
-        asyncDelay = _ref$asyncDelay === void 0 ? 10 : _ref$asyncDelay;
+        asyncDelay = _ref$asyncDelay === void 0 ? 30 : _ref$asyncDelay;
     (0, _classCallCheck2.default)(this, TestDeepSubscribe);
     this._object = object;
     this._immediate = immediate;
@@ -284,63 +286,74 @@ function () {
     value: function subscribePrivate(ruleBuilder, i) {
       var _this = this;
 
-      this._unsubscribe[i] = (0, _deepSubscribe.deepSubscribe)({
-        object: this._object,
-        subscribeValue: function subscribeValue(value, parent, propertyName) {
-          if (_this._doNotSubscribeNonObjectValues && !(value instanceof Object)) {
-            if (typeof _this._expectedLastValue[i][_this._expectedLastValue[i].length - 1] === 'undefined' || _this._subscribersCount[i] === 0) {
-              _this._expectedLastValue[i].push(value);
-            }
-
-            _this._subscribersCount[i]++;
-
-            if (typeof value !== 'undefined') {
-              _this._subscribed[i].push(value);
-            }
-
-            return;
-          }
-
-          if (_this._performanceTest) {
-            return function () {};
-          }
-
+      var subscribeValue = function subscribeValue(newValue, parent, key, propertiesPath, rule) {
+        if (_this._doNotSubscribeNonObjectValues && !(newValue instanceof Object)) {
           if (typeof _this._expectedLastValue[i][_this._expectedLastValue[i].length - 1] === 'undefined' || _this._subscribersCount[i] === 0) {
-            _this._expectedLastValue[i].push(value);
+            _this._expectedLastValue[i].push(newValue);
           }
 
           _this._subscribersCount[i]++;
 
-          if (typeof value !== 'undefined') {
-            _this._subscribed[i].push(value);
+          if (typeof newValue !== 'undefined') {
+            _this._subscribed[i].push(newValue);
           }
 
-          if (_this._useIncorrectUnsubscribe) {
-            return 'Test Incorrect Unsubscribe';
+          return;
+        }
+
+        if (_this._performanceTest) {
+          return function () {};
+        }
+
+        if (typeof _this._expectedLastValue[i][_this._expectedLastValue[i].length - 1] === 'undefined' || _this._subscribersCount[i] === 0) {
+          _this._expectedLastValue[i].push(newValue);
+        }
+
+        _this._subscribersCount[i]++;
+
+        if (typeof newValue !== 'undefined') {
+          _this._subscribed[i].push(newValue);
+        }
+
+        if (_this._useIncorrectUnsubscribe) {
+          return 'Test Incorrect Unsubscribe';
+        }
+
+        return typeof newValue !== 'undefined' ? function () {
+          _this._unsubscribed[i].push(newValue);
+        } : null;
+      };
+
+      var unsubscribeValue = function unsubscribeValue(oldValue, parent, key, propertiesPath, rule, isUnsubscribed) {
+        if (_this._performanceTest) {
+          return;
+        }
+
+        _this._subscribersCount[i]--;
+
+        if (_this._subscribersCount[i] === 0) {
+          _this._expectedLastValue[i].push(void 0);
+        }
+
+        assert.ok(_this._subscribersCount[i] >= 0); // if (this._subscribersCount[i] < 0) {
+        // 	assert.strictEqual(typeof value, 'undefined')
+        // 	this._subscribersCount[i] = 0
+        // }
+
+        if (typeof oldValue !== 'undefined' && !isUnsubscribed) {
+          _this._unsubscribed[i].push(oldValue);
+        }
+      };
+
+      this._unsubscribe[i] = (0, _deepSubscribe.deepSubscribe)({
+        object: this._object,
+        changeValue: function changeValue(key, oldValue, newValue, parent, changeType, keyType, propertiesPath, rule, isUnsubscribed) {
+          if ((changeType & _common.ValueChangeType.Unsubscribe) !== 0) {
+            unsubscribeValue(oldValue, parent, key, propertiesPath, rule, isUnsubscribed);
           }
 
-          return typeof value !== 'undefined' ? function () {
-            _this._unsubscribed[i].push(value);
-          } : null;
-        },
-        unsubscribeValue: function unsubscribeValue(value, parent, propertyName, isUnsubscribed) {
-          if (_this._performanceTest) {
-            return;
-          }
-
-          _this._subscribersCount[i]--;
-
-          if (_this._subscribersCount[i] === 0) {
-            _this._expectedLastValue[i].push(void 0);
-          }
-
-          assert.ok(_this._subscribersCount[i] >= 0); // if (this._subscribersCount[i] < 0) {
-          // 	assert.strictEqual(typeof value, 'undefined')
-          // 	this._subscribersCount[i] = 0
-          // }
-
-          if (typeof value !== 'undefined' && !isUnsubscribed) {
-            _this._unsubscribed[i].push(value);
+          if ((changeType & _common.ValueChangeType.Subscribe) !== 0) {
+            return subscribeValue(newValue, parent, key, propertiesPath, rule);
           }
         },
         lastValue: function lastValue(value, parent, propertyName) {

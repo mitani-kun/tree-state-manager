@@ -1,5 +1,6 @@
 /* tslint:disable:no-construct use-primitive-type */
 import {assert} from '../../../../../main/common/test/Assert'
+import {describe, it} from '../../../../../main/common/test/Mocha'
 import {IArrayTree, iterablesToArrays, treeToSequenceVariants} from '../../../../../main/common/test/Variants'
 
 declare const after
@@ -17,7 +18,7 @@ describe('common > test > Variants', function() {
 	function testTree<T>(tree: IArrayTree<T>, resultArrays: T[][]) {
 		const iterables = treeToSequenceVariants(tree)
 		let arrays = iterablesToArrays(iterables)
-		console.log(iterablesToString(arrays))
+		// console.log(iterablesToString(arrays))
 		assert.deepStrictEqual(arrays, resultArrays)
 		arrays = iterablesToArrays(iterables)
 		assert.deepStrictEqual(arrays, resultArrays)

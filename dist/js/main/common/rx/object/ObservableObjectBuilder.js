@@ -17,18 +17,20 @@ var _createClass2 = _interopRequireDefault(require("@babel/runtime-corejs3/helpe
 
 var _helpers = require("../../helpers/helpers");
 
+var _webrainOptions = require("../../helpers/webrainOptions");
+
 require("../extensions/autoConnect");
 
 var _IPropertyChanged = require("./IPropertyChanged");
 
-var _ObservableObject = require("./ObservableObject");
+var _ObservableClass = require("./ObservableClass");
 
 var ObservableObjectBuilder =
 /*#__PURE__*/
 function () {
   function ObservableObjectBuilder(object) {
     (0, _classCallCheck2.default)(this, ObservableObjectBuilder);
-    this.object = object || new _ObservableObject.ObservableObject();
+    this.object = object || new _ObservableClass.ObservableClass();
   }
 
   (0, _createClass2.default)(ObservableObjectBuilder, [{
@@ -48,10 +50,18 @@ function () {
       } // optimization
 
 
-      var getValue = options && options.getValue || (0, _helpers.createFunction)("return this.__fields[\"" + name + "\"]");
-      var setValue = options && options.setValue || (0, _helpers.createFunction)('v', "this.__fields[\"" + name + "\"] = v");
+      var getValue = options && options.getValue || (0, _helpers.createFunction)(function () {
+        return function () {
+          return this.__fields[name];
+        };
+      }, "return this.__fields[\"" + name + "\"]");
+      var setValue = options && options.setValue || (0, _helpers.createFunction)(function () {
+        return function (v) {
+          this.__fields[name] = v;
+        };
+      }, 'v', "this.__fields[\"" + name + "\"] = v");
 
-      var _set2 = setOptions ? (0, _bind.default)(_ObservableObject._setExt).call(_ObservableObject._setExt, null, name, getValue, setValue, setOptions) : (0, _bind.default)(_ObservableObject._set).call(_ObservableObject._set, null, name, getValue, setValue);
+      var _set2 = setOptions ? (0, _bind.default)(_ObservableClass._setExt).call(_ObservableClass._setExt, null, name, getValue, setValue, setOptions) : (0, _bind.default)(_ObservableClass._set).call(_ObservableClass._set, null, name, getValue, setValue);
 
       (0, _defineProperty.default)(object, name, {
         configurable: true,
@@ -67,7 +77,7 @@ function () {
       if (__fields && typeof initValue !== 'undefined') {
         var _value = __fields[name];
 
-        if (initValue !== _value) {
+        if (_webrainOptions.webrainOptions.equalsFunc ? !_webrainOptions.webrainOptions.equalsFunc.call(object, _value, initValue) : _value !== initValue) {
           object[name] = initValue;
         }
       }
@@ -100,11 +110,19 @@ function () {
 
       var update = options && options.update; // optimization
 
-      var getValue = options && options.getValue || (0, _helpers.createFunction)("return this.__fields[\"" + name + "\"]");
+      var getValue = options && options.getValue || (0, _helpers.createFunction)(function () {
+        return function () {
+          return this.__fields[name];
+        };
+      }, "return this.__fields[\"" + name + "\"]");
       var setValue;
 
       if (update || factory) {
-        setValue = options && options.setValue || (0, _helpers.createFunction)('v', "this.__fields[\"" + name + "\"] = v");
+        setValue = options && options.setValue || (0, _helpers.createFunction)(function () {
+          return function (v) {
+            this.__fields[name] = v;
+          };
+        }, 'v', "this.__fields[\"" + name + "\"] = v");
       }
 
       var setOnUpdate;
@@ -112,7 +130,7 @@ function () {
       if (update) {
         // tslint:disable-next-line
         var setOptions = options && options.setOptions;
-        setOnUpdate = setOptions ? (0, _bind.default)(_ObservableObject._setExt).call(_ObservableObject._setExt, null, name, getValue, setValue, setOptions) : (0, _bind.default)(_ObservableObject._set).call(_ObservableObject._set, null, name, getValue, setValue);
+        setOnUpdate = setOptions ? (0, _bind.default)(_ObservableClass._setExt).call(_ObservableClass._setExt, null, name, getValue, setValue, setOptions) : (0, _bind.default)(_ObservableClass._set).call(_ObservableClass._set, null, name, getValue, setValue);
       }
 
       var setOnInit;
@@ -122,7 +140,7 @@ function () {
           suppressPropertyChanged: true
         });
 
-        setOnInit = _setOptions ? (0, _bind.default)(_ObservableObject._setExt).call(_ObservableObject._setExt, null, name, getValue, setValue, _setOptions) : (0, _bind.default)(_ObservableObject._set).call(_ObservableObject._set, null, name, getValue, setValue);
+        setOnInit = _setOptions ? (0, _bind.default)(_ObservableClass._setExt).call(_ObservableClass._setExt, null, name, getValue, setValue, _setOptions) : (0, _bind.default)(_ObservableClass._set).call(_ObservableClass._set, null, name, getValue, setValue);
       }
 
       var createInstanceProperty = function createInstanceProperty(instance) {
@@ -147,10 +165,17 @@ function () {
         (0, _defineProperty.default)(instance, name, attributes);
       };
 
+      var initializeValue = options && options.init;
+
       if (factory) {
         var init = function init() {
           var factoryValue = factory.call(this, initValue);
           createInstanceProperty(this);
+
+          if (initializeValue) {
+            initializeValue.call(this, factoryValue);
+          }
+
           return factoryValue;
         };
 
@@ -163,7 +188,7 @@ function () {
             if (typeof factoryValue !== 'undefined') {
               var oldValue = getValue.call(this);
 
-              if (factoryValue !== oldValue) {
+              if (_webrainOptions.webrainOptions.equalsFunc ? !_webrainOptions.webrainOptions.equalsFunc.call(this, oldValue, factoryValue) : oldValue !== factoryValue) {
                 setOnInit(this, factoryValue);
               }
             }
@@ -181,7 +206,7 @@ function () {
             if (typeof newValue !== 'undefined') {
               var oldValue = getValue.call(this);
 
-              if (newValue !== oldValue) {
+              if (_webrainOptions.webrainOptions.equalsFunc ? !_webrainOptions.webrainOptions.equalsFunc.call(this, oldValue, newValue) : oldValue !== newValue) {
                 setOnInit(this, newValue);
               }
             }
@@ -206,7 +231,11 @@ function () {
         if (__fields && typeof initValue !== 'undefined') {
           var _oldValue = __fields[name];
 
-          if (initValue !== _oldValue) {
+          if (initializeValue) {
+            initializeValue.call(this, initValue);
+          }
+
+          if (_webrainOptions.webrainOptions.equalsFunc ? !_webrainOptions.webrainOptions.equalsFunc.call(object, _oldValue, initValue) : _oldValue !== initValue) {
             __fields[name] = initValue;
             var _propertyChangedIfCanEmit = object.propertyChangedIfCanEmit;
 
@@ -268,7 +297,7 @@ function () {
 // 	options?: IWritableFieldOptions,
 // 	initValue?: T,
 // ) {
-// 	return (target: ObservableObject, propertyKey: string, descriptor: PropertyDescriptor) => {
+// 	return (target: ObservableClass, propertyKey: string, descriptor: PropertyDescriptor) => {
 // 		builder.object = target
 // 		builder.writable(propertyKey, options, initValue)
 // 	}
@@ -278,12 +307,12 @@ function () {
 // 	options?: IReadableFieldOptions<T>,
 // 	initValue?: T,
 // ) {
-// 	return (target: ObservableObject, propertyKey: string) => {
+// 	return (target: ObservableClass, propertyKey: string) => {
 // 		builder.object = target
 // 		builder.readable(propertyKey, options, initValue)
 // 	}
 // }
-// class Class extends ObservableObject {
+// class Class extends ObservableClass {
 // 	@writable()
 // 	public prop: number
 //

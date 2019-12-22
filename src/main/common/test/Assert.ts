@@ -78,15 +78,13 @@ export class Assert {
 		}
 	}
 
-	public throws(fn: () => void, errType?: TClass<any>|Array<TClass<any>>, regExp?: RegExp, message?: string): void {
-		let err
-		try {
-			fn()
-		} catch (ex) {
-			err = ex
-		}
-
+	private assertError(err: Error, errType?: TClass<any>|Array<TClass<any>>, regExp?: RegExp, message?: string) {
 		this.ok(err)
+
+		if (err instanceof AssertionError) {
+			const index = Assert.errors.indexOf(err)
+			Assert.errors.splice(index, 1)
+		}
 
 		if (errType) {
 			const actualErrType = err.constructor
@@ -112,13 +110,63 @@ export class Assert {
 		}
 	}
 
+	public async throwsAsync(
+		fn: () => Promise<void>,
+		errType?: TClass<any>|Array<TClass<any>>,
+		regExp?: RegExp, message?: string,
+	): Promise<void> {
+		let err
+		try {
+			await fn()
+		} catch (ex) {
+			err = ex
+		}
+
+		this.assertError(err)
+	}
+
+	public throws(
+		fn: () => void,
+		errType?: TClass<any>|Array<TClass<any>>,
+		regExp?: RegExp, message?: string,
+	): void {
+		let err
+		try {
+			fn()
+		} catch (ex) {
+			err = ex
+		}
+
+		this.assertError(err)
+	}
+
+	public assertNotHandledErrors() {
+		if (Assert.errors.length) {
+			const firstError = Assert.errors[0]
+			Assert.errors = []
+			throw firstError
+		}
+	}
+
+	public static errors: Error[] = []
+
 	// noinspection JSMethodCanBeStatic
 	public throwAssertionError(actual, expected, message?: string) {
-		throw new AssertionError(message, {
+		console.debug('actual: ', actual)
+		console.debug('expected: ', expected)
+		const error = new AssertionError(message, {
 			actual,
 			expected,
 			showDiff: true,
 		})
+
+		if (!Assert.errors) {
+			Assert.errors = [error]
+		} else {
+			Assert.errors.push(error)
+		}
+
+		throw error
 	}
 }
 

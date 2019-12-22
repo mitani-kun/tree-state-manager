@@ -1,6 +1,8 @@
 /* eslint-disable guard-for-in */
-import { ObservableObject } from '../../../../../../main/common/rx/object/ObservableObject';
+import { ObservableClass } from '../../../../../../main/common/rx/object/ObservableClass';
 import { ObservableObjectBuilder } from '../../../../../../main/common/rx/object/ObservableObjectBuilder';
+import { assert } from '../../../../../../main/common/test/Assert';
+import { describe, it } from '../../../../../../main/common/test/Mocha';
 describe('common > main > rx > observable-object-builder', function () {
   function assertEvents(events, check) {
     events = events && events.map(o => {
@@ -122,7 +124,7 @@ describe('common > main > rx > observable-object-builder', function () {
     const {
       object
     } = new ObservableObjectBuilder();
-    assert.ok(object instanceof ObservableObject);
+    assert.ok(object instanceof ObservableClass);
     const builder = new ObservableObjectBuilder(object);
     assert.strictEqual(builder.object, object);
     assert.strictEqual(builder.readable('prop'), builder);
@@ -143,7 +145,7 @@ describe('common > main > rx > observable-object-builder', function () {
     const {
       object
     } = new ObservableObjectBuilder();
-    assert.ok(object instanceof ObservableObject);
+    assert.ok(object instanceof ObservableClass);
     const builder = new ObservableObjectBuilder(object);
     assert.strictEqual(builder.object, object);
     assert.strictEqual(builder.readable('prop'), builder);
@@ -164,7 +166,7 @@ describe('common > main > rx > observable-object-builder', function () {
     const {
       object
     } = new ObservableObjectBuilder();
-    assert.ok(object instanceof ObservableObject);
+    assert.ok(object instanceof ObservableClass);
     const builder = new ObservableObjectBuilder(object);
     assert.strictEqual(builder.object, object);
     assert.strictEqual(builder.writable('prop'), builder);

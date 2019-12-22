@@ -23,7 +23,9 @@ var _mergers = require("../../../extensions/merge/mergers");
 
 var _serializers = require("../../../extensions/serialization/serializers");
 
-var _ObservableObject2 = require("../ObservableObject");
+var _webrainOptions = require("../../../helpers/webrainOptions");
+
+var _ObservableClass2 = require("../ObservableClass");
 
 var _ObservableObjectBuilder = require("../ObservableObjectBuilder");
 
@@ -33,8 +35,8 @@ _Symbol$toStringTag = _toStringTag.default;
 
 var Property =
 /*#__PURE__*/
-function (_ObservableObject) {
-  (0, _inherits2.default)(Property, _ObservableObject);
+function (_ObservableClass) {
+  (0, _inherits2.default)(Property, _ObservableClass);
 
   function Property(options, initValue) {
     var _this;
@@ -126,7 +128,7 @@ function (_ObservableObject) {
   }, {
     key: "_canMerge",
     value: function _canMerge(source) {
-      if (source.constructor === Property && this.value === source.value || this.value === source) {
+      if (_webrainOptions.webrainOptions.equalsFunc ? source.constructor === Property && _webrainOptions.webrainOptions.equalsFunc.call(this, this.value, source.value) || _webrainOptions.webrainOptions.equalsFunc.call(this, this.value, source) : source.constructor === Property && this.value === source.value || this.value === source) {
         return null;
       }
 
@@ -138,6 +140,7 @@ function (_ObservableObject) {
       return this._mergeValue(merge, this.value, older, newer, preferCloneOlder, preferCloneNewer);
     } // endregion
     // region ISerializable
+    // noinspection SpellCheckingInspection
 
   }, {
     key: "serialize",
@@ -158,7 +161,7 @@ function (_ObservableObject) {
 
   }]);
   return Property;
-}(_ObservableObject2.ObservableObject);
+}(_ObservableClass2.ObservableClass);
 
 exports.Property = Property;
 Property.uuid = '6f2c51ccd8654baa9a93226e3374ccaf';

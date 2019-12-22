@@ -9,12 +9,17 @@ var _CalcPropertyDependenciesBuilder = require("./CalcPropertyDependenciesBuilde
 
 var _DependenciesBuilder = require("./DependenciesBuilder");
 
-function calcPropertyFactory(buildDependencies, calcFunc, calcOptions, valueOptions, initValue) {
+function calcPropertyFactory(_ref) {
+  var buildDependencies = _ref.dependencies,
+      calcFunc = _ref.calcFunc,
+      name = _ref.name,
+      calcOptions = _ref.calcOptions,
+      initValue = _ref.initValue;
   var dependencies;
 
   if (buildDependencies) {
     var _dependenciesBuilder = new _CalcPropertyDependenciesBuilder.CalcPropertyDependenciesBuilder(function (b) {
-      return b.valuePropertyName('input');
+      return b.propertyName('input');
     });
 
     buildDependencies(_dependenciesBuilder);
@@ -22,10 +27,27 @@ function calcPropertyFactory(buildDependencies, calcFunc, calcOptions, valueOpti
   }
 
   return function () {
-    var calcProperty = new _CalcProperty.CalcProperty(calcFunc, calcOptions, valueOptions, initValue);
+    var calcProperty = new _CalcProperty.CalcProperty({
+      calcFunc: calcFunc,
+      name: name,
+      calcOptions: calcOptions,
+      initValue: initValue
+    });
 
     if (dependencies) {
-      (0, _DependenciesBuilder.subscribeDependencies)(calcProperty, calcProperty, dependencies);
+      // subscribeDependencies(calcProperty.state, calcProperty, dependencies)
+      var states;
+      var unsubscribe;
+      calcProperty.propertyChanged.hasSubscribersObservable.subscribe(function (hasSubscribers) {
+        if (unsubscribe) {
+          states = unsubscribe();
+          unsubscribe = null;
+        }
+
+        if (hasSubscribers) {
+          unsubscribe = (0, _DependenciesBuilder.subscribeDependencies)(calcProperty.state, calcProperty, dependencies, states);
+        }
+      }, "CalcProperty." + calcProperty.state.name + ".hasSubscribersObservable for subscribeDependencies");
     }
 
     return calcProperty;

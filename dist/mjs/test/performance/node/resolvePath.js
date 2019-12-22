@@ -1,14 +1,15 @@
 /* tslint:disable:no-empty */
 import { calcPerformance } from 'rdtsc';
 import { ThenableSync } from '../../../main/common/async/ThenableSync';
-import { ObservableObject } from '../../../main/common/rx/object/ObservableObject';
+import { ObservableClass } from '../../../main/common/rx/object/ObservableClass';
 import { CalcObjectBuilder } from '../../../main/common/rx/object/properties/CalcObjectBuilder';
 import { calcPropertyFactory } from '../../../main/common/rx/object/properties/CalcPropertyBuilder';
 import { resolvePath } from '../../../main/common/rx/object/properties/helpers';
+import { describe, it } from '../../../main/common/test/Mocha';
 describe('resolvePath', function () {
   this.timeout(300000);
 
-  class Class extends ObservableObject {
+  class Class extends ObservableClass {
     constructor(...args) {
       super(...args);
       this.simple = {
@@ -19,9 +20,14 @@ describe('resolvePath', function () {
   }
 
   const simple = {};
-  new CalcObjectBuilder(Class.prototype).writable('observable').calc('calc', simple, calcPropertyFactory(null, (input, property) => {
-    property.value = input.value;
-    return ThenableSync.createResolved(null);
+  new CalcObjectBuilder(Class.prototype).writable('observable').calc('calc', simple, calcPropertyFactory({
+    dependencies: null,
+
+    calcFunc(state) {
+      state.value = state.input.value;
+      return ThenableSync.createResolved(null);
+    }
+
   }));
   const object = new Class();
   object.simple = simple;

@@ -1,9 +1,9 @@
 /* eslint-disable guard-for-in */
 import {IPropertyChangedEvent} from '../../../../../../main/common/rx/object/IPropertyChanged'
-import {ObservableObject} from '../../../../../../main/common/rx/object/ObservableObject'
+import {ObservableClass} from '../../../../../../main/common/rx/object/ObservableClass'
 import {ObservableObjectBuilder} from '../../../../../../main/common/rx/object/ObservableObjectBuilder'
-
-declare const assert: any
+import {assert} from '../../../../../../main/common/test/Assert'
+import {describe, it} from '../../../../../../main/common/test/Mocha'
 
 describe('common > main > rx > observable-object-builder', function() {
 	function assertEvents(events: IPropertyChangedEvent[], check: IPropertyChangedEvent[]) {
@@ -146,7 +146,7 @@ describe('common > main > rx > observable-object-builder', function() {
 
 	it('readable simple', function() {
 		const {object} = new ObservableObjectBuilder()
-		assert.ok(object instanceof ObservableObject)
+		assert.ok(object instanceof ObservableClass)
 
 		const builder = new ObservableObjectBuilder(object)
 		assert.strictEqual(builder.object, object)
@@ -174,7 +174,7 @@ describe('common > main > rx > observable-object-builder', function() {
 
 	it('readable factory', function() {
 		const {object} = new ObservableObjectBuilder()
-		assert.ok(object instanceof ObservableObject)
+		assert.ok(object instanceof ObservableClass)
 
 		const builder = new ObservableObjectBuilder(object)
 		assert.strictEqual(builder.object, object)
@@ -197,7 +197,7 @@ describe('common > main > rx > observable-object-builder', function() {
 
 	it('writable simple', function() {
 		const {object} = new ObservableObjectBuilder()
-		assert.ok(object instanceof ObservableObject)
+		assert.ok(object instanceof ObservableClass)
 
 		const builder = new ObservableObjectBuilder(object)
 		assert.strictEqual(builder.object, object)

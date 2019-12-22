@@ -35,11 +35,15 @@ function subject(base) {
 
       (0, _createClass2.default)(Subject, [{
         key: "subscribe",
-        value: function subscribe(subscriber) {
+        value: function subscribe(subscriber, description) {
           var _this = this;
 
           if (!subscriber) {
             return null;
+          }
+
+          if (description) {
+            subscriber.description = description;
           }
 
           var _subscribers = this._subscribers;
@@ -112,6 +116,11 @@ function subject(base) {
         key: "hasSubscribers",
         get: function get() {
           return !!(this._subscribers && this._subscribers.length);
+        }
+      }, {
+        key: "subscribersCount",
+        get: function get() {
+          return this._subscribers && this._subscribers.length;
         }
       }]);
       return Subject;

@@ -15,7 +15,7 @@ var _getPrototypeOf2 = _interopRequireDefault(require("@babel/runtime-corejs3/he
 
 var _inherits2 = _interopRequireDefault(require("@babel/runtime-corejs3/helpers/inherits"));
 
-var _CalcObjectDebugger = require("./CalcObjectDebugger");
+var _Debugger = require("../../Debugger");
 
 var _DependenciesBuilder2 = require("./DependenciesBuilder");
 
@@ -32,8 +32,8 @@ function (_DependenciesBuilder) {
   (0, _createClass2.default)(CalcPropertyDependenciesBuilder, [{
     key: "invalidateOn",
     value: function invalidateOn(buildRule, predicate) {
-      this.actionOn(buildRule, function (target, value, parent, propertyName) {
-        _CalcObjectDebugger.CalcObjectDebugger.Instance.onDependencyChanged(target, value, parent, propertyName);
+      this.actionOn(buildRule, function (target, value, parent, key, keyType) {
+        _Debugger.Debugger.Instance.onDependencyChanged(target, value, parent, key, keyType);
 
         target.invalidate();
       }, predicate);
@@ -42,8 +42,8 @@ function (_DependenciesBuilder) {
   }, {
     key: "clearOn",
     value: function clearOn(buildRule, predicate) {
-      this.actionOn(buildRule, function (target, value, parent, propertyName) {
-        _CalcObjectDebugger.CalcObjectDebugger.Instance.onDependencyChanged(target, value, parent, propertyName);
+      this.actionOn(buildRule, function (target, value, parent, key, keyType) {
+        _Debugger.Debugger.Instance.onDependencyChanged(target, value, parent, key, keyType);
 
         target.clear();
       }, predicate);

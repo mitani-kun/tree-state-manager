@@ -16,6 +16,8 @@ import { freezeWithUniqueId, getObjectUniqueId } from '../../../main/common/help
 import { ArraySet } from '../../../main/common/lists/ArraySet';
 import { binarySearch } from '../../../main/common/lists/helpers/array';
 import { SortedList } from '../../../main/common/lists/SortedList';
+import { assert } from '../../../main/common/test/Assert';
+import { describe, xit } from '../../../main/common/test/Mocha';
 import { createObject, TestDeepSubscribe } from '../../tests/common/main/rx/deep-subscribe/helpers/src/TestDeepSubscribe';
 const SetNative = Set;
 
@@ -1529,8 +1531,12 @@ describe('fundamental-operations', function () {
       }
 
       writable(name) {
-        const getValue = createFunction('o', `return o.__fields["${name}"]`);
-        const setValue = createFunction('o', 'v', `o.__fields["${name}"] = v`); // let getValue = createGetFunction(name, o => { getValue = o as any }) as (o: { [newProp in Name]: T }) => T
+        const getValue = createFunction(() => function () {
+          return this.__fields[name];
+        }, 'o', `return o.__fields["${name}"]`);
+        const setValue = createFunction(() => function (v) {
+          this.__fields[name] = v;
+        }, 'o', 'v', `o.__fields["${name}"] = v`); // let getValue = createGetFunction(name, o => { getValue = o as any }) as (o: { [newProp in Name]: T }) => T
         // const getValue = getValueBase.bind(null, name)
         // const setValue = createSetFunction(name) as (o: { [newProp in Name]: T }, v: T) => void
 

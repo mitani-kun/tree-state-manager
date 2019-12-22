@@ -4,7 +4,7 @@ import {ISubject, Subject} from './subject'
 export interface IBehavior<T> {
 	value: T
 	unsubscribeValue: T
-	subscribe(subscriber: ISubscriber<T>): IUnsubscribe
+	subscribe(subscriber: ISubscriber<T>, description?: any): IUnsubscribe
 	emit(value: T): this
 }
 
@@ -20,9 +20,13 @@ export function behavior<TBase>(base): any {
 			}
 		}
 
-		public subscribe(subscriber: ISubscriber<T>): IUnsubscribe {
+		public subscribe(subscriber: ISubscriber<T>, description?: any): IUnsubscribe {
 			if (!subscriber) {
 				return null
+			}
+
+			if (description) {
+				(subscriber as any).description = description
 			}
 
 			let unsubscribe = super.subscribe(subscriber)
@@ -33,9 +37,11 @@ export function behavior<TBase>(base): any {
 			}
 
 			return () => {
-				if (!unsubscribe) {
+				const _unsubscribe = unsubscribe
+				if (!_unsubscribe) {
 					return
 				}
+				unsubscribe = null
 
 				try {
 					// eslint-disable-next-line no-shadow
@@ -45,8 +51,7 @@ export function behavior<TBase>(base): any {
 						subscriber(unsubscribeValue)
 					}
 				} finally {
-					unsubscribe()
-					unsubscribe = null
+					_unsubscribe()
 				}
 			}
 		}

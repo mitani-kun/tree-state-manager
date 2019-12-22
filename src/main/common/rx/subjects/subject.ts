@@ -16,9 +16,17 @@ export function subject(base): any {
 			return !!(this._subscribers && this._subscribers.length)
 		}
 
-		public subscribe(subscriber: ISubscriber<T>): IUnsubscribe {
+		get subscribersCount() {
+			return this._subscribers && this._subscribers.length
+		}
+
+		public subscribe(subscriber: ISubscriber<T>, description?: any): IUnsubscribe {
 			if (!subscriber) {
 				return null
+			}
+
+			if (description) {
+				(subscriber as any).description = description
 			}
 
 			const {_subscribers} = this

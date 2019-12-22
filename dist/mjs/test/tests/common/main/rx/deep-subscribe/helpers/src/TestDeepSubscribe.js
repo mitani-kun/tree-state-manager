@@ -4,8 +4,9 @@ import { VALUE_PROPERTY_DEFAULT } from '../../../../../../../../main/common/help
 import { ObservableMap } from '../../../../../../../../main/common/lists/ObservableMap';
 import { ObservableSet } from '../../../../../../../../main/common/lists/ObservableSet';
 import { SortedList } from '../../../../../../../../main/common/lists/SortedList';
+import { ValueChangeType } from '../../../../../../../../main/common/rx/deep-subscribe/contracts/common';
 import { deepSubscribe } from '../../../../../../../../main/common/rx/deep-subscribe/deep-subscribe';
-import { ObservableObject } from '../../../../../../../../main/common/rx/object/ObservableObject';
+import { ObservableClass } from '../../../../../../../../main/common/rx/object/ObservableClass';
 import { ObservableObjectBuilder } from '../../../../../../../../main/common/rx/object/ObservableObjectBuilder';
 import { Assert } from '../../../../../../../../main/common/test/Assert';
 import { DeepCloneEqual } from '../../../../../../../../main/common/test/DeepCloneEqual';
@@ -29,14 +30,14 @@ export function createObject() {
   const set = new Set();
   const map2 = new Map();
 
-  class ObservableClass extends ObservableObject {}
+  class ObservableClasss extends ObservableClass {}
 
-  const observableObjectPrototype = new ObservableClass();
-  const observableObject = new ObservableObject();
+  const observableObjectPrototype = new ObservableClasss();
+  const observableObject = new ObservableClass();
   const observableList = new SortedList();
   const observableSet = new ObservableSet();
   const observableMap = new ObservableMap();
-  const property = new ObservableObject();
+  const property = new ObservableClass();
   Object.assign(object, {
     [VALUE_PROPERTY_DEFAULT]: 'nothing',
     observableObjectPrototype,
@@ -60,7 +61,7 @@ export function createObject() {
       then: resolve => setTimeout(() => resolve(observableObject), 0)
     }
   });
-  const observableObjectBuilderPrototype = new ObservableObjectBuilder(ObservableClass.prototype);
+  const observableObjectBuilderPrototype = new ObservableObjectBuilder(ObservableClasss.prototype);
   const observableObjectBuilder = new ObservableObjectBuilder(observableObject);
   const propertyBuilder = new ObservableObjectBuilder(property);
   Object.keys(object).forEach(key => {
@@ -121,7 +122,7 @@ export class TestDeepSubscribe {
     doNotSubscribeNonObjectValues,
     useIncorrectUnsubscribe,
     shouldNeverSubscribe,
-    asyncDelay = 10
+    asyncDelay = 30
   }, ...ruleBuilders) {
     this._object = object;
     this._immediate = immediate;
@@ -202,65 +203,78 @@ export class TestDeepSubscribe {
   }
 
   subscribePrivate(ruleBuilder, i) {
-    this._unsubscribe[i] = deepSubscribe({
-      object: this._object,
-      subscribeValue: (value, parent, propertyName) => {
-        if (this._doNotSubscribeNonObjectValues && !(value instanceof Object)) {
-          if (typeof this._expectedLastValue[i][this._expectedLastValue[i].length - 1] === 'undefined' || this._subscribersCount[i] === 0) {
-            this._expectedLastValue[i].push(value);
-          }
-
-          this._subscribersCount[i]++;
-
-          if (typeof value !== 'undefined') {
-            this._subscribed[i].push(value);
-          }
-
-          return;
-        }
-
-        if (this._performanceTest) {
-          return () => {};
-        }
-
+    const subscribeValue = (newValue, parent, key, propertiesPath, rule) => {
+      if (this._doNotSubscribeNonObjectValues && !(newValue instanceof Object)) {
         if (typeof this._expectedLastValue[i][this._expectedLastValue[i].length - 1] === 'undefined' || this._subscribersCount[i] === 0) {
-          this._expectedLastValue[i].push(value);
+          this._expectedLastValue[i].push(newValue);
         }
 
         this._subscribersCount[i]++;
 
-        if (typeof value !== 'undefined') {
-          this._subscribed[i].push(value);
+        if (typeof newValue !== 'undefined') {
+          this._subscribed[i].push(newValue);
         }
 
-        if (this._useIncorrectUnsubscribe) {
-          return 'Test Incorrect Unsubscribe';
+        return;
+      }
+
+      if (this._performanceTest) {
+        return () => {};
+      }
+
+      if (typeof this._expectedLastValue[i][this._expectedLastValue[i].length - 1] === 'undefined' || this._subscribersCount[i] === 0) {
+        this._expectedLastValue[i].push(newValue);
+      }
+
+      this._subscribersCount[i]++;
+
+      if (typeof newValue !== 'undefined') {
+        this._subscribed[i].push(newValue);
+      }
+
+      if (this._useIncorrectUnsubscribe) {
+        return 'Test Incorrect Unsubscribe';
+      }
+
+      return typeof newValue !== 'undefined' ? () => {
+        this._unsubscribed[i].push(newValue);
+      } : null;
+    };
+
+    const unsubscribeValue = (oldValue, parent, key, propertiesPath, rule, isUnsubscribed) => {
+      if (this._performanceTest) {
+        return;
+      }
+
+      this._subscribersCount[i]--;
+
+      if (this._subscribersCount[i] === 0) {
+        this._expectedLastValue[i].push(void 0);
+      }
+
+      assert.ok(this._subscribersCount[i] >= 0); // if (this._subscribersCount[i] < 0) {
+      // 	assert.strictEqual(typeof value, 'undefined')
+      // 	this._subscribersCount[i] = 0
+      // }
+
+      if (typeof oldValue !== 'undefined' && !isUnsubscribed) {
+        this._unsubscribed[i].push(oldValue);
+      }
+    };
+
+    this._unsubscribe[i] = deepSubscribe({
+      object: this._object,
+
+      changeValue(key, oldValue, newValue, parent, changeType, keyType, propertiesPath, rule, isUnsubscribed) {
+        if ((changeType & ValueChangeType.Unsubscribe) !== 0) {
+          unsubscribeValue(oldValue, parent, key, propertiesPath, rule, isUnsubscribed);
         }
 
-        return typeof value !== 'undefined' ? () => {
-          this._unsubscribed[i].push(value);
-        } : null;
+        if ((changeType & ValueChangeType.Subscribe) !== 0) {
+          return subscribeValue(newValue, parent, key, propertiesPath, rule);
+        }
       },
-      unsubscribeValue: (value, parent, propertyName, isUnsubscribed) => {
-        if (this._performanceTest) {
-          return;
-        }
 
-        this._subscribersCount[i]--;
-
-        if (this._subscribersCount[i] === 0) {
-          this._expectedLastValue[i].push(void 0);
-        }
-
-        assert.ok(this._subscribersCount[i] >= 0); // if (this._subscribersCount[i] < 0) {
-        // 	assert.strictEqual(typeof value, 'undefined')
-        // 	this._subscribersCount[i] = 0
-        // }
-
-        if (typeof value !== 'undefined' && !isUnsubscribed) {
-          this._unsubscribed[i].push(value);
-        }
-      },
       lastValue: (value, parent, propertyName) => {
         if (this._performanceTest) {
           return () => {};

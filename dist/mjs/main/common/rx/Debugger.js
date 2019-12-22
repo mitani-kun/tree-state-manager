@@ -1,10 +1,12 @@
-import { Subject } from '../../subjects/subject';
-export class CalcObjectDebugger {
+import { Subject } from './subjects/subject';
+export class Debugger {
   constructor() {
     this._dependencySubject = new Subject();
     this._connectorSubject = new Subject();
     this._invalidatedSubject = new Subject();
     this._calculatedSubject = new Subject();
+    this._deepSubscribeSubject = new Subject();
+    this._deepSubscribeLastValueSubject = new Subject();
     this._errorSubject = new Subject();
   } // region onDependencyChanged
 
@@ -13,13 +15,14 @@ export class CalcObjectDebugger {
     return this._dependencySubject;
   }
 
-  onDependencyChanged(target, value, parent, propertyName) {
+  onDependencyChanged(target, value, parent, key, keyType) {
     if (this._dependencySubject.hasSubscribers) {
       this._dependencySubject.emit({
         target,
         value,
         parent,
-        propertyName
+        key,
+        keyType
       });
     }
   } // endregion
@@ -30,13 +33,15 @@ export class CalcObjectDebugger {
     return this._connectorSubject;
   }
 
-  onConnectorChanged(target, value, parent, propertyName) {
+  onConnectorChanged(target, targetKey, value, parent, key, keyType) {
     if (this._connectorSubject.hasSubscribers) {
       this._connectorSubject.emit({
         target,
+        targetKey,
         value,
         parent,
-        propertyName
+        key,
+        keyType
       });
     }
   } // endregion
@@ -62,12 +67,56 @@ export class CalcObjectDebugger {
     return this._calculatedSubject;
   }
 
-  onCalculated(target, newValue, oldValue) {
+  onCalculated(target, oldValue, newValue) {
     if (this._calculatedSubject.hasSubscribers) {
       this._calculatedSubject.emit({
         target,
         newValue,
         oldValue
+      });
+    }
+  } // endregion
+  // region onDeepSubscribe
+
+
+  get deepSubscribeObservable() {
+    return this._deepSubscribeSubject;
+  }
+
+  onDeepSubscribe(key, oldValue, newValue, parent, changeType, keyType, propertiesPath, rule, oldIsLeaf, newIsLeaf, target) {
+    if (this._deepSubscribeSubject.hasSubscribers) {
+      this._deepSubscribeSubject.emit({
+        key,
+        oldValue,
+        newValue,
+        parent,
+        changeType,
+        keyType,
+        propertiesPath,
+        rule,
+        oldIsLeaf,
+        newIsLeaf,
+        target
+      });
+    }
+  } // endregion
+  // region onDeepSubscribeLastValue
+
+
+  get deepSubscribeLastValueHasSubscribers() {
+    return this._deepSubscribeLastValueSubject.hasSubscribers;
+  }
+
+  get deepSubscribeLastValueObservable() {
+    return this._deepSubscribeLastValueSubject;
+  }
+
+  onDeepSubscribeLastValue(unsubscribedValue, subscribedValue, target) {
+    if (this._deepSubscribeLastValueSubject.hasSubscribers) {
+      this._deepSubscribeLastValueSubject.emit({
+        unsubscribedValue,
+        subscribedValue,
+        target
       });
     }
   } // endregion
@@ -84,11 +133,11 @@ export class CalcObjectDebugger {
         target,
         newValue,
         oldValue,
-        err
+        error: err
       });
     }
   } // endregion
 
 
 }
-CalcObjectDebugger.Instance = new CalcObjectDebugger();
+Debugger.Instance = new Debugger();

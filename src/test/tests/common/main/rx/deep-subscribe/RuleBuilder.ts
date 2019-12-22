@@ -5,6 +5,7 @@ import {ObjectSet} from '../../../../../../main/common/lists/ObjectSet'
 import {ObservableMap} from '../../../../../../main/common/lists/ObservableMap'
 import {ObservableSet} from '../../../../../../main/common/lists/ObservableSet'
 import {SortedList} from '../../../../../../main/common/lists/SortedList'
+import {ValueChangeType, ValueKeyType} from '../../../../../../main/common/rx/deep-subscribe/contracts/common'
 import {ANY, ANY_DISPLAY, COLLECTION_PREFIX} from '../../../../../../main/common/rx/deep-subscribe/contracts/constants'
 import {
 	IRuleSubscribe,
@@ -14,6 +15,7 @@ import {IRule, RuleType} from '../../../../../../main/common/rx/deep-subscribe/c
 import {RuleBuilder} from '../../../../../../main/common/rx/deep-subscribe/RuleBuilder'
 import {ObservableObjectBuilder} from '../../../../../../main/common/rx/object/ObservableObjectBuilder'
 import {assert} from '../../../../../../main/common/test/Assert'
+import {describe, it} from '../../../../../../main/common/test/Mocha'
 
 describe('common > main > rx > deep-subscribe > RuleBuilder', function() {
 	interface IObject {
@@ -70,44 +72,49 @@ describe('common > main > rx > deep-subscribe > RuleBuilder', function() {
 			}
 		}
 
-		function checkDebugPropertyName(value: string, debugPropertyName: string) {
-			assert.ok(debugPropertyName)
-			assert.ok(debugPropertyName.length)
-
-			if (isCollection) {
-				assert.strictEqual(debugPropertyName[0], COLLECTION_PREFIX)
-				debugPropertyName = debugPropertyName.substring(1)
-			}
-
+		function checkDebugPropertyName(value: string, key: string, keyType: ValueKeyType) {
 			if (isMap) {
-				assert.strictEqual('value_' + debugPropertyName, value)
+				assert.ok(typeof key, 'string')
+				assert.strictEqual('value_' + key, value)
+				assert.strictEqual(keyType, ValueKeyType.MapKey)
+			} else if (isCollection) {
+				assert.strictEqual(key, null)
+				assert.strictEqual(keyType, ValueKeyType.CollectionAny)
+			} else {
+				assert.ok(typeof key, 'string')
+				assert.ok(key)
+				assert.ok(key.length)
+				assert.strictEqual(keyType, ValueKeyType.Property)
 			}
 		}
 
 		let subscribedItems = []
 
-		function subscribeItem(value: string, debugPropertyName: string) {
-			if (typeof value === 'undefined') {
-				return
+		function changeItem(
+			key: any,
+			oldValue: string,
+			newValue: string,
+			changeType: ValueChangeType,
+			keyType: ValueKeyType,
+		) {
+			if ((changeType & ValueChangeType.Unsubscribe) !== 0
+				&& typeof oldValue !== 'undefined'
+			) {
+				assert.ok(oldValue)
+				oldValue = oldValue.trim()
+				checkDebugPropertyName(oldValue, key, keyType)
+				subscribedItems.push('-' + oldValue)
 			}
 
-			assert.ok(value)
-			assert.strictEqual(typeof value, 'string', value)
-			value = value.trim()
-			checkDebugPropertyName(value, debugPropertyName)
-			subscribedItems.push('+' + value)
-		}
-
-		// tslint:disable-next-line:no-identical-functions
-		function unsubscribeItem(value: string, debugPropertyName: string) {
-			if (typeof value === 'undefined') {
-				return
+			if ((changeType & ValueChangeType.Subscribe) !== 0
+				&& typeof newValue !== 'undefined'
+			) {
+				assert.ok(newValue)
+				assert.strictEqual(typeof newValue, 'string', newValue)
+				newValue = newValue.trim()
+				checkDebugPropertyName(newValue, key, keyType)
+				subscribedItems.push('+' + newValue)
 			}
-
-			assert.ok(value)
-			value = value.trim()
-			checkDebugPropertyName(value, debugPropertyName)
-			subscribedItems.push('-' + value)
 		}
 
 		function testNonSubscribeProperties(object) {
@@ -142,11 +149,11 @@ describe('common > main > rx > deep-subscribe > RuleBuilder', function() {
 				// region Non Observable
 
 				const testNonObservableObject = object => {
-					let unsubscribe = subscribe(object, false, subscribeItem, unsubscribeItem)
+					let unsubscribe = subscribe(object, false, changeItem)
 					assert.strictEqual(unsubscribe, null)
 					testNonSubscribeProperties(object)
 
-					unsubscribe = subscribe(object, true, subscribeItem, unsubscribeItem)
+					unsubscribe = subscribe(object, true, changeItem)
 					assert.ok(unsubscribe)
 					assert.strictEqual(typeof unsubscribe, 'function')
 					assert.deepStrictEqual(subscribedItems, [])
@@ -166,7 +173,7 @@ describe('common > main > rx > deep-subscribe > RuleBuilder', function() {
 					assert.deepStrictEqual(subscribedItems.sort(), subscribeProperties.map(o => '-value_' + o).sort())
 					subscribedItems = []
 
-					unsubscribe = subscribe(object, true, subscribeItem, unsubscribeItem)
+					unsubscribe = subscribe(object, true, changeItem)
 					assert.ok(unsubscribe)
 					assert.strictEqual(typeof unsubscribe, 'function')
 					assert.deepStrictEqual(subscribedItems.sort(), subscribeProperties.map(o => '+value_' + o).sort())
@@ -181,7 +188,7 @@ describe('common > main > rx > deep-subscribe > RuleBuilder', function() {
 					assert.deepStrictEqual(subscribedItems, [])
 					subscribedItems = []
 
-					unsubscribe = subscribe(object, false, subscribeItem, unsubscribeItem)
+					unsubscribe = subscribe(object, false, changeItem)
 					assert.strictEqual(unsubscribe, null)
 					assert.deepStrictEqual(subscribedItems, [])
 				}
@@ -191,7 +198,7 @@ describe('common > main > rx > deep-subscribe > RuleBuilder', function() {
 				// region Observable
 
 				const testObservableObject = object => {
-					let unsubscribe = subscribe(object, false, subscribeItem, unsubscribeItem)
+					let unsubscribe = subscribe(object, false, changeItem)
 					assert.ok(unsubscribe)
 					assert.strictEqual(typeof unsubscribe, 'function')
 					testNonSubscribeProperties(object)
@@ -199,7 +206,7 @@ describe('common > main > rx > deep-subscribe > RuleBuilder', function() {
 					assert.deepStrictEqual(subscribedItems, [])
 					subscribedItems = []
 
-					unsubscribe = subscribe(object, true, subscribeItem, unsubscribeItem)
+					unsubscribe = subscribe(object, true, changeItem)
 					assert.ok(unsubscribe)
 					assert.strictEqual(typeof unsubscribe, 'function')
 					assert.deepStrictEqual(subscribedItems, [])
@@ -227,14 +234,14 @@ describe('common > main > rx > deep-subscribe > RuleBuilder', function() {
 					assert.deepStrictEqual(subscribedItems.sort(), subscribeProperties.map(o => '-value_' + o).sort())
 					subscribedItems = []
 
-					unsubscribe = subscribe(object, false, subscribeItem, unsubscribeItem)
+					unsubscribe = subscribe(object, false, changeItem)
 					assert.ok(unsubscribe)
 					assert.strictEqual(typeof unsubscribe, 'function')
 					unsubscribe()
 					assert.deepStrictEqual(subscribedItems.sort(), subscribeProperties.map(o => '-value_' + o).sort())
 					subscribedItems = []
 
-					unsubscribe = subscribe(object, true, subscribeItem, unsubscribeItem)
+					unsubscribe = subscribe(object, true, changeItem)
 					assert.ok(unsubscribe)
 					assert.strictEqual(typeof unsubscribe, 'function')
 					assert.deepStrictEqual(subscribedItems.sort(), subscribeProperties.map(o => '+value_' + o).sort())
@@ -310,7 +317,7 @@ describe('common > main > rx > deep-subscribe > RuleBuilder', function() {
 		}
 
 		testSubscribe(
-			false, true,
+			false, false,
 			{...builder.object},
 			builder.object,
 			subscribe,
@@ -1269,11 +1276,13 @@ describe('common > main > rx > deep-subscribe > RuleBuilder', function() {
 			countMin: 0,
 			countMax: Number.MAX_SAFE_INTEGER,
 			condition: null,
+			description: '<repeat>',
 			rule: {
 				type: RuleType.Repeat,
 				countMin: 1,
 				countMax: Number.MAX_SAFE_INTEGER,
 				condition: null,
+				description: '<repeat>',
 				rule: {
 					type: RuleType.Action,
 					objectTypes: ['object', 'array'],
@@ -1285,6 +1294,7 @@ describe('common > main > rx > deep-subscribe > RuleBuilder', function() {
 					countMin: 0,
 					countMax: 2,
 					condition: null,
+					description: '<repeat>',
 					rule: {
 						type: RuleType.Action,
 						objectTypes: ['object', 'array'],
@@ -1296,6 +1306,7 @@ describe('common > main > rx > deep-subscribe > RuleBuilder', function() {
 						countMin: 3,
 						countMax: 4,
 						condition: null,
+						description: '<repeat>',
 						rule: {
 							type: RuleType.Action,
 							objectTypes: ['object', 'array'],
@@ -1310,6 +1321,7 @@ describe('common > main > rx > deep-subscribe > RuleBuilder', function() {
 				countMin: 5,
 				countMax: 6,
 				condition: null,
+				description: '<repeat>',
 				rule: {
 					type: RuleType.Action,
 					objectTypes: ['object', 'array'],
@@ -1321,6 +1333,7 @@ describe('common > main > rx > deep-subscribe > RuleBuilder', function() {
 					countMin: 7,
 					countMax: 8,
 					condition: null,
+					description: '<repeat>',
 					rule: {
 						type: RuleType.Action,
 						objectTypes: ['object', 'array'],
@@ -1369,6 +1382,7 @@ describe('common > main > rx > deep-subscribe > RuleBuilder', function() {
 
 		assertRule(builder1.result(), {
 			type: RuleType.Any,
+			description: '<any>',
 			rules: [{
 				type: RuleType.Action,
 				objectTypes: ['object', 'array'],
@@ -1377,6 +1391,7 @@ describe('common > main > rx > deep-subscribe > RuleBuilder', function() {
 			}],
 			next: {
 				type: RuleType.Any,
+				description: '<any>',
 				rules: [{
 					type: RuleType.Action,
 					objectTypes: ['object', 'array'],
@@ -1385,8 +1400,10 @@ describe('common > main > rx > deep-subscribe > RuleBuilder', function() {
 				}],
 				next: {
 					type: RuleType.Any,
+					description: '<any>',
 					rules: [{
 						type: RuleType.Any,
+						description: '<any>',
 						rules: [{
 							type: RuleType.Action,
 							objectTypes: ['object', 'array'],
@@ -1395,6 +1412,7 @@ describe('common > main > rx > deep-subscribe > RuleBuilder', function() {
 						}],
 					}, {
 						type: RuleType.Any,
+						description: '<any>',
 						rules: [{
 							type: RuleType.Action,
 							objectTypes: ['object', 'array'],
@@ -1408,6 +1426,7 @@ describe('common > main > rx > deep-subscribe > RuleBuilder', function() {
 						}],
 					}, {
 						type: RuleType.Any,
+						description: '<any>',
 						rules: [{
 							type: RuleType.Action,
 							objectTypes: ['object', 'array'],
@@ -1427,6 +1446,7 @@ describe('common > main > rx > deep-subscribe > RuleBuilder', function() {
 					}],
 					next: {
 						type: RuleType.Any,
+						description: '<any>',
 						rules: [{
 							type: RuleType.Action,
 							objectTypes: ['object', 'array'],
@@ -1435,6 +1455,7 @@ describe('common > main > rx > deep-subscribe > RuleBuilder', function() {
 						}],
 						next: {
 							type: RuleType.Any,
+							description: '<any>',
 							rules: [{
 								type: RuleType.Action,
 								objectTypes: ['object', 'array'],

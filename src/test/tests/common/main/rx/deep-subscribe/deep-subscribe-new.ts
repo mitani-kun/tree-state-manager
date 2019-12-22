@@ -1,6 +1,8 @@
 /* tslint:disable:no-construct use-primitive-type no-shadowed-variable no-duplicate-string no-empty max-line-length */
 import {ListChangedType} from '../../../../../../main/common/lists/contracts/IListChanged'
 import {MapChangedType} from '../../../../../../main/common/lists/contracts/IMapChanged'
+import {assert} from '../../../../../../main/common/test/Assert'
+import {describe, it, xit} from '../../../../../../main/common/test/Mocha'
 import {createObject, TestDeepSubscribe, TestDeepSubscribeVariants} from './helpers/src/TestDeepSubscribe'
 
 describe('common > main > rx > deep-subscribe > deep-subscribe new', function() {
@@ -121,7 +123,7 @@ describe('common > main > rx > deep-subscribe > deep-subscribe new', function() 
 		)
 
 		await tester.subscribeAsync(o => ['value'], [void 0], ['value'])
-		await tester.change(o => o.value = 'value2', ['value'], ['value2'], ['value2'])
+		await tester.changeAsync(o => o.value = 'value2', ['value'], ['value2'], ['value2'])
 		await tester.unsubscribeAsync(o => ['value2'], [void 0])
 	})
 
@@ -154,7 +156,7 @@ describe('common > main > rx > deep-subscribe > deep-subscribe new', function() 
 			b => b
 				.v('notExistProperty')
 				.p('property')
-				.v('value_value')
+				.v<string>('value_value')
 				// .any(b => b.nothing())
 				// .repeat(0, 1, null, b => b.nothing())
 				// .repeat(0, 3, (o, i) => i === 3 ? RuleRepeatAction.Fork : RuleRepeatAction.Next, b => b.nothing())

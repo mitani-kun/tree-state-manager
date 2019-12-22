@@ -1,25 +1,24 @@
 /* tslint:disable:no-duplicate-string */
 /* eslint-disable guard-for-in */
-import {ObservableObject} from '../../../../../../../main/common/rx/object/ObservableObject'
 import {ObservableObjectBuilder} from '../../../../../../../main/common/rx/object/ObservableObjectBuilder'
+import {Connector} from '../../../../../../../main/common/rx/object/properties/Connector'
 import {ConnectorBuilder} from '../../../../../../../main/common/rx/object/properties/ConnectorBuilder'
+import {assert} from '../../../../../../../main/common/test/Assert'
+import {describe, it} from '../../../../../../../main/common/test/Mocha'
 import {createObject} from '../../deep-subscribe/helpers/src/TestDeepSubscribe'
-
-declare const assert: any
 
 describe('common > main > rx > properties > ConnectorBuilder', function() {
 	it('connect', function() {
 		const source = new ObservableObjectBuilder(createObject().observableObject)
-			.writable<string, 'baseProp1'>('baseProp1')
-			.writable<string, 'baseProp2'>('baseProp2')
-			.writable<string, 'prop1'>('prop1')
-			.writable<string, 'prop2'>('prop2')
+			.writable<'baseProp1', string>('baseProp1')
+			.writable<'baseProp2', string>('baseProp2')
+			.writable<'prop1', string>('prop1')
+			.writable<'prop2', string>('prop2')
 			.object
 
 		source.baseProp1 = 'baseProp1_init_source'
 
-		class BaseClass1 extends ObservableObject {
-			public readonly source = source
+		class BaseClass1 extends Connector<typeof source> {
 			public baseProp1: string
 		}
 
@@ -37,17 +36,17 @@ describe('common > main > rx > properties > ConnectorBuilder', function() {
 
 		type ValueKeys = '@value_property'
 
-		new ConnectorBuilder<ObservableObject, BaseClass1, ValueKeys>(BaseClass1.prototype)
+		new ConnectorBuilder<BaseClass1, typeof source, ValueKeys>(BaseClass1.prototype)
 			.connect('baseProp1',
-				b => b.path(o => o.source
+				b => b.path(o => o
 					.property['@value_property']
 					.observableMap['#observableList']
 					['#']
 					.baseProp1))
 
-		new ConnectorBuilder<BaseClass2, BaseClass2, ValueKeys>(BaseClass2.prototype)
+		new ConnectorBuilder<BaseClass2, typeof source, ValueKeys>(BaseClass2.prototype)
 			.connectWritable('baseProp2',
-				b => b.path(o => o['@value_property'].source
+				b => b.path(o => o['@value_property']
 					.property['@value_property']
 					.observableMap['#observableList']
 					['#']
@@ -55,9 +54,9 @@ describe('common > main > rx > properties > ConnectorBuilder', function() {
 				null,
 				'baseProp2_init')
 
-		new ConnectorBuilder<Class1, Class1, ValueKeys>(Class1.prototype)
+		new ConnectorBuilder<Class1, typeof source, ValueKeys>(Class1.prototype)
 			.connect('prop1',
-				b => b.path(o => o['@value_property'].source
+				b => b.path(o => o['@value_property']
 					.property['@value_property']
 					.observableMap['#observableList']
 					['#']
@@ -65,9 +64,9 @@ describe('common > main > rx > properties > ConnectorBuilder', function() {
 				null,
 				'prop1_init')
 
-		new ConnectorBuilder<Class2, Class2, ValueKeys>(Class2.prototype)
+		new ConnectorBuilder<Class2, typeof source, ValueKeys>(Class2.prototype)
 			.connectWritable('prop2',
-				b => b.path(o => o['@value_property'].source
+				b => b.path(o => o['@value_property']
 					.property['@value_property']
 					.observableMap['#observableList']
 					['#']
@@ -75,10 +74,10 @@ describe('common > main > rx > properties > ConnectorBuilder', function() {
 				null,
 				'prop2_init')
 
-		const baseObject1 = new BaseClass1()
-		const baseObject2 = new BaseClass2()
-		const object1 = new Class1()
-		const object2 = new Class2()
+		const baseObject1 = new BaseClass1(source)
+		const baseObject2 = new BaseClass2(source)
+		const object1 = new Class1(source)
+		const object2 = new Class2(source)
 
 		// eslint-disable-next-line prefer-const
 		let baseResults1 = []
@@ -222,5 +221,49 @@ describe('common > main > rx > properties > ConnectorBuilder', function() {
 		assert.deepStrictEqual(baseObject2.baseProp1, '1')
 		assert.deepStrictEqual(object1.baseProp1, '1')
 		assert.deepStrictEqual(object2.baseProp1, '7')
+
+		unsubscribe1[0]()
+		assert.deepStrictEqual(baseResults1, [])
+		assert.deepStrictEqual(baseResults2, [])
+		assert.deepStrictEqual(results1, [])
+		assert.deepStrictEqual(results2, [])
+		results2 = []
+		assert.deepStrictEqual(baseObject1.baseProp1, '1')
+		assert.deepStrictEqual(baseObject2.baseProp1, '1')
+		assert.deepStrictEqual(object1.baseProp1, void 0)
+		assert.deepStrictEqual(object2.baseProp1, '7')
+
+		unsubscribe2[0]()
+		assert.deepStrictEqual(baseResults1, [])
+		assert.deepStrictEqual(baseResults2, [])
+		assert.deepStrictEqual(results1, [])
+		assert.deepStrictEqual(results2, [])
+		results2 = []
+		assert.deepStrictEqual(baseObject1.baseProp1, '1')
+		assert.deepStrictEqual(baseObject2.baseProp1, '1')
+		assert.deepStrictEqual(object1.baseProp1, void 0)
+		assert.deepStrictEqual(object2.baseProp1, void 0)
+
+		baseUnsubscribe1[0]()
+		assert.deepStrictEqual(baseResults1, [])
+		assert.deepStrictEqual(baseResults2, [])
+		assert.deepStrictEqual(results1, [])
+		assert.deepStrictEqual(results2, [])
+		results2 = []
+		assert.deepStrictEqual(baseObject1.baseProp1, void 0)
+		assert.deepStrictEqual(baseObject2.baseProp1, '1')
+		assert.deepStrictEqual(object1.baseProp1, void 0)
+		assert.deepStrictEqual(object2.baseProp1, void 0)
+
+		baseUnsubscribe2[0]()
+		assert.deepStrictEqual(baseResults1, [])
+		assert.deepStrictEqual(baseResults2, [])
+		assert.deepStrictEqual(results1, [])
+		assert.deepStrictEqual(results2, [])
+		results2 = []
+		assert.deepStrictEqual(baseObject1.baseProp1, void 0)
+		assert.deepStrictEqual(baseObject2.baseProp1, void 0)
+		assert.deepStrictEqual(object1.baseProp1, void 0)
+		assert.deepStrictEqual(object2.baseProp1, void 0)
 	})
 })

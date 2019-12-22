@@ -53,13 +53,24 @@ export function toSingleCall<T extends TFunc<any>|void>(func: T, throwOnMultiple
 	}) as any
 }
 
+const allowCreateFunction = (() => {
+	try {
+		const func = new Function('a', 'b', 'return a + b')
+		return !!func
+	} catch (err) {
+		return false
+	}
+})()
+
 const createFunctionCache = {}
 // tslint:disable-next-line:ban-types
-export function createFunction(...args: string[]): Function {
+export function createFunction(alternativeFuncFactory, ...args: string[]): Function {
 	const id = args[args.length - 1] + ''
 	let func = createFunctionCache[id]
 	if (!func) {
-		createFunctionCache[id] = func = Function(...args)
+		createFunctionCache[id] = func = allowCreateFunction
+			? Function(...args)
+			: alternativeFuncFactory()
 	}
 	return func
 }
@@ -76,4 +87,20 @@ export function hideObjectProperty(object: object, propertyName: string) {
 		enumerable: false,
 		value: object[propertyName],
 	})
+}
+
+export function equalsObjects(o1, o2) {
+	if (o1 === o2) {
+		return true
+	}
+
+	if (o1 && typeof o1 === 'object' && typeof o1.equals === 'function') {
+		return o1.equals(o2)
+	}
+
+	if (o2 && typeof o2 === 'object' && typeof o2.equals === 'function') {
+		return o2.equals(o1)
+	}
+
+	return false
 }

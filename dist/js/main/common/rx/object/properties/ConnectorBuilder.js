@@ -21,30 +21,32 @@ var _inherits2 = _interopRequireDefault(require("@babel/runtime-corejs3/helpers/
 
 var _helpers = require("../../../helpers/helpers");
 
+var _Debugger = require("../../Debugger");
+
 var _deepSubscribe = require("../../deep-subscribe/deep-subscribe");
+
+var _common = require("../../deep-subscribe/helpers/common");
 
 var _RuleBuilder = require("../../deep-subscribe/RuleBuilder");
 
-var _ObservableObject = require("../ObservableObject");
+var _ObservableClass = require("../ObservableClass");
 
 var _ObservableObjectBuilder = require("../ObservableObjectBuilder");
 
-var _CalcObjectDebugger = require("./CalcObjectDebugger");
-
 var _Connector = require("./Connector");
+
+var buildSourceRule = function buildSourceRule(b) {
+  return b.p('source');
+};
 
 var ConnectorBuilder =
 /*#__PURE__*/
 function (_ObservableObjectBuil) {
   (0, _inherits2.default)(ConnectorBuilder, _ObservableObjectBuil);
 
-  function ConnectorBuilder(object, buildSourceRule) {
-    var _this;
-
+  function ConnectorBuilder(object) {
     (0, _classCallCheck2.default)(this, ConnectorBuilder);
-    _this = (0, _possibleConstructorReturn2.default)(this, (0, _getPrototypeOf2.default)(ConnectorBuilder).call(this, object));
-    _this.buildSourceRule = buildSourceRule;
-    return _this;
+    return (0, _possibleConstructorReturn2.default)(this, (0, _getPrototypeOf2.default)(ConnectorBuilder).call(this, object));
   }
 
   (0, _createClass2.default)(ConnectorBuilder, [{
@@ -60,11 +62,12 @@ function (_ObservableObjectBuil) {
   }, {
     key: "_connect",
     value: function _connect(writable, name, buildRule, options, initValue) {
-      var object = this.object,
-          buildSourceRule = this.buildSourceRule;
-      var ruleBuilder = new _RuleBuilder.RuleBuilder();
+      var object = this.object;
+      var ruleBuilder = new _RuleBuilder.RuleBuilder({
+        valuePropertyDefaultName: 'last'
+      });
 
-      if (buildSourceRule) {
+      if (object instanceof _Connector.Connector) {
         ruleBuilder = buildSourceRule(ruleBuilder);
       }
 
@@ -77,8 +80,16 @@ function (_ObservableObjectBuil) {
 
       var setOptions = options && options.setOptions; // optimization
 
-      var baseGetValue = options && options.getValue || (0, _helpers.createFunction)("return this.__fields[\"" + name + "\"]");
-      var baseSetValue = options && options.setValue || (0, _helpers.createFunction)('v', "this.__fields[\"" + name + "\"] = v");
+      var baseGetValue = options && options.getValue || (0, _helpers.createFunction)(function () {
+        return function () {
+          return this.__fields[name];
+        };
+      }, "return this.__fields[\"" + name + "\"]");
+      var baseSetValue = options && options.setValue || (0, _helpers.createFunction)(function () {
+        return function (v) {
+          this.__fields[name] = v;
+        };
+      }, 'v', "this.__fields[\"" + name + "\"] = v");
       var getValue = !writable ? baseGetValue : function () {
         return baseGetValue.call(this).value;
       };
@@ -86,19 +97,20 @@ function (_ObservableObjectBuil) {
         var baseValue = baseGetValue.call(this);
         baseValue.value = value;
       };
-      var set = setOptions ? (0, _bind.default)(_ObservableObject._setExt).call(_ObservableObject._setExt, null, name, getValue, setValue, setOptions) : (0, _bind.default)(_ObservableObject._set).call(_ObservableObject._set, null, name, getValue, setValue);
+      var set = setOptions ? (0, _bind.default)(_ObservableClass._setExt).call(_ObservableClass._setExt, null, name, getValue, setValue, setOptions) : (0, _bind.default)(_ObservableClass._set).call(_ObservableClass._set, null, name, getValue, setValue);
       return this.updatable(name, {
         setOptions: setOptions,
         hidden: options && options.hidden,
         // tslint:disable-next-line:no-shadowed-variable
         factory: function factory(initValue) {
-          var _this2 = this;
+          var _this = this;
 
           if (writable) {
             baseSetValue.call(this, {
               value: initValue,
               parent: null,
-              propertyName: null
+              key: null,
+              keyType: null
             });
           }
 
@@ -108,36 +120,38 @@ function (_ObservableObjectBuil) {
             }
           };
 
-          var receiveValue = writable ? function (value, parent, propertyName) {
-            _CalcObjectDebugger.CalcObjectDebugger.Instance.onConnectorChanged(_this2, value, parent, propertyName);
+          var receiveValue = writable ? function (value, parent, key, keyType) {
+            _Debugger.Debugger.Instance.onConnectorChanged(_this, name, value, parent, key, keyType);
 
-            var baseValue = baseGetValue.call(_this2);
+            var baseValue = baseGetValue.call(_this);
             baseValue.parent = parent;
-            baseValue.propertyName = propertyName;
-            setVal(_this2, value);
+            baseValue.key = key;
+            baseValue.keyType = keyType;
+            setVal(_this, value);
             return null;
-          } : function (value, parent, propertyName) {
-            _CalcObjectDebugger.CalcObjectDebugger.Instance.onConnectorChanged(_this2, value, parent, propertyName);
+          } : function (value, parent, key, keyType) {
+            _Debugger.Debugger.Instance.onConnectorChanged(_this, name, value, parent, key, keyType);
 
-            setVal(_this2, value);
+            setVal(_this, value);
             return null;
           };
           var rule = this === object ? ruleBase : ruleBase.clone();
           this.propertyChanged.hasSubscribersObservable.subscribe(function (hasSubscribers) {
-            _this2._setUnsubscriber(name, null);
+            _this._setUnsubscriber(name, null);
 
             if (hasSubscribers) {
               var unsubscribe = (0, _deepSubscribe.deepSubscribeRule)({
-                object: _this2,
+                object: _this instanceof _Connector.Connector ? _this.connectorState : _this,
                 lastValue: receiveValue,
+                debugTarget: _this,
                 rule: rule
               });
 
               if (unsubscribe) {
-                _this2._setUnsubscriber(name, unsubscribe);
+                _this._setUnsubscriber(name, unsubscribe);
               }
             }
-          });
+          }, "Connector." + name + ".hasSubscribersObservable for deepSubscribe");
           setVal = set;
           return initValue;
         },
@@ -145,7 +159,7 @@ function (_ObservableObjectBuil) {
           var baseValue = baseGetValue.call(this);
 
           if (baseValue.parent != null) {
-            baseValue.parent[baseValue.propertyName] = value;
+            (0, _common.setObjectValue)(baseValue.parent, baseValue.key, baseValue.keyType, value);
           } // return value
 
         },
@@ -159,11 +173,14 @@ function (_ObservableObjectBuil) {
 
 exports.ConnectorBuilder = ConnectorBuilder;
 
-function connectorClass(build, baseClass) {
+function connectorClass(_ref) {
+  var buildRule = _ref.buildRule,
+      baseClass = _ref.baseClass;
+
   var NewConnector =
   /*#__PURE__*/
-  function (_ref) {
-    (0, _inherits2.default)(NewConnector, _ref);
+  function (_ref2) {
+    (0, _inherits2.default)(NewConnector, _ref2);
 
     function NewConnector() {
       (0, _classCallCheck2.default)(this, NewConnector);
@@ -173,20 +190,24 @@ function connectorClass(build, baseClass) {
     return NewConnector;
   }(baseClass || _Connector.Connector);
 
-  build(new ConnectorBuilder(NewConnector.prototype, function (b) {
-    return b.propertyName('connectorSource');
-  }));
+  buildRule(new ConnectorBuilder(NewConnector.prototype));
   return NewConnector;
 }
 
-function connectorFactory(build, baseClass) {
-  var NewConnector = connectorClass(build, baseClass);
-  return function (source) {
-    return new NewConnector(source);
+function connectorFactory(_ref3) {
+  var name = _ref3.name,
+      buildRule = _ref3.buildRule,
+      baseClass = _ref3.baseClass;
+  var NewConnector = connectorClass({
+    buildRule: buildRule,
+    baseClass: baseClass
+  });
+  return function (source, sourceName) {
+    return new NewConnector(source, name || sourceName);
   };
 } // const builder = new ConnectorBuilder(true as any)
 //
-// export function connect<TObject extends ObservableObject, TValue = any>(
+// export function connect<TObject extends ObservableClass, TValue = any>(
 // 	options?: IConnectFieldOptions<TObject, TValue>,
 // 	initValue?: TValue,
 // ) {
@@ -195,7 +216,7 @@ function connectorFactory(build, baseClass) {
 // 		builder.connect(propertyKey, options, initValue)
 // 	}
 // }
-// class Class1 extends ObservableObject {
+// class Class1 extends ObservableClass {
 // }
 // class Class extends Class1 {
 // 	@connect()

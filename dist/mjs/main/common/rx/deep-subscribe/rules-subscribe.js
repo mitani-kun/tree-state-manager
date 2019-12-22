@@ -4,13 +4,18 @@ import { VALUE_PROPERTY_DEFAULT } from '../../helpers/value-property';
 import { ListChangedType } from '../../lists/contracts/IListChanged';
 import { MapChangedType } from '../../lists/contracts/IMapChanged';
 import { SetChangedType } from '../../lists/contracts/ISetChanged';
-import { ANY, COLLECTION_PREFIX, VALUE_PROPERTY_PREFIX } from './contracts/constants';
+import { ValueChangeType, ValueKeyType } from './contracts/common';
+import { ANY } from './contracts/constants';
 import { RuleType } from './contracts/rules';
 import { Rule } from './rules';
 
-function forEachSimple(iterable, callbackfn) {
+function forEachCollection(iterable, changeItem, isSubscribe) {
   for (const item of iterable) {
-    callbackfn(item, COLLECTION_PREFIX);
+    if (isSubscribe) {
+      changeItem(null, void 0, item, ValueChangeType.Subscribe, ValueKeyType.CollectionAny);
+    } else {
+      changeItem(null, item, void 0, ValueChangeType.Unsubscribe, ValueKeyType.CollectionAny);
+    }
   }
 } // region subscribeObjectValue
 
@@ -27,16 +32,16 @@ function getFirstExistProperty(object, propertyNames) {
   return null;
 }
 
-function subscribeObjectValue(propertyNames, object, immediateSubscribe, subscribeItem, unsubscribeItem) {
+function subscribeObjectValue(propertyNames, object, immediateSubscribe, changeItem, propertiesPath, rule) {
   if (!(object instanceof Object)) {
-    subscribeItem(object, null);
+    changeItem(null, void 0, object, ValueChangeType.Subscribe, null);
     return null;
   }
 
   if (object.constructor === Object || Array.isArray(object)) {
-    subscribeItem(object, null);
+    changeItem(null, void 0, object, ValueChangeType.Subscribe, null);
     return () => {
-      unsubscribeItem(object, null);
+      changeItem(null, object, void 0, ValueChangeType.Unsubscribe, null);
     };
   }
 
@@ -60,32 +65,32 @@ function subscribeObjectValue(propertyNames, object, immediateSubscribe, subscri
     subscribePropertyName = propertyName;
 
     if (propertyName == null) {
-      subscribeItem(object, null);
+      changeItem(null, void 0, object, ValueChangeType.Subscribe, null);
     } else {
       const value = object[propertyName];
 
       if (typeof value !== 'undefined') {
-        subscribeItem(value, VALUE_PROPERTY_PREFIX + propertyName);
+        changeItem(propertyName, void 0, value, ValueChangeType.Subscribe, ValueKeyType.ValueProperty);
       }
 
       if (isFirst) {
-        subscribeItem(void 0, VALUE_PROPERTY_PREFIX + propertyName);
+        changeItem(propertyName, void 0, void 0, ValueChangeType.Subscribe, ValueKeyType.ValueProperty);
       }
     }
   };
 
   const unsubscribeProperty = isLast => {
     if (subscribePropertyName == null) {
-      unsubscribeItem(object, null);
+      changeItem(null, object, void 0, ValueChangeType.Unsubscribe, null);
     } else {
       if (isLast) {
-        unsubscribeItem(void 0, VALUE_PROPERTY_PREFIX + subscribePropertyName);
+        changeItem(subscribePropertyName, void 0, void 0, ValueChangeType.Unsubscribe, ValueKeyType.ValueProperty);
       }
 
       const value = object[subscribePropertyName];
 
       if (typeof value !== 'undefined') {
-        unsubscribeItem(object[subscribePropertyName], VALUE_PROPERTY_PREFIX + subscribePropertyName);
+        changeItem(subscribePropertyName, value, void 0, ValueChangeType.Unsubscribe, ValueKeyType.ValueProperty);
       }
     }
 
@@ -96,6 +101,7 @@ function subscribeObjectValue(propertyNames, object, immediateSubscribe, subscri
     propertyChanged
   } = object;
   let unsubscribe;
+  let subscribed;
 
   if (propertyChanged) {
     unsubscribe = checkIsFuncOrNull(propertyChanged.subscribe(({
@@ -103,15 +109,20 @@ function subscribeObjectValue(propertyNames, object, immediateSubscribe, subscri
       oldValue,
       newValue
     }) => {
-      if (!unsubscribe && oldValue === newValue) {
+      if (!subscribed || !unsubscribe && oldValue === newValue) {
         return;
       }
 
       const newSubscribePropertyName = getSubscribePropertyName();
 
       if (name === subscribePropertyName) {
+        if (subscribePropertyName === newSubscribePropertyName && subscribePropertyName != null && unsubscribe != null && typeof oldValue !== 'undefined' && typeof newValue !== 'undefined') {
+          changeItem(subscribePropertyName, oldValue, newValue, ValueChangeType.Changed, ValueKeyType.ValueProperty);
+          return;
+        }
+
         if (typeof oldValue !== 'undefined') {
-          unsubscribeItem(oldValue, VALUE_PROPERTY_PREFIX + subscribePropertyName);
+          changeItem(subscribePropertyName, oldValue, void 0, ValueChangeType.Unsubscribe, ValueKeyType.ValueProperty);
         }
       } else if (subscribePropertyName !== newSubscribePropertyName) {
         unsubscribeProperty(false);
@@ -122,6 +133,9 @@ function subscribeObjectValue(propertyNames, object, immediateSubscribe, subscri
       if (unsubscribe != null) {
         subscribeProperty(newSubscribePropertyName, false);
       }
+    }, {
+      propertiesPath,
+      rule
     }));
   }
 
@@ -131,13 +145,20 @@ function subscribeObjectValue(propertyNames, object, immediateSubscribe, subscri
     return null;
   }
 
+  subscribed = true;
   return () => {
+    let _unsubscribe;
+
     if (unsubscribe) {
-      unsubscribe();
+      _unsubscribe = unsubscribe;
       unsubscribe = null;
     }
 
     unsubscribeProperty(true);
+
+    if (_unsubscribe) {
+      _unsubscribe();
+    }
   };
 } // endregion
 // region subscribeObject
@@ -146,63 +167,18 @@ function subscribeObjectValue(propertyNames, object, immediateSubscribe, subscri
 const allowSubscribePrototype = true;
 export function hasDefaultProperty(object) {
   return object instanceof Object && (allowSubscribePrototype ? VALUE_PROPERTY_DEFAULT in object : Object.prototype.hasOwnProperty.call(object, VALUE_PROPERTY_DEFAULT)) && object.constructor !== Object && !Array.isArray(object);
-} // export function subscribeDefaultProperty<TValue>(
-// 	object: IPropertyChanged,
-// 	immediateSubscribe: boolean,
-// 	subscribeItem: (item: TValue, debugPropertyName: string) => IUnsubscribeOrVoid,
-// ) {
-// 	let unsubscribers: IUnsubscribe[]
-// 	return subscribeObject<TValue>(
-// 		VALUE_PROPERTY_DEFAULT,
-// 		o => o === VALUE_PROPERTY_DEFAULT,
-// 		object,
-// 		immediateSubscribe,
-// 		(item, debugPropertyName) => {
-// 			const unsubscriber = subscribeItem(item, debugPropertyName)
-// 			if (unsubscriber) {
-// 				if (!unsubscribers) {
-// 					unsubscribers = []
-// 				}
-// 				unsubscribers.push(unsubscriber)
-// 			}
-// 		},
-// 		() => {
-// 			if (unsubscribers) {
-// 				const _unsubscribers = unsubscribers
-// 				unsubscribers = null
-// 				for (let i = 0, len = _unsubscribers.length; i < len; i++) {
-// 					_unsubscribers[i]()
-// 				}
-// 			}
-// 		})
-// }
+}
 
-function subscribeObject(propertyNames, propertyPredicate, object, immediateSubscribe, subscribeItem, unsubscribeItem) {
+function subscribeObject(propertyNames, propertyPredicate, object, immediateSubscribe, changeItem, propertiesPath, rule) {
   if (!(object instanceof Object)) {
     return null;
   }
 
-  let unsubscribe; // if (propertyNames !== VALUE_PROPERTY_DEFAULT && hasDefaultProperty(object)) {
-  // 	unsubscribe = subscribeDefaultProperty(
-  // 		object,
-  // 		immediateSubscribe,
-  // 		item => subscribeObject(
-  // 			propertyNames,
-  // 			propertyPredicate,
-  // 			item as any,
-  // 			immediateSubscribe,
-  // 			subscribeItem,
-  // 			unsubscribeItem),
-  // 	)
-  //
-  // 	if (unsubscribe) {
-  // 		return unsubscribe
-  // 	}
-  // }
-
   const {
     propertyChanged
   } = object;
+  let unsubscribe;
+  let subscribed;
 
   if (propertyChanged) {
     unsubscribe = checkIsFuncOrNull(propertyChanged.subscribe(({
@@ -210,28 +186,39 @@ function subscribeObject(propertyNames, propertyPredicate, object, immediateSubs
       oldValue,
       newValue
     }) => {
-      if (!unsubscribe && oldValue === newValue) {
+      if (!subscribed || !unsubscribe && oldValue === newValue) {
         return;
       } // PROF: 623 - 1.3%
 
 
       if (!propertyPredicate || propertyPredicate(name, object)) {
-        if (typeof oldValue !== 'undefined') {
-          unsubscribeItem(oldValue, name + '');
-        }
+        if (unsubscribe && typeof oldValue !== 'undefined' && typeof newValue !== 'undefined') {
+          changeItem(name, oldValue, newValue, ValueChangeType.Changed, ValueKeyType.Property);
+        } else {
+          if (typeof oldValue !== 'undefined') {
+            changeItem(name, oldValue, void 0, ValueChangeType.Unsubscribe, ValueKeyType.Property);
+          }
 
-        if (unsubscribe && typeof newValue !== 'undefined') {
-          subscribeItem(newValue, name + '');
+          if (unsubscribe && typeof newValue !== 'undefined') {
+            changeItem(name, void 0, newValue, ValueChangeType.Subscribe, ValueKeyType.Property);
+          }
         }
       }
+    }, {
+      propertiesPath,
+      rule
     }));
   }
 
-  const forEach = (callbackfn, isSubscribe) => {
+  const forEach = isSubscribe => {
     if (propertyNames == null) {
       for (const propertyName in object) {
         if ((allowSubscribePrototype || Object.prototype.hasOwnProperty.call(object, propertyName)) && (!propertyPredicate || propertyPredicate(propertyName, object))) {
-          callbackfn(object[propertyName], propertyName);
+          if (isSubscribe) {
+            changeItem(propertyName, void 0, object[propertyName], ValueChangeType.Subscribe, ValueKeyType.Property);
+          } else {
+            changeItem(propertyName, object[propertyName], void 0, ValueChangeType.Unsubscribe, ValueKeyType.Property);
+          }
         }
       }
     } else {
@@ -240,84 +227,93 @@ function subscribeObject(propertyNames, propertyPredicate, object, immediateSubs
           const propertyName = propertyNames[i];
 
           if (!isSubscribe) {
-            callbackfn(void 0, propertyName);
+            changeItem(propertyName, void 0, void 0, ValueChangeType.Unsubscribe, ValueKeyType.Property);
           }
 
           if (allowSubscribePrototype ? propertyName in object : Object.prototype.hasOwnProperty.call(object, propertyName)) {
             const value = object[propertyName];
 
             if (typeof value !== 'undefined') {
-              callbackfn(value, propertyName);
+              if (isSubscribe) {
+                changeItem(propertyName, void 0, value, ValueChangeType.Subscribe, ValueKeyType.Property);
+              } else {
+                changeItem(propertyName, value, void 0, ValueChangeType.Unsubscribe, ValueKeyType.Property);
+              }
             }
           }
 
           if (isSubscribe) {
-            callbackfn(void 0, propertyName);
+            changeItem(propertyName, void 0, void 0, ValueChangeType.Subscribe, ValueKeyType.Property);
           }
         }
       } else {
         if (!isSubscribe) {
-          callbackfn(void 0, propertyNames);
+          changeItem(propertyNames, void 0, void 0, ValueChangeType.Unsubscribe, ValueKeyType.Property);
         }
 
         if (allowSubscribePrototype ? propertyNames in object : Object.prototype.hasOwnProperty.call(object, propertyNames)) {
           const value = object[propertyNames];
 
           if (typeof value !== 'undefined') {
-            callbackfn(value, propertyNames);
+            if (isSubscribe) {
+              changeItem(propertyNames, void 0, value, ValueChangeType.Subscribe, ValueKeyType.Property);
+            } else {
+              changeItem(propertyNames, value, void 0, ValueChangeType.Unsubscribe, ValueKeyType.Property);
+            }
           }
         }
 
         if (isSubscribe) {
-          callbackfn(void 0, propertyNames);
+          changeItem(propertyNames, void 0, void 0, ValueChangeType.Subscribe, ValueKeyType.Property);
         }
       }
     }
   };
 
   if (immediateSubscribe) {
-    forEach(subscribeItem, true);
+    forEach(true);
   } else if (unsubscribe == null) {
     return null;
   }
 
+  subscribed = true;
   return () => {
+    let _unsubscribe;
+
     if (unsubscribe) {
-      unsubscribe();
+      _unsubscribe = unsubscribe;
       unsubscribe = null;
     }
 
-    forEach(unsubscribeItem, false);
+    forEach(false);
+
+    if (_unsubscribe) {
+      _unsubscribe();
+    }
   };
 } // endregion
 // region subscribeIterable
 
 
-function subscribeIterable(object, immediateSubscribe, subscribeItem, unsubscribeItem) {
+function subscribeIterable(object, immediateSubscribe, changeItem) {
   if (!object || typeof object === 'string' || !isIterable(object)) {
     return null;
   }
 
-  const forEach = callbackfn => {
-    for (const item of object) {
-      callbackfn(item, COLLECTION_PREFIX);
-    }
-  };
-
   if (immediateSubscribe) {
-    forEach(subscribeItem);
+    forEachCollection(object, changeItem, true);
   } else {
     return null;
   }
 
   return () => {
-    forEach(unsubscribeItem);
+    forEachCollection(object, changeItem, false);
   };
 } // endregion
 // region subscribeList
 
 
-function subscribeList(object, immediateSubscribe, subscribeItem, unsubscribeItem) {
+function subscribeList(object, immediateSubscribe, changeItem, propertiesPath, rule) {
   if (!object || object[Symbol.toStringTag] !== 'List') {
     return null;
   }
@@ -326,6 +322,7 @@ function subscribeList(object, immediateSubscribe, subscribeItem, unsubscribeIte
     listChanged
   } = object;
   let unsubscribe;
+  let subscribed;
 
   if (listChanged) {
     unsubscribe = checkIsFuncOrNull(listChanged.subscribe(({
@@ -333,11 +330,15 @@ function subscribeList(object, immediateSubscribe, subscribeItem, unsubscribeIte
       oldItems,
       newItems
     }) => {
+      if (!subscribed) {
+        return;
+      }
+
       switch (type) {
         case ListChangedType.Added:
           if (unsubscribe) {
             for (let i = 0, len = newItems.length; i < len; i++) {
-              subscribeItem(newItems[i], COLLECTION_PREFIX);
+              changeItem(null, void 0, newItems[i], ValueChangeType.Subscribe, ValueKeyType.CollectionAny);
             }
           }
 
@@ -345,44 +346,52 @@ function subscribeList(object, immediateSubscribe, subscribeItem, unsubscribeIte
 
         case ListChangedType.Removed:
           for (let i = 0, len = oldItems.length; i < len; i++) {
-            unsubscribeItem(oldItems[i], COLLECTION_PREFIX);
+            changeItem(null, oldItems[i], void 0, ValueChangeType.Unsubscribe, ValueKeyType.CollectionAny);
           }
 
           break;
 
         case ListChangedType.Set:
-          if (unsubscribe || oldItems[0] !== newItems[0]) {
-            unsubscribeItem(oldItems[0], COLLECTION_PREFIX);
-          }
-
           if (unsubscribe) {
-            subscribeItem(newItems[0], COLLECTION_PREFIX);
+            changeItem(null, oldItems[0], newItems[0], ValueChangeType.Changed, ValueKeyType.CollectionAny);
+          } else if (oldItems[0] !== newItems[0]) {
+            changeItem(null, oldItems[0], void 0, ValueChangeType.Unsubscribe, ValueKeyType.CollectionAny);
           }
 
           break;
       }
+    }, {
+      propertiesPath,
+      rule
     }));
   }
 
   if (immediateSubscribe) {
-    forEachSimple(object, subscribeItem);
+    forEachCollection(object, changeItem, true);
   } else if (unsubscribe == null) {
     return null;
   }
 
+  subscribed = true;
   return () => {
+    let _unsubscribe;
+
     if (unsubscribe) {
-      unsubscribe();
+      _unsubscribe = unsubscribe;
       unsubscribe = null;
     }
 
-    forEachSimple(object, unsubscribeItem);
+    forEachCollection(object, changeItem, false);
+
+    if (_unsubscribe) {
+      _unsubscribe();
+    }
   };
 } // endregion
 // region subscribeSet
 
 
-function subscribeSet(object, immediateSubscribe, subscribeItem, unsubscribeItem) {
+function subscribeSet(object, immediateSubscribe, changeItem, propertiesPath, rule) {
   if (!object || object[Symbol.toStringTag] !== 'Set' && !(object instanceof Set)) {
     return null;
   }
@@ -391,6 +400,7 @@ function subscribeSet(object, immediateSubscribe, subscribeItem, unsubscribeItem
     setChanged
   } = object;
   let unsubscribe;
+  let subscribed;
 
   if (setChanged) {
     unsubscribe = checkIsFuncOrNull(setChanged.subscribe(({
@@ -398,11 +408,15 @@ function subscribeSet(object, immediateSubscribe, subscribeItem, unsubscribeItem
       oldItems,
       newItems
     }) => {
+      if (!subscribed) {
+        return;
+      }
+
       switch (type) {
         case SetChangedType.Added:
           if (unsubscribe) {
             for (let i = 0, len = newItems.length; i < len; i++) {
-              subscribeItem(newItems[i], COLLECTION_PREFIX);
+              changeItem(null, void 0, newItems[i], ValueChangeType.Subscribe, ValueKeyType.CollectionAny);
             }
           }
 
@@ -410,33 +424,43 @@ function subscribeSet(object, immediateSubscribe, subscribeItem, unsubscribeItem
 
         case SetChangedType.Removed:
           for (let i = 0, len = oldItems.length; i < len; i++) {
-            unsubscribeItem(oldItems[i], COLLECTION_PREFIX);
+            changeItem(null, oldItems[i], void 0, ValueChangeType.Unsubscribe, ValueKeyType.CollectionAny);
           }
 
           break;
       }
+    }, {
+      propertiesPath,
+      rule
     }));
   }
 
   if (immediateSubscribe) {
-    forEachSimple(object, subscribeItem);
+    forEachCollection(object, changeItem, true);
   } else if (unsubscribe == null) {
     return null;
   }
 
+  subscribed = true;
   return () => {
+    let _unsubscribe;
+
     if (unsubscribe) {
-      unsubscribe();
+      _unsubscribe = unsubscribe;
       unsubscribe = null;
     }
 
-    forEachSimple(object, unsubscribeItem);
+    forEachCollection(object, changeItem, false);
+
+    if (_unsubscribe) {
+      _unsubscribe();
+    }
   };
 } // endregion
 // region subscribeMap
 
 
-function subscribeMap(keys, keyPredicate, object, immediateSubscribe, subscribeItem, unsubscribeItem) {
+function subscribeMap(keys, keyPredicate, object, immediateSubscribe, changeItem, propertiesPath, rule) {
   if (!object || object[Symbol.toStringTag] !== 'Map' && !(object instanceof Map)) {
     return null;
   }
@@ -445,6 +469,7 @@ function subscribeMap(keys, keyPredicate, object, immediateSubscribe, subscribeI
     mapChanged
   } = object;
   let unsubscribe;
+  let subscribed;
 
   if (mapChanged) {
     unsubscribe = checkIsFuncOrNull(mapChanged.subscribe(({
@@ -453,7 +478,7 @@ function subscribeMap(keys, keyPredicate, object, immediateSubscribe, subscribeI
       oldValue,
       newValue
     }) => {
-      if (!unsubscribe && oldValue === newValue) {
+      if (!subscribed || !unsubscribe && oldValue === newValue) {
         return;
       }
 
@@ -461,84 +486,102 @@ function subscribeMap(keys, keyPredicate, object, immediateSubscribe, subscribeI
         switch (type) {
           case MapChangedType.Added:
             if (unsubscribe) {
-              subscribeItem(newValue, COLLECTION_PREFIX + key);
+              changeItem(key, void 0, newValue, ValueChangeType.Subscribe, ValueKeyType.MapKey);
             }
 
             break;
 
           case MapChangedType.Removed:
-            unsubscribeItem(oldValue, COLLECTION_PREFIX + key);
+            changeItem(key, oldValue, void 0, ValueChangeType.Unsubscribe, ValueKeyType.MapKey);
             break;
 
           case MapChangedType.Set:
-            unsubscribeItem(oldValue, COLLECTION_PREFIX + key);
-
             if (unsubscribe) {
-              subscribeItem(newValue, COLLECTION_PREFIX + key);
+              changeItem(key, oldValue, newValue, ValueChangeType.Changed, ValueKeyType.MapKey);
+            } else {
+              changeItem(key, oldValue, void 0, ValueChangeType.Unsubscribe, ValueKeyType.MapKey);
             }
 
             break;
         }
       }
+    }, {
+      propertiesPath,
+      rule
     }));
   }
 
-  const forEach = (callbackfn, isSubscribe) => {
+  const forEach = isSubscribe => {
     if (keys) {
       for (let i = 0, len = keys.length; i < len; i++) {
         const key = keys[i];
 
         if (!isSubscribe) {
-          callbackfn(void 0, COLLECTION_PREFIX + key);
+          changeItem(key, void 0, void 0, ValueChangeType.Unsubscribe, ValueKeyType.MapKey);
         }
 
         if (object.has(key)) {
-          callbackfn(object.get(key), COLLECTION_PREFIX + key);
+          if (isSubscribe) {
+            changeItem(key, void 0, object.get(key), ValueChangeType.Subscribe, ValueKeyType.MapKey);
+          } else {
+            changeItem(key, object.get(key), void 0, ValueChangeType.Unsubscribe, ValueKeyType.MapKey);
+          }
         }
 
         if (isSubscribe) {
-          callbackfn(void 0, COLLECTION_PREFIX + key);
+          changeItem(key, void 0, void 0, ValueChangeType.Subscribe, ValueKeyType.MapKey);
         }
       }
     } else {
       for (const entry of object) {
         if (!keyPredicate || keyPredicate(entry[0], object)) {
-          callbackfn(entry[1], COLLECTION_PREFIX + entry[0]);
+          if (isSubscribe) {
+            changeItem(entry[0], void 0, entry[1], ValueChangeType.Subscribe, ValueKeyType.MapKey);
+          } else {
+            changeItem(entry[0], entry[1], void 0, ValueChangeType.Unsubscribe, ValueKeyType.MapKey);
+          }
         }
       }
     }
   };
 
   if (immediateSubscribe) {
-    forEach(subscribeItem, true);
+    forEach(true);
   } else if (unsubscribe == null) {
     return null;
   }
 
+  subscribed = true;
   return () => {
+    let _unsubscribe;
+
     if (unsubscribe) {
-      unsubscribe();
+      _unsubscribe = unsubscribe;
       unsubscribe = null;
     }
 
-    forEach(unsubscribeItem, false);
+    forEach(false);
+
+    if (_unsubscribe) {
+      _unsubscribe();
+    }
   };
 } // endregion
 // region subscribeCollection
 
 
-function subscribeCollection(object, immediateSubscribe, subscribeItem, unsubscribeItem) {
+function subscribeCollection(object, immediateSubscribe, changeItem, propertiesPath, rule) {
   if (!object) {
     return null;
   }
 
-  const unsubscribeList = subscribeList(object, immediateSubscribe, subscribeItem, unsubscribeItem);
-  const unsubscribeSet = subscribeSet(object, immediateSubscribe, subscribeItem, unsubscribeItem);
-  const unsubscribeMap = subscribeMap(null, null, object, immediateSubscribe, subscribeItem, unsubscribeItem);
+  const unsubscribeList = subscribeList(object, immediateSubscribe, changeItem, propertiesPath, rule);
+  const unsubscribeSet = subscribeSet(object, immediateSubscribe, changeItem, propertiesPath, rule);
+  const unsubscribeMap = subscribeMap(null, null, object, immediateSubscribe, changeItem, propertiesPath, rule);
   let unsubscribeIterable;
 
   if (!unsubscribeList && !unsubscribeSet && !unsubscribeMap) {
-    unsubscribeIterable = subscribeIterable(object, immediateSubscribe, subscribeItem, unsubscribeItem);
+    unsubscribeIterable = subscribeIterable(object, immediateSubscribe, changeItem);
 
     if (!unsubscribeIterable) {
       return null;
@@ -610,8 +653,8 @@ export let SubscribeObjectType;
 })(SubscribeObjectType || (SubscribeObjectType = {}));
 
 export class RuleSubscribe extends Rule {
-  constructor() {
-    super(RuleType.Action);
+  constructor(description) {
+    super(RuleType.Action, description);
   }
 
   clone() {
@@ -637,8 +680,8 @@ export class RuleSubscribe extends Rule {
 
 }
 export class RuleSubscribeObject extends RuleSubscribe {
-  constructor(type, propertyPredicate, ...propertyNames) {
-    super();
+  constructor(type, propertyPredicate, description, ...propertyNames) {
+    super(description);
 
     if (propertyNames && !propertyNames.length) {
       propertyNames = null;
@@ -707,8 +750,8 @@ function createKeyPredicate(keys) {
 }
 
 export class RuleSubscribeMap extends RuleSubscribe {
-  constructor(keyPredicate, ...keys) {
-    super();
+  constructor(keyPredicate, description, ...keys) {
+    super(description);
 
     if (keys && !keys.length) {
       keys = null;
@@ -734,8 +777,8 @@ export class RuleSubscribeMap extends RuleSubscribe {
 // region RuleSubscribeCollection
 
 export class RuleSubscribeCollection extends RuleSubscribe {
-  constructor() {
-    super(); // @ts-ignore
+  constructor(description) {
+    super(description); // @ts-ignore
 
     this.subscribe = subscribeCollection;
   }

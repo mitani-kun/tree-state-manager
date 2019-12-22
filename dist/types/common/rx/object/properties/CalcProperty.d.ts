@@ -1,29 +1,47 @@
-import { ThenableOrIteratorOrValue, ThenableOrValue } from '../../../async/async';
+import { ThenableOrValue } from '../../../async/async';
+import { CalcStat } from '../../../helpers/CalcStat';
 import { VALUE_PROPERTY_DEFAULT } from '../../../helpers/value-property';
 import { IDeferredCalcOptions } from '../../deferred-calc/DeferredCalc';
-import { ObservableObject } from '../ObservableObject';
-import { ICalcProperty } from './contracts';
-import { IPropertyOptions, Property } from './Property';
-export declare type CalcPropertyFunc<TInput, TTarget, TSource> = (input: TInput, property: Property<TTarget, TSource>) => ThenableOrIteratorOrValue<void>;
-export declare class CalcPropertyValue<TValue, TInput = any, TMergeSource = any> {
-    get: () => CalcProperty<TValue, TInput, TMergeSource>;
-    constructor(property: CalcProperty<TValue, TInput, TMergeSource>);
+import { ObservableClass } from '../ObservableClass';
+import { CalcPropertyFunc, ICalcProperty, ICalcPropertyState } from './contracts';
+export declare class CalcPropertyValue<TValue, TInput = any> {
+    get: () => CalcProperty<TValue, TInput>;
+    constructor(property: CalcProperty<TValue, TInput>);
 }
-export declare class CalcProperty<TValue, TInput = any, TMergeSource = any> extends ObservableObject implements ICalcProperty<TValue> {
+export declare class CalcPropertyState<TValue, TInput = any> extends ObservableClass implements ICalcPropertyState<TValue, TInput> {
+    readonly calcOptions: IDeferredCalcOptions;
+    name: string;
+    constructor(calcOptions: IDeferredCalcOptions, initValue: TValue);
+    value: TValue;
+    input: TInput;
+}
+export declare class CalcProperty<TValue, TInput = any> extends ObservableClass implements ICalcProperty<TValue, TInput> {
     private readonly _calcFunc;
-    private readonly _valueProperty;
     private readonly _deferredCalc;
     private _deferredValue;
     private _hasValue;
+    private _error;
     private readonly _initValue?;
-    input: TInput;
-    constructor(calcFunc: CalcPropertyFunc<TInput, TValue, TMergeSource>, calcOptions: IDeferredCalcOptions, valueOptions?: IPropertyOptions<TValue, TMergeSource>, initValue?: TValue);
+    readonly timeSyncStat: CalcStat;
+    readonly timeAsyncStat: CalcStat;
+    readonly timeDebuggerStat: CalcStat;
+    readonly timeEmitEventsStat: CalcStat;
+    readonly timeTotalStat: CalcStat;
+    readonly state: ICalcPropertyState<TValue, TInput>;
+    constructor({ calcFunc, name, calcOptions, initValue, }: {
+        calcFunc: CalcPropertyFunc<TValue, TInput>;
+        name?: string;
+        calcOptions: IDeferredCalcOptions;
+        initValue?: TValue;
+    });
+    private setDeferredValue;
+    private onValueChanged;
     invalidate(): void;
     onInvalidated(): void;
-    onCalculated(): void;
-    readonly [VALUE_PROPERTY_DEFAULT]: ThenableOrValue<TValue>;
-    readonly wait: ThenableOrValue<TValue>;
-    readonly last: TValue;
-    readonly lastOrWait: ThenableOrValue<TValue>;
+    get [VALUE_PROPERTY_DEFAULT](): ThenableOrValue<TValue>;
+    get wait(): ThenableOrValue<TValue>;
+    get last(): TValue;
+    /** @deprecated not needed and not implemented. Use 'last' instead. */
+    get lastOrWait(): ThenableOrValue<TValue>;
     clear(): void;
 }

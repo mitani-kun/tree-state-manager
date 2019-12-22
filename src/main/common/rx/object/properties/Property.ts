@@ -7,7 +7,8 @@ import {
 	ISerializeValue,
 } from '../../../extensions/serialization/contracts'
 import {registerSerializable} from '../../../extensions/serialization/serializers'
-import {ObservableObject} from '../ObservableObject'
+import {webrainOptions} from '../../../helpers/webrainOptions'
+import {ObservableClass} from '../ObservableClass'
 import {ObservableObjectBuilder} from '../ObservableObjectBuilder'
 
 export interface IPropertyOptions<TTarget, TSource> {
@@ -16,7 +17,7 @@ export interface IPropertyOptions<TTarget, TSource> {
 }
 
 export class Property<TValue, TMergeSource = TValue>
-	extends ObservableObject
+	extends ObservableClass
 	implements
 		IMergeable<Property<TValue, TMergeSource>, any>,
 		ISerializable
@@ -176,8 +177,11 @@ export class Property<TValue, TMergeSource = TValue>
 	// region IMergeable
 
 	public _canMerge(source: Property<TValue, TMergeSource>|TValue|TMergeSource): boolean {
-		if (source.constructor === Property
-			&& this.value === (source as Property<TValue, TMergeSource>).value
+		if (webrainOptions.equalsFunc
+			? source.constructor === Property
+				&& webrainOptions.equalsFunc.call(this, this.value, (source as Property<TValue, TMergeSource>).value)
+				|| webrainOptions.equalsFunc.call(this, this.value, source)
+			: source.constructor === Property && this.value === (source as Property<TValue, TMergeSource>).value
 				|| this.value === source
 		) {
 			return null
@@ -207,6 +211,7 @@ export class Property<TValue, TMergeSource = TValue>
 
 	// region ISerializable
 
+	// noinspection SpellCheckingInspection
 	public static uuid: string = '6f2c51ccd8654baa9a93226e3374ccaf'
 
 	public serialize(serialize: ISerializeValue): ISerializedObject {

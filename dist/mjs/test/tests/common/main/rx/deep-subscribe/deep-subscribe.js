@@ -2,8 +2,9 @@
 import { delay } from '../../../../../../main/common/helpers/helpers';
 import { VALUE_PROPERTY_DEFAULT } from '../../../../../../main/common/helpers/value-property';
 import { RuleRepeatAction } from '../../../../../../main/common/rx/deep-subscribe/contracts/rules';
-import { ObservableObject } from '../../../../../../main/common/rx/object/ObservableObject';
+import { ObservableClass } from '../../../../../../main/common/rx/object/ObservableClass';
 import { ObservableObjectBuilder } from '../../../../../../main/common/rx/object/ObservableObjectBuilder';
+import { describe, it, xit } from '../../../../../../main/common/test/Mocha';
 import { createObject, TestDeepSubscribe } from './helpers/src/TestDeepSubscribe';
 describe('common > main > rx > deep-subscribe > deep-subscribe', function () {
   const check = createObject();
@@ -21,13 +22,13 @@ describe('common > main > rx > deep-subscribe > deep-subscribe', function () {
       doNotSubscribeNonObjectValues: true
     }, b => b.propertyAny().propertyRegexp(/^[a-z]/).repeat(1, 1, o => Array.isArray(o) ? RuleRepeatAction.Next : RuleRepeatAction.Fork, b => b.p('1')), b => b.propertyAny().repeat(1, 1, null, b => b.propertyRegexp(/^[a-z]/)).repeat(1, 1, o => Array.isArray(o) ? RuleRepeatAction.Next : RuleRepeatAction.Fork, b => b.p('1')), // b => b
     // 	.propertyRegexp(/^[a-z]/)
-    // 	.repeat(0, 1, o => o && o.constructor === ObservableObject
+    // 	.repeat(0, 1, o => o && o.constructor === ObservableClass
     // 		? RuleRepeatAction.Next
     // 		: RuleRepeatAction.Fork, b => b.propertyRegexp(/^[a-z]/))
     // 	.repeat(1, 1,
     // 		o => Array.isArray(o) ? RuleRepeatAction.Next : RuleRepeatAction.Fork,
     // 		b => b.p('1')),
-    b => b.propertyAny().repeat(0, 0, null, b => b.propertyRegexp(/^[a-z]/)).repeat(1, 1, o => Array.isArray(o) ? RuleRepeatAction.Next : RuleRepeatAction.Fork, b => b.p('1')), b => b.propertyAny().repeat(2, 3, o => o && o.constructor === ObservableObject ? RuleRepeatAction.Next : RuleRepeatAction.Fork, b => b.propertyRegexp(/^[a-z]/)).repeat(1, 1, o => Array.isArray(o) ? RuleRepeatAction.Next : RuleRepeatAction.Fork, b => b.p('1'))).subscribe(o => ['value2']).unsubscribe(o => ['value2']).subscribe(o => ['value2']).unsubscribe(o => ['value2']);
+    b => b.propertyAny().repeat(0, 0, null, b => b.propertyRegexp(/^[a-z]/)).repeat(1, 1, o => Array.isArray(o) ? RuleRepeatAction.Next : RuleRepeatAction.Fork, b => b.p('1')), b => b.propertyAny().repeat(2, 3, o => o && o.constructor === ObservableClass ? RuleRepeatAction.Next : RuleRepeatAction.Fork, b => b.propertyRegexp(/^[a-z]/)).repeat(1, 1, o => Array.isArray(o) ? RuleRepeatAction.Next : RuleRepeatAction.Fork, b => b.p('1'))).subscribe(o => ['value2']).unsubscribe(o => ['value2']).subscribe(o => ['value2']).unsubscribe(o => ['value2']);
   });
   it('unsubscribe leaf non object', function () {
     const object1 = createObject();
@@ -184,6 +185,61 @@ describe('common > main > rx > deep-subscribe > deep-subscribe', function () {
   });
   it('any', function () {
     new TestDeepSubscribe({
+      object: createObject(),
+      immediate: true,
+      doNotSubscribeNonObjectValues: true
+    }, b => b.p('value').any(o => o.nothing(), o => o.any(o => o.nothing(), o => o.any(o => o.nothing())))).subscribe(o => ['value'], null, o => ['value']).unsubscribe(o => ['value']);
+    new TestDeepSubscribe({
+      object: createObject().observableObject,
+      immediate: true,
+      doNotSubscribeNonObjectValues: true
+    }, b => b.p('value').p('prop')).change(o => {
+      o.value = null;
+    }, o => [], o => [], o => []).subscribe(o => [], null, o => []).change(o => {
+      o.value = {
+        prop: 'prop'
+      };
+    }, o => [], o => ['prop'], o => ['prop']).change(o => {
+      o.value = 123;
+    }, o => ['prop'], o => [], o => [void 0]).change(o => {
+      o.value = null;
+    }, o => [], o => [], o => []).unsubscribe(o => []);
+    new TestDeepSubscribe({
+      object: createObject().observableObject,
+      immediate: true,
+      doNotSubscribeNonObjectValues: true
+    }, b => b.p('observableList').collection().p('value').p('prop')).change(o => {
+      o.value = null;
+    }, o => [], o => [], o => []).subscribe(o => [], null, o => []).change(o => {
+      o.value = {
+        prop: 'prop'
+      };
+    }, o => [], o => ['prop'], o => ['prop']).change(o => {
+      o.value = null;
+    }, o => ['prop'], o => [], o => [void 0]).change(o => {
+      o.observableObject.observableList.insert(0, {
+        value: {
+          prop: 'prop'
+        }
+      });
+    }, o => [], o => ['prop'], o => ['prop']).change(o => {
+      o.observableObject.observableList.set(0, 123);
+    }, o => ['prop'], o => [], o => [void 0]).unsubscribe(o => []);
+    new TestDeepSubscribe({
+      object: createObject().observableObject,
+      immediate: true,
+      doNotSubscribeNonObjectValues: true
+    }, b => b.any(o => o.p('map2', 'set'))).subscribe(o => [o.map2, o.set], null, o => [o.map2]).change(o => {
+      o.set = o.observableObject;
+    }, o => [o.set], o => [o.observableObject], o => []).unsubscribe(o => [o.map2, o.observableObject]);
+    new TestDeepSubscribe({
+      object: createObject().observableObject,
+      immediate: true,
+      doNotSubscribeNonObjectValues: true
+    }, b => b.any(o => o.nothing(), o => o.p('map2', 'set'))).subscribe(o => [o, o.map2, o.set], null, o => [o]).change(o => {
+      o.set = o.observableObject;
+    }, o => [o.set], o => [], o => []).unsubscribe(o => [o.map2, o]);
+    new TestDeepSubscribe({
       object: createObject().object,
       immediate: true,
       doNotSubscribeNonObjectValues: true
@@ -192,7 +248,8 @@ describe('common > main > rx > deep-subscribe > deep-subscribe', function () {
       object: createObject().observableObject,
       immediate: true,
       doNotSubscribeNonObjectValues: true
-    }, b => b.any(o => o.path(o => o['map2|set']), o => o.path(o => o['map2|set']), o => o.path(o => o['map2|set'].object.observableObject))).subscribe(o => [o.map2, o.set], null, o => [o.map2]).change(o => {
+    }, b => b.any(o => o.path(o => o['map2|set']), o => o.path(o => o['map2|set']) // o => o.path((o: any) => o['map2|set'].object.observableObject),
+    )).subscribe(o => [o.map2, o.set], null, o => [o.map2]).change(o => {
       o.set = o.observableObject;
     }, o => [o.set], o => [o.observableObject], o => []).unsubscribe(o => [o.map2, o.set]);
     new TestDeepSubscribe({
@@ -297,10 +354,35 @@ describe('common > main > rx > deep-subscribe > deep-subscribe', function () {
       object: createObject().observableObject,
       immediate: true,
       doNotSubscribeNonObjectValues: true
-    }, b => b.any(o => o.path(o => o.property['@value_observableObject']['map2|set']), o => o.path(o => o.property['@value_observableObject']['map2|set']), o => o.path(o => o.property['@value_observableObject']['map2|set'].object.observableObject)), b => b.any(o => o.path(o => o.property['map2|set']), o => o.path(o => o.property['map2|set']), o => o.path(o => o.property['map2|set'].object.observableObject))).subscribe(o => [o.map2, o.set], null, o => [o.map2]).change(o => {
+    }, b => b.any(o => o.path(o => o.property['@value_observableObject']['map2|set']), o => o.path(o => o.property['@value_observableObject']['map2|set']), o => o.path(o => o.property['@value_observableObject']['map2|set'].object.observableObject)), b => b.any(o => o.path(o => o.property['map2|set']), o => o.path(o => o.property['map2|set']) // o => o.path((o: any) => o.property['map2|set'].object.observableObject),
+    )).subscribe(o => [o.map2, o.set], null, o => [o.map2]).change(o => {
       o.set = o.observableObject;
     }, o => [o.set], o => [o.observableObject], o => []).unsubscribe(o => [o.map2, o.set]);
-  });
+  }); // it('value properties null', async function() {
+  // 	const object = createObject().observableObject
+  // 	const property = object.property
+  // 	object.property = null
+  //
+  // 	new TestDeepSubscribe(
+  // 		{
+  // 			object: object,
+  // 			immediate: true,
+  // 			doNotSubscribeNonObjectValues: true,
+  // 		},
+  // 		b => b.p('property'),
+  // 	)
+  // 		.subscribe(o => [null])
+  // 		.change(o => o.property = property as any,
+  // 			o => [null], o => [o.observableObject])
+  // 		.change(o => o.property[VALUE_PROPERTY_DEFAULT] = new Number(1) as any,
+  // 			o => [o.observableObject], [new Number(1)])
+  // 		.change(o => o.property = null as any,
+  // 			[new Number(1)], [null])
+  // 		.change(o => o.property = o.object.property,
+  // 			[null], [new Number(1)])
+  // 		.unsubscribe([new Number(1)])
+  // })
+
   it('promises', async function () {
     const object = createObject();
     object.observableObject.value = new Number(1);
@@ -313,7 +395,7 @@ describe('common > main > rx > deep-subscribe > deep-subscribe', function () {
     await delay(20);
     await tester.changeAsync(o => object.observableObject.value = new Number(2), [new Number(1)], [new Number(2)]);
     await delay(20);
-    await tester.unsubscribe([new Number(2)]);
+    await tester.unsubscribeAsync([new Number(2)]);
     await delay(100);
   });
   xit('promises throw', async function () {
@@ -325,11 +407,11 @@ describe('common > main > rx > deep-subscribe > deep-subscribe', function () {
       doNotSubscribeNonObjectValues: true,
       useIncorrectUnsubscribe: true
     }, b => b.path(o => o.promiseAsync.value));
-    await tester.subscribeAsync([new Number(1)]);
+    await tester.subscribeAsync([new Number(1)], [], []);
     await delay(20);
     await tester.changeAsync(o => object.observableObject.value = new Number(2), [], [new Number(2)], null, Error, /Value is not a function or null\/undefined/);
     await delay(20);
-    await tester.unsubscribe([]);
+    await tester.unsubscribeAsync([]);
     await delay(100);
   });
   it('lists', function () {

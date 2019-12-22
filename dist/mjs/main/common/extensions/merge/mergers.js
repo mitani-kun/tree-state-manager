@@ -80,7 +80,7 @@ class ValueState {
     } = this;
 
     if (!_meta) {
-      _meta = this.mergerState.mergerVisitor.typeMeta.getMeta(this.type);
+      _meta = this.mergerState.mergerVisitor.getMeta(this.type);
 
       if (!_meta) {
         throw new Error(`Class (${this.type && this.type.name}) have no type meta`);
@@ -240,7 +240,8 @@ class ValueState {
             } = this;
             this.merge(mergerVisitor.getNextMerge(preferClone, preferClone, refs, refs, refs, options), _clone, target, target, () => {
               throw new Error(`Class (${this.type.name}) cannot be merged with clone`);
-            }, preferClone, preferClone, options);
+            }, preferClone, preferClone // options,
+            );
             break;
 
           case false:
@@ -364,7 +365,8 @@ class MergeState {
       isSet = true;
     } : () => {
       throw new Error(`Class ${olderState.type.name} does not need cloning.` + 'You should use "preferClone: false" in merger options for this class');
-    }, preferCloneNewer, preferCloneNewer, options);
+    }, preferCloneNewer, preferCloneNewer // options,
+    );
 
     if (isSet) {
       return;
@@ -415,7 +417,8 @@ class MergeState {
       } else {
         isSet = true;
       }
-    }, preferCloneOlder, preferCloneNewer, options);
+    }, preferCloneOlder, preferCloneNewer // options,
+    );
 
     if (isSet) {
       return !!set;
@@ -451,8 +454,8 @@ var ObjectStatus;
 
 export class MergerVisitor {
   // public refs: IRef[]
-  constructor(typeMeta) {
-    this.typeMeta = typeMeta;
+  constructor(getMeta) {
+    this.getMeta = getMeta;
   }
 
   getStatus(object) {
@@ -720,8 +723,16 @@ export class MergerVisitor {
 // region TypeMetaMergerCollection
 
 export class TypeMetaMergerCollection extends TypeMetaCollection {
-  constructor(proto) {
+  constructor({
+    proto,
+    customMeta
+  } = {}) {
     super(proto || TypeMetaMergerCollection.default);
+    this.customMeta = customMeta;
+  }
+
+  getMeta(type) {
+    return this.customMeta && this.customMeta(type) || super.getMeta(type);
   }
 
   static makeTypeMetaMerger(type, meta) {
@@ -754,8 +765,9 @@ export function registerMergeable(type, meta) {
 export function registerMerger(type, meta) {
   TypeMetaMergerCollection.default.putType(type, meta);
 }
-export function registerMergerPrimitive(type, meta) {
-  registerMerger(type, {
+
+function createPrimitiveTypeMetaMerger(meta) {
+  return {
     preferClone: false,
     ...meta,
     merger: {
@@ -766,18 +778,26 @@ export function registerMergerPrimitive(type, meta) {
 
       ...(meta ? meta.merger : {})
     }
-  });
+  };
+}
+
+export function registerMergerPrimitive(type, meta) {
+  registerMerger(type, createPrimitiveTypeMetaMerger(meta));
 } // endregion
 // region ObjectMerger
 
+const primitiveTypeMetaMerger = createPrimitiveTypeMetaMerger();
+const observableObjectProperties = ['propertyChanged'];
 export class ObjectMerger {
   constructor(typeMeta) {
-    this.typeMeta = new TypeMetaMergerCollection(typeMeta);
+    this.typeMeta = new TypeMetaMergerCollection({
+      proto: typeMeta
+    });
     this.merge = this.merge.bind(this);
   }
 
   merge(base, older, newer, set, preferCloneOlder, preferCloneNewer, options) {
-    const merger = new MergerVisitor(this.typeMeta);
+    const merger = new MergerVisitor(type => this.typeMeta.getMeta(type));
     const mergedValue = merger.merge(base, older, newer, set, preferCloneOlder, preferCloneNewer, options);
     return mergedValue;
   }
@@ -787,6 +807,19 @@ export class ObjectMerger {
 // Handled in MergerVisitor:
 
 ObjectMerger.default = new ObjectMerger();
+ObjectMerger.observableOnly = new ObjectMerger(new TypeMetaMergerCollection({
+  customMeta: type => {
+    const prototype = type.prototype;
+
+    for (let i = 0, len = observableObjectProperties.length; i < len; i++) {
+      if (Object.prototype.hasOwnProperty.call(prototype, observableObjectProperties[i])) {
+        return primitiveTypeMetaMerger;
+      }
+    }
+
+    return null;
+  }
+}));
 
 function isPrimitive(value) {
   return !canHaveUniqueId(value) || typeof value === 'function'; // value == null
