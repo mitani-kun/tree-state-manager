@@ -1,8 +1,11 @@
+// region main
+
 /* tslint:disable:ordered-imports */
 export {ThenableSync} from './async/ThenableSync'
 export {ObservableClass} from './rx/object/ObservableClass'
 export {ObservableObject} from './rx/object/ObservableObject'
 export {CalcObjectBuilder} from './rx/object/properties/CalcObjectBuilder'
+export {DependCalcObjectBuilder} from './rx/object/properties/DependCalcObjectBuilder'
 export {calcPropertyFactory} from './rx/object/properties/CalcPropertyBuilder'
 export {connectorFactory} from './rx/object/properties/ConnectorBuilder'
 export {Property} from './rx/object/properties/Property'
@@ -14,7 +17,7 @@ export {ArrayMap} from './lists/ArrayMap'
 export {ObservableSet} from './lists/ObservableSet'
 export {ObservableMap} from './lists/ObservableMap'
 export {deepSubscribe} from './rx/deep-subscribe/deep-subscribe'
-export {resolvePath} from './rx/object/properties/helpers'
+export {resolvePath} from './rx/object/properties/path/resolve'
 export {ObjectMap} from './lists/ObjectMap'
 export {ObjectSet} from './lists/ObjectSet'
 export {CalcProperty} from './rx/object/properties/CalcProperty'
@@ -26,23 +29,49 @@ export {Subject} from './rx/subjects/subject'
 export {BehaviorSubject} from './rx/subjects/behavior'
 export {registerMergeable, registerMerger} from './extensions/merge/mergers'
 export {registerSerializable, registerSerializer, ObjectSerializer} from './extensions/serialization/serializers'
-export {isIterable} from './helpers/helpers'
+export {isIterable, isIterator, equals} from './helpers/helpers'
 export {DependenciesBuilder} from './rx/object/properties/DependenciesBuilder'
 export {subscribeDependencies} from './rx/object/properties/DependenciesBuilder'
-export {webrainOptions} from './helpers/webrainOptions'
+export {webrainOptions, webrainEquals} from './helpers/webrainOptions'
 export {CalcPropertyState} from './rx/object/properties/CalcProperty'
 export {ConnectorState} from './rx/object/properties/Connector'
 export {ValueChangeType} from './rx/deep-subscribe/contracts/common'
-export {resolveAsyncAll, resolveAsyncAny} from './async/ThenableSync'
+export {resolveAsync, resolveAsyncFunc, resolveAsyncAll, resolveAsyncAny} from './async/ThenableSync'
 export {dependenciesSubscriber} from './rx/object/properties/DependenciesBuilder'
 export {CalcStat} from './helpers/CalcStat'
 export {VALUE_PROPERTY_DEFAULT} from './helpers/value-property'
-export {delay} from './helpers/helpers'
 export {DeferredCalc} from './rx/deferred-calc/DeferredCalc'
 export {RuleBuilder} from './rx/deep-subscribe/RuleBuilder'
+export {delay, performanceNow} from './time/helpers'
+export {TimeLimit} from './time/TimeLimit'
+export {TimeLimits} from './time/TimeLimits'
+export {Random} from './random/Random'
+export {ALWAYS_CHANGE_VALUE, NO_CHANGE_VALUE} from './rx/depend/core/CallState'
+export {
+	getCallState,
+	getOrCreateCallState,
+	invalidateCallState,
+	subscribeCallState,
+} from './rx/depend/core/CallState'
+export {CallStatus} from './rx/depend/core/contracts'
+export {depend, dependX} from './rx/depend/core/depend'
+export {DependMap} from './rx/depend/lists/DependMap'
+export {DependSet} from './rx/depend/lists/DependSet'
+export {dependCalcPropertyFactory, dependCalcPropertyFactoryX} from './rx/object/properties/DependCalcObjectBuilder'
+export {dependConnectorFactory} from './rx/object/properties/DependConnectorBuilder'
+export {noSubscribe} from './rx/depend/core/current-state'
+export {dependDeepSubscriber} from './rx/object/properties/path/dependDeepSubscriber'
+export {Path} from './rx/object/properties/path/builder'
+export {autoCalcConnect, autoCalc, dependWait, dependWrapThis} from './rx/depend/helpers'
+export {createConnector} from './rx/object/properties/helpers'
 
-// Interfaces:
-import {ThenableOrIteratorOrValue as _ThenableOrIteratorOrValue} from './async/async'
+// region Interfaces
+
+import {
+	ThenableOrIteratorOrValue as _ThenableOrIteratorOrValue,
+	ThenableOrValue as _ThenableOrValue,
+	ThenableIterator as _ThenableIterator,
+} from './async/async'
 import {
 	IMergeable as _IMergeable,
 	IMergeOptions as _IMergeOptions,
@@ -58,8 +87,15 @@ import {TClass as _TClass} from './helpers/helpers'
 import {HasDefaultOrValue as _HasDefaultOrValue} from './helpers/value-property'
 import {IObservableMap as _IObservableMap} from './lists/contracts/IMapChanged'
 import {IObservableSet as _IObservableSet} from './lists/contracts/ISetChanged'
+import {
+	ICallState as _ICallState,
+	IDeferredOptions as _IDeferredOptions,
+} from './rx/depend/core/contracts'
 import {ICalcProperty as _ICalcProperty} from './rx/object/properties/contracts'
-import {IPropertyChangedObject as _IPropertyChangedObject} from './rx/object/IPropertyChanged'
+import {
+	IPropertyChangedObject as _IPropertyChangedObject,
+	IPropertyChanged as _IPropertyChanged,
+} from './rx/object/IPropertyChanged'
 import {
 	IObservable as _IObservable,
 	ISubscriber as _ISubscriber,
@@ -67,6 +103,18 @@ import {
 	IUnsubscribeOrVoid as _IUnsubscribeOrVoid,
 } from './rx/subjects/observable'
 import {ISubject as _ISubject} from './rx/subjects/subject'
+import {ITimeLimitBase as _ITimeLimitBase} from './time/TimeLimit'
+import {ITimeLimit as _ITimeLimit} from './time/TimeLimit'
+import {ITimeLimits as _ITimeLimits} from './time/TimeLimits'
+import {
+	IWritableFieldOptions as _IWritableFieldOptions,
+	IReadableFieldOptions as _IReadableFieldOptions,
+	IUpdatableFieldOptions as _IUpdatableFieldOptions,
+} from './rx/object/ObservableObjectBuilder'
+import {
+	IConnectFieldOptions as _IConnectFieldOptions,
+} from './rx/object/properties/DependConnectorBuilder'
+import {TSubscribeFunc as _TSubscribeFunc} from './rx/object/properties/path/dependDeepSubscriber'
 
 export type ISubscriber<T> = _ISubscriber<T>
 export type IUnsubscribe = _IUnsubscribe
@@ -84,6 +132,47 @@ export type IObservableSet<T> = _IObservableSet<T>
 export type IObservable<T> = _IObservable<T>
 export type ISubject<T> = _ISubject<T>
 export type IPropertyChangedObject = _IPropertyChangedObject
+export type IPropertyChanged = _IPropertyChanged
 export type ThenableOrIteratorOrValue<T> = _ThenableOrIteratorOrValue<T>
+export type ThenableIterator<T> = _ThenableIterator<T>
+export type ThenableOrValue<T> = _ThenableOrValue<T>
 export type ICalcProperty<TValue, TInput> = _ICalcProperty<TValue, TInput>
 export type HasDefaultOrValue<T> = _HasDefaultOrValue<T>
+export type ITimeLimitBase = _ITimeLimitBase
+export type ITimeLimit = _ITimeLimit
+export type ITimeLimits = _ITimeLimits
+export type IDeferredOptions = _IDeferredOptions
+export type ICallState<TThisOuter, TArgs extends any[], TResultInner>
+	= _ICallState<TThisOuter, TArgs, TResultInner>
+export type IWritableFieldOptions<TObject, TValue> = _IWritableFieldOptions<TObject, TValue>
+export type IReadableFieldOptions<TObject, TValue> = _IReadableFieldOptions<TObject, TValue>
+export type IUpdatableFieldOptions<TObject, TValue> = _IUpdatableFieldOptions<TObject, TValue>
+export type IConnectFieldOptions<TObject, TValue> = _IConnectFieldOptions<TObject, TValue>
+export type TSubscribeFunc<TObject, TValue> = _TSubscribeFunc<TObject, TValue>
+
+// endregion
+
+// endregion
+
+// region test
+
+// region Interfaces
+
+// import {
+// 	IDeepCloneEqualOptions as _IDeepCloneEqualOptions,
+// 	IDeepCloneOptions as _IDeepCloneOptions,
+// 	IDeepEqualOptions as _IDeepEqualOptions,
+// } from './test/DeepCloneEqual'
+
+// export * from './test/Assert'
+// export * from './test/Mocha'
+// export * from './test/unhandledErrors'
+// export {DeepCloneEqual} from './test/DeepCloneEqual'
+
+// export type IDeepCloneEqualOptions = _IDeepCloneEqualOptions
+// export type IDeepCloneOptions = _IDeepCloneOptions
+// export type IDeepEqualOptions = _IDeepEqualOptions
+
+// endregion
+
+// endregion

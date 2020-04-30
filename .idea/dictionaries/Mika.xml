@@ -4,6 +4,7 @@
       <w>babelrc</w>
       <w>browserslist</w>
       <w>browserstack</w>
+      <w>bytecode</w>
       <w>callbackfn</w>
       <w>childs</w>
       <w>chokidar</w>
@@ -11,17 +12,26 @@
       <w>coord</w>
       <w>corejs</w>
       <w>cssnano</w>
+      <w>deopted</w>
+      <w>deoptimization</w>
+      <w>deoptimize</w>
+      <w>deoptimized</w>
       <w>deserialized</w>
       <w>fileuri</w>
       <w>focusring</w>
       <w>forin</w>
       <w>funcs</w>
       <w>hydratable</w>
+      <w>inlined</w>
+      <w>inobject</w>
       <w>intelli</w>
       <w>jsnext</w>
+      <w>megamorphic</w>
       <w>mergeable</w>
       <w>multiremote</w>
+      <w>murmurhash</w>
       <w>necolas</w>
+      <w>newspace</w>
       <w>nikolaymakhonin</w>
       <w>nycrc</w>
       <w>onfulfill</w>
@@ -29,6 +39,8 @@
       <w>onreject</w>
       <w>onrejected</w>
       <w>patreon</w>
+      <w>perceptron</w>
+      <w>recalc</w>
       <w>regenerator</w>
       <w>safaritechpreview</w>
       <w>samsung</w>
@@ -41,6 +53,7 @@
       <w>unsubscriber</w>
       <w>unsubscribers</w>
       <w>updatable</w>
+      <w>wasm</w>
       <w>webrain</w>
       <w>yandex</w>
       <w>yargs</w>

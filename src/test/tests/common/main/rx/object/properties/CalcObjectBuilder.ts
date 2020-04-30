@@ -2,19 +2,16 @@
 /* eslint-disable guard-for-in */
 import {ThenableOrIteratorOrValue} from '../../../../../../../main/common/async/async'
 import {ThenableSync} from '../../../../../../../main/common/async/ThenableSync'
-import {delay} from '../../../../../../../main/common/helpers/helpers'
 import {deepSubscribe} from '../../../../../../../main/common/rx/deep-subscribe/deep-subscribe'
 import {ObservableClass} from '../../../../../../../main/common/rx/object/ObservableClass'
 import {CalcObjectBuilder} from '../../../../../../../main/common/rx/object/properties/CalcObjectBuilder'
 import {calcPropertyFactory} from '../../../../../../../main/common/rx/object/properties/CalcPropertyBuilder'
 import {connectorFactory} from '../../../../../../../main/common/rx/object/properties/ConnectorBuilder'
-import {ICalcProperty} from '../../../../../../../main/common/rx/object/properties/contracts'
-import {resolvePath} from '../../../../../../../main/common/rx/object/properties/helpers'
-import {Property} from '../../../../../../../main/common/rx/object/properties/Property'
+import {resolvePath} from '../../../../../../../main/common/rx/object/properties/path/resolve'
 import {IUnsubscribeOrVoid} from '../../../../../../../main/common/rx/subjects/observable'
 import {assert} from '../../../../../../../main/common/test/Assert'
-import {describe, it} from '../../../../../../../main/common/test/Mocha'
-import {createObject, TestDeepSubscribe} from '../../deep-subscribe/helpers/src/TestDeepSubscribe'
+import {describe, it, xit} from '../../../../../../../main/common/test/Mocha'
+import {TestDeepSubscribe} from '../../deep-subscribe/helpers/src/TestDeepSubscribe'
 
 describe('common > main > rx > properties > CalcObjectBuilder', function() {
 	this.timeout(30000)

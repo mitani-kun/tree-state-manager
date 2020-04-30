@@ -92,8 +92,12 @@ export class ConnectorBuilder<
 		}
 
 		const set = setOptions
-			? _setExt.bind(null, name, getValue, setValue, setOptions)
-			: _set.bind(null, name, getValue, setValue)
+			? function(this: TObject, newValue: TValue) {
+				return _setExt.call(this, name, getValue, setValue, setOptions, newValue)
+			}
+			: function(this: TObject, newValue: TValue) {
+				return _set.call(this, name, getValue, setValue, newValue)
+			}
 
 		return this.updatable(
 			name,
@@ -106,7 +110,7 @@ export class ConnectorBuilder<
 						baseSetValue.call(this, {value: initValue, parent: null, key: null, keyType: null})
 					}
 
-					let setVal = (obj, value: TValue): void => {
+					let setVal = function(this: TObject, value: TValue): void {
 						if (typeof value !== 'undefined') {
 							initValue = value
 						}
@@ -121,12 +125,12 @@ export class ConnectorBuilder<
 							baseValue.key = key
 							baseValue.keyType = keyType
 
-							setVal(this, value)
+							setVal.call(this, value)
 							return null
 						}
 						: (value: TValue, parent: any, key: any, keyType: ValueKeyType) => {
 							Debugger.Instance.onConnectorChanged(this, name, value, parent, key, keyType)
-							setVal(this, value)
+							setVal.call(this, value)
 							return null
 						}
 
@@ -159,6 +163,7 @@ export class ConnectorBuilder<
 				},
 				update: writable && function(value: any): TValue|void {
 					const baseValue = baseGetValue.call(this)
+					set.call(this, value)
 					if (baseValue.parent != null) {
 						setObjectValue(baseValue.parent, baseValue.key, baseValue.keyType, value)
 					}
@@ -182,8 +187,10 @@ export function connectorClass<
 	buildRule: (connectorBuilder: ConnectorBuilder<Connector<TSource>, TSource>) => { object: TConnector },
 	baseClass?: new (source: TSource) => Connector<TSource>,
 }): new (source: TSource, name?: string) => TConnector {
+	// @ts-ignore
 	class NewConnector extends (baseClass || Connector) implements Connector<TSource> { }
 
+	// @ts-ignore
 	buildRule(new ConnectorBuilder<NewConnector, TSource>(
 		NewConnector.prototype,
 	))

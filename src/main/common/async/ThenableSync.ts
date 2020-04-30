@@ -1,9 +1,10 @@
+import {getCurrentState, setCurrentState} from '../rx/depend/core/current-state'
 import {
 	isAsync,
-	isThenable,
+	isThenable, IThenable,
 	ResolveResult,
 	resolveValue,
-	resolveValueFunc, Thenable,
+	resolveValueFunc,
 	ThenableOrIteratorOrValue,
 	ThenableOrValue,
 	TOnFulfilled,
@@ -41,21 +42,19 @@ export function createRejected<TValue = any>(
 	return thenable
 }
 
-export class ThenableSync<TValue = any> implements Thenable<TValue> {
-	private _onfulfilled: Array<TOnFulfilled<TValue, any>>
-	private _onrejected: Array<TOnRejected<TValue>>
-	private _value: TValue
-	private _error: any
-	private _status: ThenableSyncStatus
+export class ThenableSync<TValue = any> implements IThenable<TValue> {
+	private _onfulfilled: Array<TOnFulfilled<TValue, any>> = null
+	private _onrejected: Array<TOnRejected<TValue>> = null
+	private _value: TValue = void 0
+	private _error: any = null
+	private _status: ThenableSyncStatus = null
 	private readonly _customResolveValue: TResolveAsyncValue
 
 	constructor(
 		executor?: TExecutor<TValue>,
 		customResolveValue?: TResolveAsyncValue,
 	) {
-		if (customResolveValue != null) {
-			this._customResolveValue = customResolveValue
-		}
+		this._customResolveValue = customResolveValue
 
 		if (executor) {
 			try {
@@ -88,7 +87,7 @@ export class ThenableSync<TValue = any> implements Thenable<TValue> {
 				if (e) {
 					this._reject(o)
 				} else {
-					value = o
+					this.__resolve(o)
 				}
 			},
 			(o, e) => {
@@ -109,7 +108,9 @@ export class ThenableSync<TValue = any> implements Thenable<TValue> {
 		if ((result & ResolveResult.Error) !== 0) {
 			return
 		}
+	}
 
+	private __resolve(value?: ThenableOrIteratorOrValue<TValue>): void {
 		this._status = ThenableSyncStatus.Resolved
 
 		this._value = value as TValue
@@ -144,8 +145,12 @@ export class ThenableSync<TValue = any> implements Thenable<TValue> {
 
 		const result = resolveValue(
 			error,
-			o => { error = o },
-			o => { this._reject(o) },
+			o => {
+				this.__reject(o)
+			},
+			o => {
+				this._reject(o)
+			},
 			this._customResolveValue,
 		)
 
@@ -153,7 +158,9 @@ export class ThenableSync<TValue = any> implements Thenable<TValue> {
 			this._status = ThenableSyncStatus.Resolving
 			return
 		}
+	}
 
+	private __reject(error?: ThenableOrIteratorOrValue<any>): void {
 		this._status = ThenableSyncStatus.Rejected
 
 		this._error = error
@@ -187,14 +194,12 @@ export class ThenableSync<TValue = any> implements Thenable<TValue> {
 			}
 
 			let isError
-			error = (() => {
-				try {
-					return onrejected(error)
-				} catch (err) {
-					isError = true
-					return err
-				}
-			})()
+			try {
+				error = onrejected(error)
+			} catch (err) {
+				isError = true
+				error = err
+			}
 
 			const result = resolveAsync(error, null, null, !lastExpression, customResolveValue)
 
@@ -226,20 +231,18 @@ export class ThenableSync<TValue = any> implements Thenable<TValue> {
 				}
 
 				let isError
-				_value = (() => {
-					try {
-						return onfulfilled(_value)
-					} catch (err) {
-						isError = true
-						return err
-					}
-				})()
+				try {
+					_value = onfulfilled(_value) as any
+				} catch (err) {
+					isError = true
+					_value = err
+				}
 
 				if (isError) {
 					const result = resolveAsync(_value as any, null, null, !lastExpression,
 						customResolveValue)
 					if (isThenable(result)) {
-						return result.then(o => reject(o), onrejected)
+						return result.then(reject, onrejected)
 					}
 					return reject(result)
 				} else {
@@ -267,17 +270,23 @@ export class ThenableSync<TValue = any> implements Thenable<TValue> {
 					this._onrejected = _onrejected = []
 				}
 
+				const callState = getCurrentState()
+
 				const rejected = onrejected
 					? (value): any => {
 						let isError
-						value = (() => {
-							try {
-								return onrejected(value)
-							} catch (err) {
-								isError = true
-								return err
-							}
-						})()
+
+						const prevState = getCurrentState()
+						try {
+							setCurrentState(callState)
+							value = onrejected(value)
+						} catch (err) {
+							isError = true
+							value = err
+						} finally {
+							setCurrentState(prevState)
+						}
+
 						if (isError) {
 							result.reject(value)
 						} else {
@@ -296,14 +305,18 @@ export class ThenableSync<TValue = any> implements Thenable<TValue> {
 				_onfulfilled.push(onfulfilled
 					? (value: any): any => {
 						let isError
-						value = (() => {
-							try {
-								return onfulfilled(value)
-							} catch (err) {
-								isError = true
-								return err
-							}
-						})()
+
+						const prevState = getCurrentState()
+						try {
+							setCurrentState(callState)
+							value = onfulfilled(value) as any
+						} catch (err) {
+							isError = true
+							value = err
+						} finally {
+							setCurrentState(prevState)
+						}
+
 						if (isError) {
 							resolveValue(value, rejected, rejected, customResolveValue)
 						} else {
@@ -473,11 +486,11 @@ function *_resolveAsyncAll<TValue>(
 
 export function resolveAsyncAll<TValue = any, TResult1 = TValue, TResult2 = never>(
 	input: Array<ThenableOrIteratorOrValue<TValue>>,
-	onfulfilled?: TOnFulfilled<TValue[], TResult1[]>,
+	onfulfilled?: TOnFulfilled<TValue[], TResult1>,
 	onrejected?: TOnRejected<TResult2>,
 	dontThrowOnImmediateError?: boolean,
 	customResolveValue?: TResolveAsyncValue,
-): ThenableOrValue<TResult1[]> {
+): ThenableOrValue<TResult1> {
 	let resolved = true
 	const inputPrepared = input.map(o => {
 		const item = resolveAsync(o, null, null, true, customResolveValue)
@@ -487,7 +500,7 @@ export function resolveAsyncAll<TValue = any, TResult1 = TValue, TResult2 = neve
 		return item
 	})
 
-	return resolveAsync<TValue[], TResult1[], TResult2>(
+	return resolveAsync<TValue[], TResult1, TResult2>(
 		resolved
 			? inputPrepared as any
 			: _resolveAsyncAll(inputPrepared)[Symbol.iterator](),

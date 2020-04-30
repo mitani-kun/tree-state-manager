@@ -5,12 +5,25 @@ import {IReadableFieldOptions, IWritableFieldOptions} from '../ObservableObjectB
 import {CalcProperty} from './CalcProperty'
 import {calcPropertyFactory} from './CalcPropertyBuilder'
 import {Connector} from './Connector'
-import {ConnectorBuilder, connectorFactory} from './ConnectorBuilder'
+import {connectorFactory} from './ConnectorBuilder'
 import {ValueKeys} from './contracts'
+import {DependConnectorBuilder} from './DependConnectorBuilder'
+import {Path} from './path/builder'
 
-export class CalcObjectBuilder<TObject extends ObservableClass, TValueKeys extends string | number = ValueKeys>
-	extends ConnectorBuilder<TObject, TObject>
+export class CalcObjectBuilder<
+	TObject extends ObservableClass,
+	TConnectorSource = TObject,
+	TValueKeys extends string | number = ValueKeys,
+>
+	extends DependConnectorBuilder<TObject, TConnectorSource>
 {
+	constructor(
+		object?: TObject,
+		connectorSourcePath?: Path<TObject, TConnectorSource>,
+	) {
+		super(object, connectorSourcePath)
+	}
+
 	// @ts-ignore
 	public writable<
 		Name extends keyof TObject,
@@ -42,10 +55,10 @@ export class CalcObjectBuilder<TObject extends ObservableClass, TValueKeys exten
 		calcFactory: (initValue?: TObject[Name]) => CalcProperty<TObject[Name], TInput>,
 		initValue?: TObject[Name],
 	): this {
-		return super.readable<Extract<Name, string|number>, CalcProperty<
-			TObject[Name],
-			TInput
-		>>(name as Extract<Name, string|number>, {
+		return super.readable<
+			Extract<Name, string|number>,
+			CalcProperty<TObject[Name], TInput>
+		>(name as Extract<Name, string|number>, {
 			factory(this: TObject) {
 				const property = calcFactory(initValue)
 				if (property.state.name == null) {
@@ -88,8 +101,8 @@ export class CalcObjectBuilder<TObject extends ObservableClass, TValueKeys exten
 	>(
 		name: Name,
 		buildRule: (builder: RuleBuilder<TObject, ValueKeys>) => RuleBuilder<TObject[Name], ValueKeys>,
-		options?: IWritableFieldOptions<TObject, TObject[Name]>,
-		initValue?: TObject[Name],
+		// options?: IWritableFieldOptions<TObject, TObject[Name]>,
+		// initValue?: TObject[Name],
 	): this {
 		return this.calc<
 			Connector<TObject> & { readonly value: TObject[Name] },
@@ -110,8 +123,24 @@ export class CalcObjectBuilder<TObject extends ObservableClass, TValueKeys exten
 	}
 }
 
-// const builder = new CalcObjectBuilder(true as any)
-//
+class Class extends ObservableClass {
+	public prop1: number
+	public prop2: string
+}
+
+new CalcObjectBuilder(new Class())
+	.writable('prop1')
+	.calc(
+		'prop2',
+		o => o,
+		calcPropertyFactory({
+			dependencies: d => d.invalidateOn(b => b.propertyAny()),
+			calcFunc(state) {
+				const x = this
+			},
+		}),
+	)
+
 // export function calc<
 // 	TObject extends ObservableClass,
 // 	TInput extends new (object: TObject) => any | NotFunction<any>,

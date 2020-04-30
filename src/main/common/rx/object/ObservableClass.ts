@@ -1,13 +1,15 @@
-import {webrainOptions} from '../../helpers/webrainOptions'
+import {equals} from '../../helpers/helpers'
+import {webrainEquals, webrainOptions} from '../../helpers/webrainOptions'
+import {getCallState, invalidateCallState} from '../../rx/depend/core/CallState'
 import '../extensions/autoConnect'
 import {PropertyChangedObject} from './PropertyChangedObject'
 
 export interface ISetOptions<TObject, TValue> {
 	equalsFunc?: (this: TObject, oldValue: TValue, newValue: TValue) => boolean,
 	fillFunc?: (this: TObject, oldValue: TValue, newValue: TValue) => boolean,
-	convertFunc?: (this: TObject, newValue: TValue) => any,
-	beforeChange?: (this: TObject, oldValue: TValue) => void,
-	afterChange?: (this: TObject, newValue: TValue) => void,
+	convertFunc?: (this: TObject, oldValue: TValue, newValue: TValue) => any,
+	beforeChange?: (this: TObject, oldValue: TValue, newValue: TValue) => void,
+	afterChange?: (this: TObject, oldValue: TValue, newValue: TValue) => void,
 	suppressPropertyChanged?: boolean,
 }
 
@@ -33,51 +35,54 @@ export class ObservableClass extends PropertyChangedObject {
 
 /** @internal */
 export function _setExt(
+	this: ObservableClass,
 	name: string | number,
 	getValue: () => any,
 	setValue: (v) => void,
 	options: ISetOptions<any, any>,
-	object: ObservableClass,
 	newValue,
 ) {
 	if (!options) {
-		return _set(name, getValue, setValue, object, newValue)
+		return _set.call(this, name, getValue, setValue, newValue)
 	}
 
-	const oldValue = getValue ? getValue.call(object) : object.__fields[name]
+	const oldValue = getValue ? getValue.call(this) : this.__fields[name]
 
 	const equalsFunc = options.equalsFunc || webrainOptions.equalsFunc
-	if (oldValue === newValue || equalsFunc && equalsFunc.call(object, oldValue, newValue)) {
+	if (equals(oldValue, newValue) || equalsFunc && equalsFunc.call(this, oldValue, newValue)) {
 		return false
 	}
 
 	const fillFunc = options.fillFunc
-	if (fillFunc && oldValue != null && newValue != null && fillFunc.call(object, oldValue, newValue)) {
+	if (fillFunc && oldValue != null && newValue != null && fillFunc.call(this, oldValue, newValue)) {
 		return false
 	}
 
 	const convertFunc = options.convertFunc
 	if (convertFunc) {
-		newValue = convertFunc.call(object, newValue)
+		newValue = convertFunc.call(this, oldValue, newValue)
 	}
 
-	// if (oldValue === newValue) {
+	// TODO uncomment this and run tests
+	// if (equals(oldValue, newValue)) {
 	// 	return false
 	// }
 
 	const beforeChange = options.beforeChange
 	if (beforeChange) {
-		beforeChange.call(object, oldValue)
+		beforeChange.call(this, oldValue, newValue)
 	}
 
 	if (setValue) {
-		setValue.call(object, newValue)
+		setValue.call(this, newValue)
 	} else {
-		object.__fields[name] = newValue
+		this.__fields[name] = newValue
 	}
 
+	invalidateCallState(getCallState(getValue).call(this))
+
 	if (!options || !options.suppressPropertyChanged) {
-		const {propertyChangedIfCanEmit} = object
+		const {propertyChangedIfCanEmit} = this
 		if (propertyChangedIfCanEmit) {
 			propertyChangedIfCanEmit.onPropertyChanged({
 				name,
@@ -89,7 +94,7 @@ export function _setExt(
 
 	const afterChange = options.afterChange
 	if (afterChange) {
-		afterChange.call(object, newValue)
+		afterChange.call(this, oldValue, newValue)
 	}
 
 	return true
@@ -97,21 +102,23 @@ export function _setExt(
 
 /** @internal */
 export function _set(
+	this: ObservableClass,
 	name: string | number,
 	getValue: () => any,
 	setValue: (v) => void,
-	object: ObservableClass,
 	newValue,
 ) {
-	const oldValue = getValue.call(object)
+	const oldValue = getValue.call(this)
 
-	if (oldValue === newValue || webrainOptions.equalsFunc && webrainOptions.equalsFunc.call(object, oldValue, newValue)) {
+	if (webrainEquals.call(this, oldValue, newValue)) {
 		return false
 	}
 
-	setValue.call(object, newValue)
+	setValue.call(this, newValue)
 
-	const {propertyChangedDisabled, propertyChanged} = object.__meta
+	invalidateCallState(getCallState(getValue).call(this))
+
+	const {propertyChangedDisabled, propertyChanged} = this.__meta
 	if (!propertyChangedDisabled && propertyChanged) {
 		propertyChanged.emit({
 			name,

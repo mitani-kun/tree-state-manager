@@ -1,4 +1,4 @@
-import {webrainOptions} from '../../../helpers/webrainOptions'
+import {webrainEquals} from '../../../helpers/webrainOptions'
 import {IPropertiesPath, ValueKeyType} from '../../deep-subscribe/contracts/common'
 import {IRule} from '../../deep-subscribe/contracts/rules'
 import {deepSubscribeRule} from '../../deep-subscribe/deep-subscribe'
@@ -102,7 +102,7 @@ export function subscribeDependencies<TSubscribeObject, TActionTarget>(
 						}
 
 						const stateValue = state[id].value
-						if (webrainOptions.equalsFunc(stateValue, newValue)) {
+						if (webrainEquals(stateValue, newValue)) {
 							return
 						}
 						// action(actionTarget, stateValue, parent, key, keyType, propertiesPath, rule)

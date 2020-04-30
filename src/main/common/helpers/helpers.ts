@@ -1,11 +1,21 @@
+export function equals(v1, v2) {
+	return v1 === v2
+		// is NaN
+		|| v1 !== v1 && v2 !== v2
+}
+
 export function isIterable(value: any): boolean {
 	return value != null
-		&& typeof value[Symbol.iterator] === 'function'
+		&& typeof value === 'object'
+		&& (
+			Array.isArray(value)
+			|| !(value instanceof String)
+			&& typeof value[Symbol.iterator] === 'function'
+		)
 }
 
 export function isIterator(value: any): boolean {
-	return value != null
-		&& typeof value[Symbol.iterator] === 'function'
+	return isIterable(value)
 		&& typeof value.next === 'function'
 }
 
@@ -17,10 +27,6 @@ export function typeToDebugString(type) {
 
 // tslint:disable-next-line:no-empty no-shadowed-variable
 export const EMPTY: any = function EMPTY() {}
-
-export function delay(timeMilliseconds) {
-	return new Promise(resolve => setTimeout(resolve, timeMilliseconds))
-}
 
 export type TClass<T> = new (...args: any[]) => T
 export type TFunc<TResult> = (...args: any[]) => TResult
@@ -90,7 +96,7 @@ export function hideObjectProperty(object: object, propertyName: string) {
 }
 
 export function equalsObjects(o1, o2) {
-	if (o1 === o2) {
+	if (equals(o1, o2)) {
 		return true
 	}
 
@@ -103,4 +109,16 @@ export function equalsObjects(o1, o2) {
 	}
 
 	return false
+}
+
+export function nextHash(hash: number, value: number) {
+	return ((4294967296 + hash) * 31 + value) | 0
+}
+
+export function missingGetter() {
+	throw new TypeError('Missing Getter')
+}
+
+export function missingSetter() {
+	throw new TypeError('Missing Setter')
 }

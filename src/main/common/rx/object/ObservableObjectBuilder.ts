@@ -1,5 +1,6 @@
-import {createFunction} from '../../helpers/helpers'
-import {webrainOptions} from '../../helpers/webrainOptions'
+import {createFunction, missingSetter} from '../../helpers/helpers'
+import {webrainEquals} from '../../helpers/webrainOptions'
+import {depend} from '../../rx/depend/core/depend'
 import '../extensions/autoConnect'
 import {PropertyChangedEvent} from './IPropertyChanged'
 import {_set, _setExt, ISetOptions, ObservableClass} from './ObservableClass'
@@ -59,23 +60,24 @@ export class ObservableObjectBuilder<TObject extends ObservableClass> {
 		const setValue = options && options.setValue
 			|| createFunction(() => (function(v) { this.__fields[name] = v }), 'v', `this.__fields["${name}"] = v`) as any
 		const set = setOptions
-			? _setExt.bind(null, name, getValue, setValue, setOptions)
-			: _set.bind(null, name, getValue, setValue)
+			? function(this: TObject, newValue: TValue) {
+				return _setExt.call(this, name, getValue, setValue, setOptions, newValue)
+			}
+			: function(this: TObject, newValue: TValue) {
+				return _set.call(this, name, getValue, setValue, newValue)
+			}
 
 		Object.defineProperty(object, name, {
 			configurable: true,
 			enumerable  : !hidden,
-			get(this: TObject) {
-				return getValue.call(this)
-			},
-			set(this: TObject, newValue) {
-				set(this, newValue)
-			},
+			get: depend(getValue, null, null, true),
+			// get: getValue,
+			set,
 		})
 
 		if (__fields && typeof initValue !== 'undefined') {
 			const value = __fields[name]
-			if (webrainOptions.equalsFunc ? !webrainOptions.equalsFunc.call(object, value, initValue) : value !== initValue) {
+			if (!webrainEquals.call(object, value, initValue)) {
 				object[name as any] = initValue
 			}
 		}
@@ -130,8 +132,12 @@ export class ObservableObjectBuilder<TObject extends ObservableClass> {
 			// tslint:disable-next-line
 			const setOptions = options && options.setOptions
 			setOnUpdate = setOptions
-				? _setExt.bind(null, name, getValue, setValue, setOptions)
-				: _set.bind(null, name, getValue, setValue)
+				? function(this: TObject, newValue: TValue) {
+					return _setExt.call(this, name, getValue, setValue, setOptions, newValue)
+				}
+				: function(this: TObject, newValue: TValue) {
+					return _set.call(this, name, getValue, setValue, newValue)
+				}
 		}
 
 		let setOnInit
@@ -141,26 +147,30 @@ export class ObservableObjectBuilder<TObject extends ObservableClass> {
 				suppressPropertyChanged: true,
 			}
 			setOnInit = setOptions
-				? _setExt.bind(null, name, getValue, setValue, setOptions)
-				: _set.bind(null, name, getValue, setValue)
+				? function(this: TObject, newValue: TValue) {
+					return _setExt.call(this, name, getValue, setValue, setOptions, newValue)
+				}
+				: function(this: TObject, newValue: TValue) {
+					return _set.call(this, name, getValue, setValue, newValue)
+				}
 		}
 
 		const createInstanceProperty = instance => {
 			const attributes: any = {
 				configurable: true,
 				enumerable: !hidden,
-				get(this: TObject) {
-					return getValue.call(this)
-				},
-			}
-			if (update) {
-				attributes.set = function(value) {
-					const newValue = update.call(this, value)
-					if (typeof newValue !== 'undefined') {
-						setOnUpdate(this, newValue)
+				// get: depend(getValue, null, true),
+				get: getValue,
+				set: update
+					? function(value) {
+						const newValue = update.call(this, value)
+						if (typeof newValue !== 'undefined') {
+							setOnUpdate.call(this, newValue)
+						}
 					}
-				}
+					: missingSetter,
 			}
+
 			Object.defineProperty(instance, name, attributes)
 		}
 
@@ -182,32 +192,27 @@ export class ObservableObjectBuilder<TObject extends ObservableClass> {
 					const factoryValue = init.call(this)
 					if (typeof factoryValue !== 'undefined') {
 						const oldValue = getValue.call(this)
-						if (webrainOptions.equalsFunc
-							? !webrainOptions.equalsFunc.call(this, oldValue, factoryValue)
-							: oldValue !== factoryValue
-						) {
-							setOnInit(this, factoryValue)
+						if (!webrainEquals.call(this, oldValue, factoryValue)) {
+							setOnInit.call(this, factoryValue)
 						}
 					}
 					return factoryValue
 				},
-			}
-			if (update) {
-				initAttributes.set = function(this: TObject, value) {
-					// tslint:disable:no-dead-store
-					const factoryValue = init.call(this)
-					const newValue = update.call(this, value)
-					if (typeof newValue !== 'undefined') {
-						const oldValue = getValue.call(this)
-						if (webrainOptions.equalsFunc
-							? !webrainOptions.equalsFunc.call(this, oldValue, newValue)
-							: oldValue !== newValue
-						) {
-							setOnInit(this, newValue)
+				set: update
+					? function(this: TObject, value) {
+						// tslint:disable:no-dead-store
+						const factoryValue = init.call(this)
+						const newValue = update.call(this, value)
+						if (typeof newValue !== 'undefined') {
+							const oldValue = getValue.call(this)
+							if (!webrainEquals.call(this, oldValue, newValue)) {
+								setOnInit.call(this, newValue)
+							}
 						}
 					}
-				}
+					: missingSetter,
 			}
+
 			Object.defineProperty(object, name, initAttributes)
 
 			if (__fields) {
@@ -232,10 +237,7 @@ export class ObservableObjectBuilder<TObject extends ObservableClass> {
 					initializeValue.call(this, initValue)
 				}
 
-				if (webrainOptions.equalsFunc
-					? !webrainOptions.equalsFunc.call(object, oldValue, initValue)
-					: oldValue !== initValue
-				) {
+				if (!webrainEquals.call(object, oldValue, initValue)) {
 					__fields[name] = initValue
 					const {propertyChangedIfCanEmit} = object
 					if (propertyChangedIfCanEmit) {

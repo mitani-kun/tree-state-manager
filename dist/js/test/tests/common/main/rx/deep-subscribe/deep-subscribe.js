@@ -12,11 +12,15 @@ var _from = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stabl
 
 var _concat = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/instance/concat"));
 
+var _map = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/instance/map"));
+
 var _repeat = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/instance/repeat"));
 
 var _isArray = _interopRequireDefault(require("@babel/runtime-corejs3/core-js-stable/array/is-array"));
 
-var _helpers = require("../../../../../../main/common/helpers/helpers");
+var _rulesSubscribe = require("../../../../../../main/common/rx/deep-subscribe/rules-subscribe");
+
+var _helpers = require("../../../../../../main/common/time/helpers");
 
 var _valueProperty = require("../../../../../../main/common/helpers/value-property");
 
@@ -62,6 +66,103 @@ var _TestDeepSubscribe = require("./helpers/src/TestDeepSubscribe");
       return ['value2'];
     }).unsubscribe(function (o) {
       return ['value2'];
+    });
+  });
+  (0, _Mocha.it)('change', function () {
+    var changeId = (0, _rulesSubscribe.getChangeId)();
+
+    var changeIds = function changeIds(ids) {
+      return (0, _map.default)(ids).call(ids, function (o) {
+        return o + changeId;
+      });
+    };
+
+    new _TestDeepSubscribe.TestDeepSubscribe({
+      object: (0, _TestDeepSubscribe.createObject)().observableObject,
+      immediate: true,
+      doNotSubscribeNonObjectValues: true
+    }, function (b) {
+      return b.p('observableObject').change();
+    }).subscribe(function (o) {
+      return changeIds([1]);
+    }).unsubscribe(function (o) {
+      return changeIds([1]);
+    }).subscribe(function (o) {
+      return changeIds([2]);
+    }).unsubscribe(function (o) {
+      return changeIds([2]);
+    }).subscribe(function (o) {
+      return changeIds([3]);
+    }).change(function (o) {
+      return o.observableObject.value = 1;
+    }, changeIds([3]), changeIds([4])).unsubscribe(function (o) {
+      return changeIds([4]);
+    });
+    changeId = (0, _rulesSubscribe.getChangeId)();
+    new _TestDeepSubscribe.TestDeepSubscribe({
+      object: (0, _TestDeepSubscribe.createObject)().observableObject,
+      immediate: true,
+      doNotSubscribeNonObjectValues: true
+    }, function (b) {
+      return b.p('observableList').change();
+    }).subscribe(function (o) {
+      return changeIds([1]);
+    }).unsubscribe(function (o) {
+      return changeIds([1]);
+    }).subscribe(function (o) {
+      return changeIds([2]);
+    }).unsubscribe(function (o) {
+      return changeIds([2]);
+    }).subscribe(function (o) {
+      return changeIds([3]);
+    }).change(function (o) {
+      return o.observableList.add(o);
+    }, changeIds([3, 4]), changeIds([4, 5])).unsubscribe(function (o) {
+      return changeIds([5]);
+    });
+    changeId = (0, _rulesSubscribe.getChangeId)();
+    new _TestDeepSubscribe.TestDeepSubscribe({
+      object: (0, _TestDeepSubscribe.createObject)().observableObject,
+      immediate: true,
+      doNotSubscribeNonObjectValues: true
+    }, function (b) {
+      return b.p('observableSet').change();
+    }).subscribe(function (o) {
+      return changeIds([1]);
+    }).unsubscribe(function (o) {
+      return changeIds([1]);
+    }).subscribe(function (o) {
+      return changeIds([2]);
+    }).unsubscribe(function (o) {
+      return changeIds([2]);
+    }).subscribe(function (o) {
+      return changeIds([3]);
+    }).change(function (o) {
+      return o.observableSet.delete(o);
+    }, changeIds([3, 4]), changeIds([4, 5])).unsubscribe(function (o) {
+      return changeIds([5]);
+    });
+    changeId = (0, _rulesSubscribe.getChangeId)();
+    new _TestDeepSubscribe.TestDeepSubscribe({
+      object: (0, _TestDeepSubscribe.createObject)().observableObject,
+      immediate: true,
+      doNotSubscribeNonObjectValues: true
+    }, function (b) {
+      return b.p('observableMap').change();
+    }).subscribe(function (o) {
+      return changeIds([1]);
+    }).unsubscribe(function (o) {
+      return changeIds([1]);
+    }).subscribe(function (o) {
+      return changeIds([2]);
+    }).unsubscribe(function (o) {
+      return changeIds([2]);
+    }).subscribe(function (o) {
+      return changeIds([3]);
+    }).change(function (o) {
+      return o.observableMap.delete('property');
+    }, changeIds([3, 4]), changeIds([4, 5])).unsubscribe(function (o) {
+      return changeIds([5]);
     });
   });
   (0, _Mocha.it)('repeat with condition', function () {

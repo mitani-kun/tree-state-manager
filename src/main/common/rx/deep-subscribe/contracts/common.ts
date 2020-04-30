@@ -15,6 +15,7 @@ export enum ValueKeyType {
 	ValueProperty,
 	MapKey,
 	CollectionAny,
+	ChangeCount,
 }
 
 export type IChangeValue<TValue> = (

@@ -6,13 +6,13 @@ var _regenerator = _interopRequireDefault(require("@babel/runtime-corejs3/regene
 
 var _asyncToGenerator2 = _interopRequireDefault(require("@babel/runtime-corejs3/helpers/asyncToGenerator"));
 
-var _helpers = require("../../../../../main/common/helpers/helpers");
-
 var _performance = require("../../../../../main/common/helpers/performance");
 
 var _Assert = require("../../../../../main/common/test/Assert");
 
 var _Mocha = require("../../../../../main/common/test/Mocha");
+
+var _helpers = require("../../../../../main/common/time/helpers");
 
 /* eslint-disable class-methods-use-this */
 (0, _Mocha.describe)('common > helpers > performance',

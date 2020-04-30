@@ -1,9 +1,10 @@
 import {isAsync, ThenableOrValue} from '../../../async/async'
 import {resolveAsyncFunc} from '../../../async/ThenableSync'
 import {CalcStat} from '../../../helpers/CalcStat'
+import {equals} from '../../../helpers/helpers'
 import {now} from '../../../helpers/performance'
 import {VALUE_PROPERTY_DEFAULT} from '../../../helpers/value-property'
-import {webrainOptions} from '../../../helpers/webrainOptions'
+import {webrainEquals, webrainOptions} from '../../../helpers/webrainOptions'
 import {Debugger} from '../../Debugger'
 import {DeferredCalc, IDeferredCalcOptions} from '../../deferred-calc/DeferredCalc'
 import {ObservableClass} from '../ObservableClass'
@@ -85,24 +86,46 @@ export class CalcProperty<TValue, TInput = any>
 			calcOptions = {}
 		}
 
-		this._calcFunc = calcFunc
-		this.state = new CalcPropertyState(calcOptions, initValue)
-
-		if (typeof name !== 'undefined') {
-			this.state.name = name
-		}
-
 		this.timeSyncStat = new CalcStat()
 		this.timeAsyncStat = new CalcStat()
 		this.timeDebuggerStat = new CalcStat()
 		this.timeEmitEventsStat = new CalcStat()
 		this.timeTotalStat = new CalcStat()
 
+		this._calcFunc = calcFunc
+		// this._calcFunc = dependX(function(state) {
+		// 	const result = calcFunc(state)
+		// 	return isThenable(result) ? thenableAsIterator(result) : result
+		// })
+
+		// let dependUnsubscribe
+		// this.propertyChanged.hasSubscribersObservable
+		// 	.subscribe(hasSubscribers => {
+		// 		if (dependUnsubscribe) {
+		// 			dependUnsubscribe()
+		// 			dependUnsubscribe = null
+		// 		}
+		//
+		// 		if (hasSubscribers) {
+		// 			dependUnsubscribe = getOrCreateCallState(this._calcFunc)
+		// 				.call(this, this.state)
+		// 				.subscribe(() => {
+		// 					this._invalidate()
+		// 				})
+		// 		}
+		// 	})
+
+		this.state = new CalcPropertyState(calcOptions, initValue)
+
+		if (typeof name !== 'undefined') {
+			this.state.name = name
+		}
+
 		this._deferredCalc = new DeferredCalc(
 			() => {
 				this.onInvalidated()
 			},
-			(done: (isChanged: boolean, oldValue: TValue, newValue: TValue) => void) => {
+			() => {
 				const prevValue = this.state.value
 
 				const timeStart = now()
@@ -128,7 +151,7 @@ export class CalcProperty<TValue, TInput = any>
 						timeAsync = now()
 						Debugger.Instance.onCalculated(this, prevValue, val)
 						timeDebugger = now()
-						done(isChangedForce, prevValue, val)
+						this._deferredCalc.done(isChangedForce, prevValue, val)
 						timeEmitEvents = now()
 
 						this.timeSyncStat.add(timeSync - timeStart)
@@ -149,7 +172,7 @@ export class CalcProperty<TValue, TInput = any>
 						if (webrainOptions.equalsFunc.call(this.state, prevValue, this.state.value)) {
 							this.state.value = val = prevValue
 						}
-						done(prevValue !== val, prevValue, val)
+						this._deferredCalc.done(!equals(prevValue, val), prevValue, val)
 						timeEmitEvents = now()
 
 						this.timeSyncStat.add(timeSync - timeStart)
@@ -168,7 +191,7 @@ export class CalcProperty<TValue, TInput = any>
 				}
 			},
 			(isChangedForce, oldValue, newValue) => {
-				if (isChangedForce || oldValue !== newValue) {
+				if (isChangedForce || !equals(oldValue, newValue)) {
 					if (!isChangedForce && isAsync(this._deferredValue)) {
 						this._deferredValue = newValue
 					} else {
@@ -183,10 +206,7 @@ export class CalcProperty<TValue, TInput = any>
 
 	private setDeferredValue(newValue, force?: boolean) {
 		const oldValue = this._deferredValue
-		if (!force && (webrainOptions.equalsFunc
-			? webrainOptions.equalsFunc.call(this, oldValue, newValue)
-			: oldValue === newValue)
-		) {
+		if (!force && webrainEquals.call(this, oldValue, newValue)) {
 			return
 		}
 
@@ -203,10 +223,7 @@ export class CalcProperty<TValue, TInput = any>
 	}
 
 	private onValueChanged(oldValue, newValue, force?: boolean) {
-		if (!force && (webrainOptions.equalsFunc
-			? webrainOptions.equalsFunc.call(this, oldValue, newValue)
-			: oldValue === newValue)
-		) {
+		if (!force && webrainEquals.call(this, oldValue, newValue)) {
 			return
 		}
 
@@ -220,6 +237,11 @@ export class CalcProperty<TValue, TInput = any>
 	}
 
 	public invalidate(): void {
+		this._invalidate()
+		// invalidateCallState(getCallState(this._calcFunc).call(this, this.state))
+	}
+
+	private _invalidate(): void {
 		if (!this._error) {
 			// console.log('invalidate: ' + this.state.name)
 			this._deferredCalc.invalidate()
@@ -259,10 +281,7 @@ export class CalcProperty<TValue, TInput = any>
 	}
 
 	public clear() {
-		if ((webrainOptions.equalsFunc
-			? !webrainOptions.equalsFunc.call(this, this.state.value, this._initValue)
-			: this.state.value !== this._initValue)
-		) {
+		if (!webrainEquals.call(this, this.state.value, this._initValue)) {
 			const oldValue = this.state.value
 			const newValue = this._initValue
 			this.state.value = newValue

@@ -1,3 +1,4 @@
+import {equals} from '../../helpers/helpers'
 import {ISubscriber, IUnsubscribe} from './observable'
 import {ISubject, Subject} from './subject'
 
@@ -47,7 +48,7 @@ export function behavior<TBase>(base): any {
 					// eslint-disable-next-line no-shadow
 					// tslint:disable-next-line:no-shadowed-variable
 					const {value, unsubscribeValue} = this
-					if (typeof unsubscribeValue !== 'undefined' && unsubscribeValue !== value) {
+					if (typeof unsubscribeValue !== 'undefined' && !equals(unsubscribeValue, value)) {
 						subscriber(unsubscribeValue)
 					}
 				} finally {

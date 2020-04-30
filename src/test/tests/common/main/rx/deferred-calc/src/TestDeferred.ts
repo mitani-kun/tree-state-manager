@@ -50,7 +50,13 @@ interface IDeferredCalcOptionsVariants extends IOptionsVariants {
 	autoCalc?: boolean[]
 }
 
-export const timing = new TestTiming()
+export class TestTimingForDeferredCalc extends TestTiming {
+	public setTimeout(handler: () => void, timeout: number): number {
+		return super.setTimeout(handler, timeout - 1)
+	}
+}
+
+export const timing = new TestTimingForDeferredCalc()
 timing.addTime(1000)
 let staticAutoCalc
 let staticCalcTime
@@ -73,7 +79,7 @@ staticDeferredCalc = new DeferredCalc(
 			staticDeferredCalc.calc()
 		}
 	},
-	function(done) {
+	function() {
 		if (staticDeferredCalc) {
 			assert.strictEqual(this, staticDeferredCalc)
 		} else {
@@ -85,9 +91,9 @@ staticDeferredCalc = new DeferredCalc(
 			type: EventType.Calc,
 		})
 		if (!staticCalcTime) {
-			done()
+			this.done()
 		} else {
-			timing.setTimeout(done, staticCalcTime)
+			timing.setTimeout(() => this.done(), staticCalcTime + 1)
 		}
 	},
 	function() {
@@ -197,7 +203,7 @@ export class TestDeferredCalc extends TestVariants<
 								this.calc()
 							}
 						},
-						function(done) {
+						function() {
 							if (deferredCalc) {
 								assert.strictEqual(this, deferredCalc)
 							} else {
@@ -209,9 +215,9 @@ export class TestDeferredCalc extends TestVariants<
 								type: EventType.Calc,
 							})
 							if (!calcTime) {
-								done()
+								this.done()
 							} else {
-								timing.setTimeout(done, calcTime)
+								timing.setTimeout(() => this.done(), calcTime + 1)
 							}
 						},
 						function() {

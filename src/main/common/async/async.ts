@@ -1,17 +1,29 @@
-import {isIterator} from '../helpers/helpers'
+import {equals, isIterator} from '../helpers/helpers'
+import {TCallStateAny} from '../rx/depend/core/CallState'
+import {getCurrentState, setCurrentState} from '../rx/depend/core/current-state'
 
 export type ThenableOrValue<T> = T | Thenable<T>
 
 export type ThenableOrIterator<T> = ThenableIterator<T> | ThenableOrIteratorOrValueNested<T>
 
+export type IteratorOrValue<T> = ThenableIterator<T> | T
+
 export type ThenableOrIteratorOrValue<T> = T | ThenableOrIterator<T>
 
 export type AsyncValueOf<T> = T extends ThenableOrIterator<infer V>	? V : T
 
-export interface ThenableOrIteratorOrValueNested<T> extends Thenable<ThenableOrIteratorOrValue<T>>
+export type ThenableOrIteratorOrValueNested<T>
+	= IThenableOrIteratorOrValueNested<T> | IPromiseLikeOrIteratorOrValueNested<T>
+
+// tslint:disable-next-line:class-name
+export interface IThenableOrIteratorOrValueNested<T> extends IThenable<ThenableOrIteratorOrValue<T>>
 {}
 
-export interface ThenableIterator<T> extends Iterator<ThenableOrIteratorOrValue<T|any>>
+// tslint:disable-next-line:class-name
+export interface IPromiseLikeOrIteratorOrValueNested<T> extends PromiseLike<ThenableOrIteratorOrValue<T>>
+{}
+
+export interface ThenableIterator<T> extends Iterator<any, ThenableOrIteratorOrValue<T>>
 {}
 
 export type TResolve<TValue> = (value?: ThenableOrIteratorOrValue<TValue>) => void
@@ -20,20 +32,29 @@ export type TReject = (error?: any) => void
 export type TResolveAsyncValue<TValue = any, TResult = any> = (value: TValue) => ThenableOrIteratorOrValue<TResult>
 
 export type TOnFulfilled<TValue = any, TResult = any>
-	= (value: TValue) => ThenableOrIteratorOrValue<TResult> | PromiseLike<TResult>
+	= (value: TValue) => ThenableOrIteratorOrValue<TResult>
 
 export type TOnRejected<TResult = any>
-	= (error: any) => ThenableOrIteratorOrValue<TResult> | PromiseLike<TResult>
+	= (error: any) => ThenableOrIteratorOrValue<TResult>
 
-export interface Thenable<T = any> extends PromiseLike<T> {
+// tslint:disable-next-line:class-name
+export interface IThenable<T = any> extends PromiseLike<T> {
 	then<TResult1 = T, TResult2 = never>(
 		onfulfilled?: TOnFulfilled<T, TResult1>,
 		onrejected?: TOnRejected<TResult2>,
 	): Thenable<TResult1 | TResult2>,
+	then<TResult1 = T, TResult2 = never>(
+		onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null,
+		onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null,
+	): PromiseLike<TResult1 | TResult2>
 }
 
+export type Thenable<T = any> = IThenable<T> | PromiseLike<T>
+
 export function isThenable(value: any): boolean {
-	return value != null && typeof value.then === 'function'
+	return value != null
+		&& typeof value === 'object'
+		&& typeof value.then === 'function'
 }
 
 export function isAsync(value: any): boolean {
@@ -50,7 +71,7 @@ export enum ResolveResult {
 	DeferredError = Deferred | Error,
 }
 
-export function resolveIterator<T>(
+function resolveIterator<T>(
 	iterator: ThenableIterator<T>,
 	isError: boolean,
 	onImmediate: (value: ThenableOrIteratorOrValue<T>, isError: boolean) => void,
@@ -67,7 +88,10 @@ export function resolveIterator<T>(
 		nextOnImmediate: (value: ThenableOrIteratorOrValue<T>, isError: boolean) => void,
 		nextOnDeferred: (value: ThenableOrIteratorOrValue<T>, isError: boolean) => void,
 	): ResolveResult {
-		const body = () => {
+		let _onImmediate: (value: T, isError: boolean) => void
+		let _onDeferred: (value: T, isError: boolean) => void
+
+		try {
 			while (true) {
 				let iteratorResult: IteratorResult<ThenableOrIteratorOrValue<T>>
 
@@ -83,16 +107,24 @@ export function resolveIterator<T>(
 					return isError ? ResolveResult.ImmediateError : ResolveResult.Immediate
 				}
 
+				if (_onImmediate == null) {
+					_onImmediate = (o, nextIsError) => {
+						nextValue = o
+						isThrow = nextIsError
+					}
+				}
+
+				if (_onDeferred == null) {
+					_onDeferred = (o, nextIsError) => {
+						iterate(o, nextIsError, nextOnDeferred, nextOnDeferred)
+					}
+				}
+
 				const result = _resolveValue(
 					iteratorResult.value,
 					false,
-					(o, nextIsError) => {
-						nextValue = o
-						isThrow = nextIsError
-					},
-					(o, nextIsError) => {
-						iterate(o, nextIsError, nextOnDeferred, nextOnDeferred)
-					},
+					_onImmediate,
+					_onDeferred,
 					customResolveValue,
 				)
 
@@ -100,10 +132,6 @@ export function resolveIterator<T>(
 					return result
 				}
 			}
-		}
-
-		try {
-			return body()
 		} catch (err) {
 			nextOnImmediate(err, true)
 			return ResolveResult.ImmediateError
@@ -113,7 +141,7 @@ export function resolveIterator<T>(
 	return iterate(void 0, false, onImmediate, onDeferred)
 }
 
-export function resolveThenable<T>(
+function resolveThenable<T>(
 	thenable: ThenableOrIteratorOrValueNested<T>,
 	isError: boolean,
 	onImmediate: (value: ThenableOrIteratorOrValue<T>, isError: boolean) => void,
@@ -126,21 +154,29 @@ export function resolveThenable<T>(
 	let result = isError ? ResolveResult.DeferredError : ResolveResult.Deferred
 	let deferred
 
-	((thenable as any).thenLast || thenable.then).call(thenable, value => {
+	const _onfulfilled: TOnFulfilled<T, void> = value => {
 		if (deferred) {
 			onDeferred(value, isError)
 		} else {
 			result = isError ? ResolveResult.ImmediateError : ResolveResult.Immediate
 			onImmediate(value, isError)
 		}
-	}, err => {
+	}
+
+	const _onrejected: TOnRejected = err => {
 		if (deferred) {
 			onDeferred(err, true)
 		} else {
 			result = ResolveResult.ImmediateError
 			onImmediate(err, true)
 		}
-	})
+	}
+
+	if ((thenable as any).thenLast != null) {
+		(thenable as any).thenLast(_onfulfilled, _onrejected)
+	} else {
+		thenable.then(_onfulfilled, _onrejected)
+	}
 
 	deferred = true
 
@@ -153,61 +189,88 @@ function _resolveValue<T>(
 	onImmediate: (value: T, isError: boolean) => void,
 	onDeferred: (value: T, isError: boolean) => void,
 	customResolveValue: TResolveAsyncValue<T>,
+	callState?: TCallStateAny,
 ): ResolveResult {
-	const nextOnImmediate = (o, nextIsError) => {
-		if (nextIsError) {
-			isError = true
-		}
-		value = o
-	}
-	const nextOnDeferred = (val, nextIsError) => {
-		_resolveValue(val, isError || nextIsError, onDeferred, onDeferred, customResolveValue)
+	const prevCallState = getCurrentState()
+	if (callState == null) {
+		callState = prevCallState
+	} else {
+		setCurrentState(callState)
 	}
 
-	while (true) {
-		{
-			const result = resolveThenable(
-				value as ThenableOrIteratorOrValueNested<T>,
-				isError,
-				nextOnImmediate,
-				nextOnDeferred,
-			)
-
-			if ((result & ResolveResult.Deferred) !== 0) {
-				return result
+	try {
+		const nextOnImmediate = (o, nextIsError) => {
+			if (nextIsError) {
+				isError = true
 			}
-			if ((result & ResolveResult.Immediate) !== 0) {
-				continue
-			}
+			value = o
 		}
 
-		{
-			const result = resolveIterator(
-				value as ThenableIterator<T>,
-				isError,
-				nextOnImmediate,
-				nextOnDeferred,
+		const nextOnDeferred = (val, nextIsError) => {
+			_resolveValue(
+				val,
+				isError || nextIsError,
+				onDeferred,
+				onDeferred,
 				customResolveValue,
+				callState,
 			)
-
-			if ((result & ResolveResult.Deferred) !== 0) {
-				return result
-			}
-			if ((result & ResolveResult.Immediate) !== 0) {
-				continue
-			}
 		}
 
-		if (value != null && customResolveValue != null) {
-			const newValue = customResolveValue(value as T)
-			if (newValue !== value) {
-				value = newValue
-				continue
+		let iterations = 0
+		while (true) {
+			iterations++
+			if (iterations > 1000) {
+				throw new Error('_resolveAsync infinity loop')
 			}
-		}
 
-		onImmediate(value as T, isError)
-		return isError ? ResolveResult.ImmediateError : ResolveResult.Immediate
+			{
+				const result = resolveThenable(
+					value as ThenableOrIteratorOrValueNested<T>,
+					isError,
+					nextOnImmediate,
+					nextOnDeferred,
+				)
+
+				if ((result & ResolveResult.Deferred) !== 0) {
+					return result
+				}
+				if ((result & ResolveResult.Immediate) !== 0) {
+					continue
+				}
+			}
+
+			{
+				const result = resolveIterator(
+					value as ThenableIterator<T>,
+					isError,
+					nextOnImmediate,
+					nextOnDeferred,
+					customResolveValue,
+				)
+
+				if ((result & ResolveResult.Deferred) !== 0) {
+					return result
+				}
+				if ((result & ResolveResult.Immediate) !== 0) {
+					continue
+				}
+			}
+
+			if (value != null && customResolveValue != null) {
+				const newValue = customResolveValue(value as T)
+				if (!equals(newValue, value)) {
+					value = newValue
+					continue
+				}
+			}
+
+			onImmediate(value as T, isError)
+
+			return isError ? ResolveResult.ImmediateError : ResolveResult.Immediate
+		}
+	} finally {
+		setCurrentState(prevCallState)
 	}
 }
 

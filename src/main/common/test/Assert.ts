@@ -8,6 +8,10 @@ export const AssertionError = typeof require === 'function'
 
 const deepCloneEqualDefault = new DeepCloneEqual()
 
+if (!console.debug) {
+	console.debug = console.info
+}
+
 export class Assert {
 	public deepCloneEqual: DeepCloneEqual
 
@@ -106,7 +110,10 @@ export class Assert {
 		}
 
 		if (regExp) {
-			this.ok(regExp.test(err.message))
+			this.ok(
+				regExp.test(err.message),
+				err ? (message || '') + '\r\n' + err + '\r\n' + err.stack : message,
+			)
 		}
 	}
 
@@ -122,7 +129,7 @@ export class Assert {
 			err = ex
 		}
 
-		this.assertError(err)
+		this.assertError(err, errType, regExp, message)
 	}
 
 	public throws(
@@ -137,7 +144,7 @@ export class Assert {
 			err = ex
 		}
 
-		this.assertError(err)
+		this.assertError(err, errType, regExp, message)
 	}
 
 	public assertNotHandledErrors() {

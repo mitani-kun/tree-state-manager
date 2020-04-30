@@ -4,6 +4,7 @@ const istanbul = require('rollup-plugin-istanbul')
 // const globals = require('rollup-plugin-node-globals')
 // const builtins = require('rollup-plugin-node-builtins')
 const resolve  = require('rollup-plugin-node-resolve')
+const replace = require('@rollup/plugin-replace')
 const commonjs  = require('rollup-plugin-commonjs')
 const nycrc  = require('../../.nycrc.json')
 const {fileExtensions} = require('../common/helpers')
@@ -79,6 +80,21 @@ module.exports = {
 			legacy && plugins.babel.browser(),
 			...getFileCodePlugins,
 			!dev && plugins.terser(),
+		]
+	},
+	libs({dev = false, legacy = true}) {
+		return [
+			plugins.babel.minimal({
+				// compact: true,
+			}),
+			plugins.resolve({
+				browser: true,
+			}),
+			plugins.commonjs(),
+			legacy && plugins.babel.v8Trace({
+				// compact: true,
+			}),
+			// !dev && plugins.terser(),
 		]
 	},
 }
