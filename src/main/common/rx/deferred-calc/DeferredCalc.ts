@@ -10,6 +10,7 @@ export interface IDeferredCalcOptions {
 }
 
 export class DeferredCalc {
+	private readonly _shouldInvalidate: () => void
 	private readonly _canBeCalcCallback: () => void
 	private readonly _calcFunc: () => void
 	private readonly _calcCompletedCallback: (...doneArgs: any[]) => void
@@ -26,13 +27,22 @@ export class DeferredCalc {
 	private _timeCalcStart: number = 0
 	private _timeCalcEnd: number = 0
 
-	constructor(
-		canBeCalcCallback: () => void,
-		calcFunc: () => void,
-		calcCompletedCallback: (...doneArgs: any[]) => void,
-		options: IDeferredCalcOptions,
-		dontInvalidate?: boolean,
-	) {
+	constructor({
+		shouldInvalidate,
+		canBeCalcCallback,
+		calcFunc,
+		calcCompletedCallback,
+		options,
+		dontImmediateInvalidate,
+	}: {
+		shouldInvalidate?: () => void,
+		canBeCalcCallback?: () => void,
+		calcFunc?: () => void,
+		calcCompletedCallback?: (...doneArgs: any[]) => void,
+		options?: IDeferredCalcOptions,
+		dontImmediateInvalidate?: boolean,
+	}) {
+		this._shouldInvalidate = shouldInvalidate
 		this._canBeCalcCallback = canBeCalcCallback
 		this._calcFunc = calcFunc
 		this._calcCompletedCallback = calcCompletedCallback
@@ -40,7 +50,7 @@ export class DeferredCalc {
 		this._timing = this._options.timing || timingDefault
 		this._pulseBind = () => { this._pulse() }
 
-		if (!dontInvalidate) {
+		if (!dontImmediateInvalidate) {
 			this.invalidate()
 		}
 	}
@@ -135,7 +145,11 @@ export class DeferredCalc {
 		this._timeCalcEnd = 0
 		this._pulse()
 
-		this._calcFunc()
+		if (this._calcFunc != null) {
+			this._calcFunc()
+		} else {
+			this.done()
+		}
 	}
 
 	public done(...args: any[])
@@ -149,7 +163,11 @@ export class DeferredCalc {
 
 	private _canBeCalc() {
 		this._canBeCalcEmitted = true
-		this._canBeCalcCallback()
+		if (this._canBeCalcCallback != null) {
+			this._canBeCalcCallback()
+		} else {
+			this.calc()
+		}
 	}
 
 	private _getNextCalcTime() {
@@ -179,24 +197,6 @@ export class DeferredCalc {
 			timeNextPulse = now
 		} else if (timeNextPulse <= now) {
 			this._timerId = -1
-		}
-
-		// endregion
-
-		// region Auto invalidate
-
-		const {autoInvalidateInterval} = this._options
-		if (autoInvalidateInterval != null) {
-			const autoInvalidateTime = Math.max(
-				this._timeCalcStart + autoInvalidateInterval,
-				this._timeInvalidateLast + autoInvalidateInterval,
-				now)
-
-			if (autoInvalidateTime <= now) {
-				this._invalidate()
-			} else if (timeNextPulse <= now || autoInvalidateTime < timeNextPulse) {
-				timeNextPulse = autoInvalidateTime
-			}
 		}
 
 		// endregion
@@ -234,6 +234,31 @@ export class DeferredCalc {
 
 		// endregion
 
+		// region Auto invalidate
+
+		const {autoInvalidateInterval} = this._options
+		if (autoInvalidateInterval
+			&& this._timeInvalidateLast === 0
+			&& !(timeNextPulse > now && timeNextPulse !== this._timeNextPulse)
+		) {
+			const autoInvalidateTime = Math.max(
+				this._timeCalcStart + autoInvalidateInterval,
+				now)
+
+			if (autoInvalidateTime <= now) {
+				if (this._shouldInvalidate != null) {
+					this._shouldInvalidate()
+				} else {
+					this.invalidate()
+				}
+				return
+			} else if (timeNextPulse <= now || autoInvalidateTime < timeNextPulse) {
+				timeNextPulse = autoInvalidateTime
+			}
+		}
+
+		// endregion
+
 		// region Timer
 
 		if (timeNextPulse > now && timeNextPulse !== this._timeNextPulse) {
@@ -243,6 +268,7 @@ export class DeferredCalc {
 			}
 			this._timeNextPulse = timeNextPulse
 			this._timerId = _timing.setTimeout(this._pulseBind, timeNextPulse - now + 1) // ( + 1) is  fix hung
+			return
 		}
 
 		// endregion

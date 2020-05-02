@@ -6,21 +6,13 @@
 
 import {List as ImmutableList, Map as ImmutableMap, Set as ImmutableSet} from 'immutable'
 import {calcPerformance} from 'rdtsc'
-import {SynchronousPromise} from 'synchronous-promise'
 import {resolveValue} from '../../../main/common/async/async'
 import {resolveAsync, ThenableSync} from '../../../main/common/async/ThenableSync'
 import {createFunction, isIterable} from '../../../main/common/helpers/helpers'
 import {freezeWithUniqueId, getObjectUniqueId} from '../../../main/common/helpers/object-unique-id'
-import {getTupleId, getTupleIdMap} from '../../../main/common/helpers/tuple-unique-id'
-import {ArraySet} from '../../../main/common/lists/ArraySet'
 import {binarySearch} from '../../../main/common/lists/helpers/array'
-import {SortedList} from '../../../main/common/lists/SortedList'
-import {deepSubscribe} from '../../../main/common/rx/deep-subscribe/deep-subscribe'
-import {ObservableClass} from '../../../main/common/rx/object/ObservableClass'
-import {ObservableObjectBuilder} from '../../../main/common/rx/object/ObservableObjectBuilder'
 import {assert} from '../../../main/common/test/Assert'
 import {describe, it, xit} from '../../../main/common/test/Mocha'
-import {createObject, TestDeepSubscribe} from '../../tests/common/main/rx/deep-subscribe/helpers/src/TestDeepSubscribe'
 
 const SetNative = Set
 require('./src/SetPolyfill')
@@ -932,33 +924,9 @@ describe('fundamental-operations', function() {
 			// assert.strictEqual(set.length, 0)
 		}
 
-		function testSortedList(options) {
-			const set = new SortedList(options)
-			testSet(
-				o => set.add(o),
-				o => set.remove(o),
-				o => set,
-				o => set,
-			)
-			// set.clear()
-			// assert.strictEqual(set.size, 0)
-		}
-
 		function testSetPolyfill() {
 			// console.log(SetPolyfill.toString())
 			const set = new SetPolyfill()
-			testSet(
-				o => set.add(o),
-				o => set.delete(o),
-				o => set,
-				o => set,
-			)
-			// assert.strictEqual(set.size, 0)
-		}
-
-		function testArraySet() {
-			// console.log(ArraySet.toString())
-			const set = new ArraySet()
 			testSet(
 				o => set.add(o),
 				o => set.delete(o),
@@ -1044,7 +1012,6 @@ describe('fundamental-operations', function() {
 			testEmpty,
 			testArrayHashTable, // 1.0
 			testSetNative, // 1.0
-			testArraySet, // 1.0150311148125015
 			testObject, // 1.1021265644157587
 			testWeakSetNative, // 1.6042837809702268
 			testArraySplice, // 2.0924161982094525
@@ -1052,76 +1019,7 @@ describe('fundamental-operations', function() {
 			testArray, // 3.645999606727277
 			testSetPolyfill, // 5.62216901473616
 			testArrayKeepOrder, // 7.91167557313716
-			() => testSortedList({ // 22.514027691026442
-				autoSort        : true,
-				notAddIfExists  : true,
-				minAllocatedSize: 1000,
-				// compare         : compareUniqueId
-			}),
 			testImmutableSet, // 33.87640826335392
-			// () => testSortedList({
-			// 	autoSort        : true,
-			// 	notAddIfExists  : false,
-			// 	minAllocatedSize: 1000
-			// }),
-			// () => testSortedList({
-			// 	autoSort        : false,
-			// 	notAddIfExists  : false,
-			// 	minAllocatedSize: 1000
-			// })
-		)
-
-		console.log(result)
-	})
-
-	it('getTupleId', function() {
-		this.timeout(300000)
-
-		let _this = {}
-		let func = () => {}
-		let items = [{}, Math.round(Math.random() * 10)]
-
-		let _thisArray = []
-		let funcArray = []
-		let itemsArray = []
-
-		let id
-		for (let i = 0; i < 100000; i++) {
-			_this = {}
-			func = () => {}
-			items = [{}, Math.round(Math.random() * 10)]
-
-			_thisArray[i] = _this
-			funcArray[i] = func
-			itemsArray[i] = items
-
-			id = getTupleId.apply(getTupleIdMap(func, _this, 4), items)
-
-			id = getObjectUniqueId(_this)
-		}
-
-		let index = 0
-
-		const result = calcPerformance(
-			10000,
-			() => {
-				// no operations
-			},
-			() => {
-				// _this = {}
-				// func = () => {}
-				items = [{}, Math.round(Math.random() * 10)]
-
-				_this = _thisArray[index % 100000]
-				func = funcArray[index % 100000]
-				// items = itemsArray[index % 100000]
-			},
-			() => {
-				id = getTupleId.apply(getTupleIdMap(func, _this, 4), items)
-			},
-			() => {
-				id = getObjectUniqueId(_this)
-			},
 		)
 
 		console.log(result)
@@ -1164,65 +1062,6 @@ describe('fundamental-operations', function() {
 			() => object.hasOwnProperty('property'),
 			() => Object.prototype.hasOwnProperty.call(child, 'property'),
 			() => child.hasOwnProperty('property'),
-		)
-
-		console.log(result)
-	})
-
-	xit('deepSubscribe', function() {
-		this.timeout(300000)
-
-		const createTester = (...propertyNames) => new TestDeepSubscribe(
-			{
-				object         : createObject().object,
-				immediate      : true,
-				performanceTest: true,
-			},
-			b => b
-				.repeat(1, 3, null, b => b
-					.any(
-						// b => b.propertyRegexp(/object|observableObject/),
-						b => b.propertyNames('object', 'observableObject'),
-						b => b.propertyNames(...propertyNames).path(o => o['#']),
-					))
-				.path(o => o['#']),
-		)
-			.subscribe([])
-			.unsubscribe([])
-
-		const testerList = createTester('list')
-		const testerSet = createTester('set')
-		const testerMap = createTester('map')
-		const testerObservableList = createTester('observableList')
-		const testerObservableSet = createTester('observableSet')
-		const testerObservableMap = createTester('observableMap')
-		const testerAll = createTester('list', 'set', 'map', 'observableList', 'observableSet', 'observableMap')
-
-		const result = calcPerformance(
-			10000,
-			() => {
-				// no operations
-			},
-			() => testerList.subscribe([]),
-			() => testerList.unsubscribe([]),
-
-			() => testerSet.subscribe([]),
-			() => testerSet.unsubscribe([]),
-
-			() => testerMap.subscribe([]),
-			() => testerMap.unsubscribe([]),
-
-			() => testerObservableList.subscribe([]),
-			() => testerObservableList.unsubscribe([]),
-
-			() => testerObservableSet.subscribe([]),
-			() => testerObservableSet.unsubscribe([]),
-
-			() => testerObservableMap.subscribe([]),
-			() => testerObservableMap.unsubscribe([]),
-
-			() => testerAll.subscribe([]),
-			() => testerAll.unsubscribe([]),
 		)
 
 		console.log(result)
@@ -1502,32 +1341,11 @@ describe('fundamental-operations', function() {
 			},
 			() => {
 				let resolve
-				new SynchronousPromise(o => {
-					resolve = o
-				})
-					.then(o => true)
-					// .then(o => true)
-
-				resolve(1)
-			},
-			() => {
-				let resolve
 				new ThenableSync(o => {
 					resolve = o
 				})
 					.then(o => true)
 					// .then(o => true)
-
-				resolve(1)
-			},
-			() => {
-				let resolve
-				let result
-				new SynchronousPromise(o => {
-					resolve = o
-				})
-					.then(o => true)
-					.then(o => (result = o))
 
 				resolve(1)
 			},
