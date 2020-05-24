@@ -4,9 +4,12 @@
 export {ThenableSync} from './async/ThenableSync'
 export {ObservableClass} from './rx/object/ObservableClass'
 export {ObservableObject} from './rx/object/ObservableObject'
-export {DependCalcObjectBuilder} from './rx/object/properties/DependCalcObjectBuilder'
-export {createFunction} from './helpers/helpers'
-export {getObjectUniqueId} from './helpers/object-unique-id'
+export {ObjectBuilder} from './rx/object/ObjectBuilder'
+export {ClassBuilder} from './rx/object/ClassBuilder'
+export {ObservableObjectBuilder} from './rx/object/ObservableObjectBuilder'
+export {CalcObjectBuilder} from './rx/object/properties/CalcObjectBuilder'
+// export {createFunction} from './helpers/helpers'
+// export {getObjectUniqueId} from './helpers/object-unique-id'
 export {resolvePath} from './rx/object/properties/path/resolve'
 export {ObjectMerger} from './extensions/merge/mergers'
 export {PropertyChangedObject} from './rx/object/PropertyChangedObject'
@@ -17,7 +20,7 @@ export {registerMergeable, registerMerger} from './extensions/merge/mergers'
 export {registerSerializable, registerSerializer, ObjectSerializer} from './extensions/serialization/serializers'
 export {isIterable, isIterator, equals} from './helpers/helpers'
 export {webrainOptions, webrainEquals} from './helpers/webrainOptions'
-export {ConnectorState} from './rx/object/properties/Connector'
+// export {ConnectorState} from './rx/object/properties/Connector'
 export {resolveAsync, resolveAsyncFunc, resolveAsyncAll, resolveAsyncAny} from './async/ThenableSync'
 export {CalcStat} from './helpers/CalcStat'
 export {VALUE_PROPERTY_DEFAULT} from './helpers/value-property'
@@ -35,13 +38,13 @@ export {CallStatus} from './rx/depend/core/contracts'
 export {depend, dependX} from './rx/depend/core/depend'
 export {DependMap} from './rx/depend/lists/DependMap'
 export {DependSet} from './rx/depend/lists/DependSet'
-export {dependCalcPropertyFactory, dependCalcPropertyFactoryX} from './rx/object/properties/DependCalcObjectBuilder'
-export {dependConnectorFactory} from './rx/object/properties/DependConnectorBuilder'
+export {calcPropertyFactory, calcPropertyFactoryX} from './rx/object/properties/CalcObjectBuilder'
+export {connectorFactory} from './rx/object/properties/ConnectorBuilder'
 export {noSubscribe} from './rx/depend/core/current-state'
-export {dependDeepSubscriber} from './rx/object/properties/path/dependDeepSubscriber'
+export {deepSubscriber} from './rx/object/properties/path/deepSubscriber'
 export {Path} from './rx/object/properties/path/builder'
 export {autoCalcConnect, autoCalc, dependWait, dependWrapThis} from './rx/depend/helpers'
-export {createConnector} from './rx/object/properties/helpers'
+// export {createConnector} from './rx/object/properties/helpers'
 
 // region Interfaces
 
@@ -86,8 +89,17 @@ import {
 } from './rx/object/ObservableObjectBuilder'
 import {
 	IConnectFieldOptions as _IConnectFieldOptions,
-} from './rx/object/properties/DependConnectorBuilder'
-import {TSubscribeFunc as _TSubscribeFunc} from './rx/object/properties/path/dependDeepSubscriber'
+} from './rx/object/properties/ConnectorBuilder'
+import {TSubscribeFunc as _TSubscribeFunc} from './rx/object/properties/path/deepSubscriber'
+import {
+	Func as _Func,
+	FuncAny as _FuncAny,
+	ArgsOf as _ArgsOf,
+	ResultOf as _ResultOf,
+	AsyncResultOf as _AsyncResultOf,
+	KeysOf as _KeysOf,
+	OptionalNested as _OptionalNested,
+} from './helpers/typescript'
 
 export type ISubscriber<T> = _ISubscriber<T>
 export type IUnsubscribe = _IUnsubscribe
@@ -117,6 +129,13 @@ export type IReadableFieldOptions<TObject, TValue> = _IReadableFieldOptions<TObj
 export type IUpdatableFieldOptions<TObject, TValue> = _IUpdatableFieldOptions<TObject, TValue>
 export type IConnectFieldOptions<TObject, TValue> = _IConnectFieldOptions<TObject, TValue>
 export type TSubscribeFunc<TObject, TValue> = _TSubscribeFunc<TObject, TValue>
+export type Func<TThis, TArgs extends any[], TValue = void> = _Func<TThis, TArgs, TValue>
+export type FuncAny = _FuncAny
+export type ArgsOf<TFunc> = _ArgsOf<TFunc>
+export type ResultOf<TFunc> = _ResultOf<TFunc>
+export type AsyncResultOf<TFunc> = _AsyncResultOf<TFunc>
+export type KeysOf<TObject, TValue> = _KeysOf<TObject, TValue>
+export type OptionalNested<TObject> = _OptionalNested<TObject>
 
 // endregion
 

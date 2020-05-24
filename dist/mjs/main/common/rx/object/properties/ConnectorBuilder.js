@@ -1,166 +1,140 @@
-import { createFunction } from '../../../helpers/helpers';
-import { Debugger } from '../../Debugger';
-import { deepSubscribeRule } from '../../deep-subscribe/deep-subscribe';
-import { setObjectValue } from '../../deep-subscribe/helpers/common';
-import { RuleBuilder } from '../../deep-subscribe/RuleBuilder';
-import { _set, _setExt } from '../ObservableClass';
+import { missingSetter } from '../../../helpers/helpers';
+import { getOrCreateCallState } from '../../../rx/depend/core/CallState';
+import { depend } from '../../../rx/depend/core/depend';
+import { dependWait } from '../../../rx/depend/helpers';
+import { makeDependPropertySubscriber } from '../helpers';
 import { ObservableObjectBuilder } from '../ObservableObjectBuilder';
 import { Connector } from './Connector';
-
-const buildSourceRule = b => b.p('source');
-
+import { observableClass } from './helpers';
+import { Path, PathGetSet } from './path/builder';
 export class ConnectorBuilder extends ObservableObjectBuilder {
-  constructor(object) {
+  constructor(object, sourcePath) {
     super(object);
-  }
+    this.sourcePath = sourcePath;
+  } // region connectSimple
 
-  connect(name, buildRule, options, initValue) {
-    return this._connect(false, name, buildRule, options, initValue);
-  }
 
-  connectWritable(name, buildRule, options, initValue) {
-    return this._connect(true, name, buildRule, options, initValue);
-  }
+  connectSimple(name, common, getSet, options) {
+    return this._connect(name, common, getSet, options);
+  } // endregion
+  // region connect
 
-  _connect(writable, name, buildRule, options, initValue) {
+
+  connect(name, common, getSet, options) {
+    return this._connect(name, common, getSet, options ? { ...options,
+      isDepend: true
+    } : {
+      isDepend: true
+    });
+  } // endregion
+  // region connectLazy
+
+
+  connectLazy(name, common, getSet, options) {
+    return this._connect(name, common, getSet, options ? { ...options,
+      isDepend: true,
+      isLazy: true
+    } : {
+      isDepend: true,
+      isLazy: true
+    });
+  } // endregion
+  // region connectWait
+
+
+  connectWait(name, common, getSet, options) {
+    return this._connect(name, common, getSet, options ? { ...options,
+      isDepend: true,
+      isWait: true
+    } : {
+      isDepend: true,
+      isWait: true
+    });
+  } // endregion
+  // region connectWaitLazy
+
+
+  connectWaitLazy(name, common, getSet, options) {
+    return this._connect(name, common, getSet, options ? { ...options,
+      isDepend: true,
+      isLazy: true,
+      isWait: true
+    } : {
+      isDepend: true,
+      isLazy: true,
+      isWait: true
+    });
+  } // endregion
+  // region _connect
+
+
+  _connect(name, common, getSet, options) {
+    let path = PathGetSet.build(common, getSet);
+    const {
+      sourcePath
+    } = this;
+
+    if (sourcePath != null) {
+      path = PathGetSet.concat(sourcePath, path);
+    }
+
+    const {
+      hidden,
+      isDepend,
+      isLazy,
+      isWait,
+      waitCondition,
+      waitTimeout
+    } = options || {};
     const {
       object
     } = this;
-    let ruleBuilder = new RuleBuilder({
-      valuePropertyDefaultName: 'last'
+
+    if (!path.canGet) {
+      throw new Error('path.canGet == false');
+    }
+
+    let getValue = function () {
+      return path.get(this);
+    };
+
+    if (isDepend) {
+      getValue = depend(getValue, null, makeDependPropertySubscriber(name));
+
+      if (isWait) {
+        getValue = dependWait(getValue, waitCondition, waitTimeout, isLazy);
+      } else if (isLazy) {
+        const _getValue = getValue;
+
+        getValue = function () {
+          const state = getOrCreateCallState(_getValue).apply(this, arguments);
+          return state.getValue(true);
+        };
+      }
+    }
+
+    Object.defineProperty(object, name, {
+      configurable: true,
+      enumerable: !hidden,
+      get: getValue,
+      set: !path.canSet ? missingSetter : function (value) {
+        return path.set(this, value);
+      }
     });
+    return this;
+  } // endregion
 
-    if (object instanceof Connector) {
-      ruleBuilder = buildSourceRule(ruleBuilder);
-    }
-
-    ruleBuilder = buildRule(ruleBuilder);
-    const ruleBase = ruleBuilder && ruleBuilder.result();
-
-    if (ruleBase == null) {
-      throw new Error('buildRule() return null or not initialized RuleBuilder');
-    }
-
-    const setOptions = options && options.setOptions; // optimization
-
-    const baseGetValue = options && options.getValue || createFunction(() => function () {
-      return this.__fields[name];
-    }, `return this.__fields["${name}"]`);
-    const baseSetValue = options && options.setValue || createFunction(() => function (v) {
-      this.__fields[name] = v;
-    }, 'v', `this.__fields["${name}"] = v`);
-    const getValue = !writable ? baseGetValue : function () {
-      return baseGetValue.call(this).value;
-    };
-    const setValue = !writable ? baseSetValue : function (value) {
-      const baseValue = baseGetValue.call(this);
-      baseValue.value = value;
-    };
-    const set = setOptions ? _setExt.bind(null, name, getValue, setValue, setOptions) : _set.bind(null, name, getValue, setValue);
-    return this.updatable(name, {
-      setOptions,
-      hidden: options && options.hidden,
-
-      // tslint:disable-next-line:no-shadowed-variable
-      factory(initValue) {
-        if (writable) {
-          baseSetValue.call(this, {
-            value: initValue,
-            parent: null,
-            key: null,
-            keyType: null
-          });
-        }
-
-        let setVal = (obj, value) => {
-          if (typeof value !== 'undefined') {
-            initValue = value;
-          }
-        };
-
-        const receiveValue = writable ? (value, parent, key, keyType) => {
-          Debugger.Instance.onConnectorChanged(this, name, value, parent, key, keyType);
-          const baseValue = baseGetValue.call(this);
-          baseValue.parent = parent;
-          baseValue.key = key;
-          baseValue.keyType = keyType;
-          setVal(this, value);
-          return null;
-        } : (value, parent, key, keyType) => {
-          Debugger.Instance.onConnectorChanged(this, name, value, parent, key, keyType);
-          setVal(this, value);
-          return null;
-        };
-        const rule = this === object ? ruleBase : ruleBase.clone();
-        this.propertyChanged.hasSubscribersObservable.subscribe(hasSubscribers => {
-          this._setUnsubscriber(name, null);
-
-          if (hasSubscribers) {
-            const unsubscribe = deepSubscribeRule({
-              object: this instanceof Connector ? this.connectorState : this,
-              lastValue: receiveValue,
-              debugTarget: this,
-              rule
-            });
-
-            if (unsubscribe) {
-              this._setUnsubscriber(name, unsubscribe);
-            }
-          }
-        }, `Connector.${name}.hasSubscribersObservable for deepSubscribe`);
-        setVal = set;
-        return initValue;
-      },
-
-      update: writable && function (value) {
-        const baseValue = baseGetValue.call(this);
-
-        if (baseValue.parent != null) {
-          setObjectValue(baseValue.parent, baseValue.key, baseValue.keyType, value);
-        } // return value
-
-      },
-      getValue,
-      setValue
-    }, initValue);
-  }
 
 }
-export function connectorClass({
-  buildRule,
-  baseClass
-}) {
-  // @ts-ignore
-  class NewConnector extends (baseClass || Connector) {} // @ts-ignore
-
-
-  buildRule(new ConnectorBuilder(NewConnector.prototype));
-  return NewConnector;
+export function dependConnectorClass(build, baseClass) {
+  const sourcePath = new Path().f(o => o.connectorState).f(o => o.source).init();
+  return observableClass(object => build(new ConnectorBuilder(object, sourcePath)).object, baseClass != null ? baseClass : Connector);
 }
 export function connectorFactory({
   name,
-  buildRule,
+  build,
   baseClass
 }) {
-  const NewConnector = connectorClass({
-    buildRule,
-    baseClass
-  });
-  return (source, sourceName) => new NewConnector(source, name || sourceName);
-} // const builder = new ConnectorBuilder(true as any)
-//
-// export function connect<TObject extends ObservableClass, TValue = any>(
-// 	options?: IConnectFieldOptions<TObject, TValue>,
-// 	initValue?: TValue,
-// ) {
-// 	return (target: TObject, propertyKey: string) => {
-// 		builder.object = target
-// 		builder.connect(propertyKey, options, initValue)
-// 	}
-// }
-// class Class1 extends ObservableClass {
-// }
-// class Class extends Class1 {
-// 	@connect()
-// 	public prop: number
-// }
+  const NewConnector = dependConnectorClass(build, baseClass);
+  return (source, _name) => new NewConnector(source, _name != null ? _name : name);
+}

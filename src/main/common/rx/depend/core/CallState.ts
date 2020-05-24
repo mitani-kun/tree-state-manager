@@ -9,6 +9,7 @@ import {
 } from '../../../async/async'
 import {resolveAsync, ThenableSync} from '../../../async/ThenableSync'
 import {isIterator, nextHash} from '../../../helpers/helpers'
+import {Func} from '../../../helpers/typescript'
 import {webrainEquals, webrainOptions} from '../../../helpers/webrainOptions'
 import {ObjectPool} from '../../../lists/ObjectPool'
 import {PairingHeap, PairingNode} from '../../../lists/PairingHeap'
@@ -16,7 +17,17 @@ import {fastNow} from '../../../time/helpers'
 import {DeferredCalc, IDeferredCalcOptions} from '../../deferred-calc/DeferredCalc'
 import {ISubscriber, IUnsubscribe} from '../../subjects/observable'
 import {ISubject, Subject} from '../../subjects/subject'
-import {CallStatus, CallStatusShort, Func, ICallState, ILinkItem, TCall, TInnerValue, TResultOuter} from './contracts'
+import {
+	CallStatus,
+	CallStatusShort,
+	ICallState,
+	ILinkItem,
+	TCall,
+	TCallStateAny,
+	TFuncCall,
+	TInnerValue,
+	TResultOuter,
+} from './contracts'
 import {getCurrentState, setCurrentState} from './current-state'
 import {InternalError} from './helpers'
 
@@ -466,16 +477,6 @@ export function invalidateParent<
 
 // endregion
 
-export type TCallStateAny = CallState<any, any, any>
-
-export type TFuncCall<
-	TThisOuter,
-	TArgs extends any[],
-	TResultInner
-	> = (
-	state: CallState<TThisOuter, TArgs, TResultInner>,
-) => TResultInner
-
 export class CallState<
 	TThisOuter,
 	TArgs extends any[],
@@ -683,7 +684,7 @@ export class CallState<
 			setCurrentState(this._parentCallState)
 
 			if (isThenable(value)) {
-				this._updateCheckAsync(value as any)
+				this._updateCheckAsync(value)
 			} else {
 				this._parentCallState = null
 			}
@@ -925,7 +926,7 @@ export class CallState<
 				}
 
 				if (!isLazy && (dependencyState.status & Flag_Async) !== 0) {
-					yield resolveAsync(dependencyState.valueAsync, null, EMPTY_FUNC) as any
+					yield resolveAsync(dependencyState.valueAsync, null, EMPTY_FUNC)
 				}
 
 				if ((this.status & Flag_Recalc) !== 0) {
@@ -1121,6 +1122,9 @@ export class CallState<
 			this._lastAccessTime = fastNow()
 			this._afterCalc(prevStatus, true)
 			this.onChanged()
+			if (webrainOptions.callState.logCaughtErrors) {
+				console.error(error)
+			}
 		} else {
 			this._afterCalc(prevStatus, false)
 		}
@@ -1520,7 +1524,12 @@ export function createCallStateProvider<
 			return callState
 		}
 
-		const valueIdsClone: Int32Array = _valueIdsBuffer.slice(0, countValueStates)
+		// const valueIdsClone: Int32Array = _valueIdsBuffer.slice(0, countValueStates)
+		const valueIdsClone = new Int32Array(countValueStates)
+		for (let i = 0; i < countValueStates; i++) {
+			valueIdsClone[i] = _valueIdsBuffer[i]
+		}
+
 		for (let i = 0; i < countValueStates; i++) {
 			if (i > 0) {
 				const valueState = getValueState(_valueIdsBuffer[i])
@@ -1548,6 +1557,8 @@ export function createCallStateProvider<
 		} else {
 			callStates.push(callState)
 		}
+
+		garbageCollectSchedule()
 
 		return callState
 	}
@@ -1831,6 +1842,8 @@ export function reduceCallStates(deleteSize: number, _minCallStateLifeTime: numb
 // Garbage collector
 function garbageCollect() {
 	try {
+		garbageCollectTimer = null
+
 		const {bulkSize, minLifeTime, interval, disabled} = webrainOptions.callState.garbageCollect
 
 		if (!disabled) {
@@ -1839,21 +1852,29 @@ function garbageCollect() {
 				bulkSize,
 				minLifeTime,
 			)
-			if (countDeleted > 0) {
+			if (countDeleted > 0 || callStatesCount === 0) {
 				console.debug(`CallState GC - deleted: ${countDeleted}, alive: ${callStatesCount}, ${
 					(fastNow() - time) / countDeleted
 				} ms/item`)
 			}
 		}
 
-		setTimeout(garbageCollect, interval)
+		garbageCollectSchedule()
 	} catch (error) {
 		console.error(error)
 		throw error
 	}
 }
 
-garbageCollect()
+let garbageCollectTimer = null
+function garbageCollectSchedule() {
+	if (callStatesCount > 0 && garbageCollectTimer === null) {
+		const {interval, disabled} = webrainOptions.callState.garbageCollect
+		if (!disabled) {
+			garbageCollectTimer = setTimeout(garbageCollect, interval)
+		}
+	}
+}
 
 // endregion
 

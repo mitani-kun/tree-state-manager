@@ -1,32 +1,78 @@
-import { RuleBuilder } from '../../deep-subscribe/RuleBuilder';
+import { TClass } from '../../../helpers/typescript';
 import { ObservableClass } from '../ObservableClass';
-import { IWritableFieldOptions, ObservableObjectBuilder } from '../ObservableObjectBuilder';
+import { IReadableFieldOptions, ObservableObjectBuilder } from '../ObservableObjectBuilder';
 import { Connector } from './Connector';
 import { ValueKeys } from './contracts';
+import { INextPathGetSet, Path, TNextPath } from './path/builder';
+export interface IConnectFieldOptions<TObject, TValue> extends IReadableFieldOptions<TObject, TValue> {
+    isDepend?: boolean;
+    isLazy?: boolean;
+    isWait?: boolean;
+    waitCondition?: (value: TValue) => boolean;
+    waitTimeout?: number;
+}
 export declare class ConnectorBuilder<TObject extends Connector<TSource> | ObservableClass, TSource = TObject, TValueKeys extends string | number = ValueKeys> extends ObservableObjectBuilder<TObject> {
-    constructor(object?: TObject);
-    connect<Name extends string | number = Extract<keyof TObject, string | number>, TValue = Name extends keyof TObject ? TObject[Name] : any>(name: Name, buildRule: (builder: RuleBuilder<TSource, TValueKeys>) => RuleBuilder<TValue, TValueKeys>, options?: IWritableFieldOptions<TObject, TValue>, initValue?: TValue): this & {
+    readonly sourcePath?: Path<TObject, TSource>;
+    constructor(object?: TObject, sourcePath?: Path<TObject, TSource>);
+    connectSimple<Name extends string | number = Extract<keyof TObject, string | number>, TValue = Name extends keyof TObject ? TObject[Name] : TSource>(name: Name, common: TNextPath<TSource, TSource, TValue>, getSet?: null | undefined, options?: IReadableFieldOptions<TSource, TValue>): this & {
         object: {
-            readonly [newProp in Name]: TValue;
+            [newProp in Name]: TValue;
         };
     };
-    connectWritable<Name extends string | number = Extract<keyof TObject, string | number>, TValue = Name extends keyof TObject ? TObject[Name] : any>(name: Name, buildRule: (builder: RuleBuilder<TSource, TValueKeys>) => RuleBuilder<TValue, TValueKeys>, options?: IWritableFieldOptions<TObject, TValue>, initValue?: TValue): this & {
+    connectSimple<Name extends string | number = Extract<keyof TObject, string | number>, TCommonValue = TSource, TValue = Name extends keyof TObject ? TObject[Name] : TCommonValue>(name: Name, common: TNextPath<TSource, TSource, TCommonValue>, getSet: INextPathGetSet<TSource, TCommonValue, TValue>, options?: IReadableFieldOptions<TSource, TValue>): this & {
+        object: {
+            [newProp in Name]: TValue;
+        };
+    };
+    connect<Name extends string | number = Extract<keyof TObject, string | number>, TValue = Name extends keyof TObject ? TObject[Name] : TSource>(name: Name, common: TNextPath<TSource, TSource, TValue>, getSet?: null | undefined, options?: IConnectFieldOptions<TSource, TValue>): this & {
+        object: {
+            [newProp in Name]: TValue;
+        };
+    };
+    connect<Name extends string | number = Extract<keyof TObject, string | number>, TCommonValue = TSource, TValue = Name extends keyof TObject ? TObject[Name] : TCommonValue>(name: Name, common: TNextPath<TSource, TSource, TCommonValue>, getSet: INextPathGetSet<TSource, TCommonValue, TValue>, options?: IConnectFieldOptions<TSource, TValue>): this & {
+        object: {
+            [newProp in Name]: TValue;
+        };
+    };
+    connectLazy<Name extends string | number = Extract<keyof TObject, string | number>, TValue = Name extends keyof TObject ? TObject[Name] : TSource>(name: Name, common: TNextPath<TSource, TSource, TValue>, getSet?: null | undefined, options?: IConnectFieldOptions<TSource, TValue>): this & {
+        object: {
+            [newProp in Name]: TValue;
+        };
+    };
+    connectLazy<Name extends string | number = Extract<keyof TObject, string | number>, TCommonValue = TSource, TValue = Name extends keyof TObject ? TObject[Name] : TCommonValue>(name: Name, common: TNextPath<TSource, TSource, TCommonValue>, getSet: INextPathGetSet<TSource, TCommonValue, TValue>, options?: IConnectFieldOptions<TSource, TValue>): this & {
+        object: {
+            [newProp in Name]: TValue;
+        };
+    };
+    connectWait<Name extends string | number = Extract<keyof TObject, string | number>, TValue = Name extends keyof TObject ? TObject[Name] : TSource>(name: Name, common: TNextPath<TSource, TSource, TValue>, getSet?: null | undefined, options?: IConnectFieldOptions<TSource, TValue>): this & {
+        object: {
+            [newProp in Name]: TValue;
+        };
+    };
+    connectWait<Name extends string | number = Extract<keyof TObject, string | number>, TCommonValue = TSource, TValue = Name extends keyof TObject ? TObject[Name] : TCommonValue>(name: Name, common: TNextPath<TSource, TSource, TCommonValue>, getSet: INextPathGetSet<TSource, TCommonValue, TValue>, options?: IConnectFieldOptions<TSource, TValue>): this & {
+        object: {
+            [newProp in Name]: TValue;
+        };
+    };
+    connectWaitLazy<Name extends string | number = Extract<keyof TObject, string | number>, TValue = Name extends keyof TObject ? TObject[Name] : TSource>(name: Name, common: TNextPath<TSource, TSource, TValue>, getSet?: null | undefined, options?: IConnectFieldOptions<TSource, TValue>): this & {
+        object: {
+            [newProp in Name]: TValue;
+        };
+    };
+    connectWaitLazy<Name extends string | number = Extract<keyof TObject, string | number>, TCommonValue = TSource, TValue = Name extends keyof TObject ? TObject[Name] : TCommonValue>(name: Name, common: TNextPath<TSource, TSource, TCommonValue>, getSet: INextPathGetSet<TSource, TCommonValue, TValue>, options?: IConnectFieldOptions<TSource, TValue>): this & {
         object: {
             [newProp in Name]: TValue;
         };
     };
     private _connect;
 }
-export declare function connectorClass<TSource extends ObservableClass, TConnector extends Connector<TSource>>({ buildRule, baseClass, }: {
-    buildRule: (connectorBuilder: ConnectorBuilder<Connector<TSource>, TSource>) => {
-        object: TConnector;
-    };
-    baseClass?: new (source: TSource) => Connector<TSource>;
-}): new (source: TSource, name?: string) => TConnector;
-export declare function connectorFactory<TSource extends ObservableClass, TConnector extends Connector<TSource>>({ name, buildRule, baseClass, }: {
+export declare function dependConnectorClass<TSource, TConnectorClass extends TBaseClass, TBaseClass extends Connector<TSource> = Connector<TSource>>(build: (connectorBuilder: ConnectorBuilder<TBaseClass, TSource>) => {
+    object: TConnectorClass;
+}, baseClass?: TClass<[TSource, string?], TBaseClass>): TClass<[TSource, string?], TConnectorClass>;
+export declare function connectorFactory<TSource extends ObservableClass, TConnectorClass extends TBaseClass, TBaseClass extends Connector<TSource> = Connector<TSource>>({ name, build, baseClass, }: {
     name?: string;
-    buildRule: (connectorBuilder: ConnectorBuilder<Connector<TSource>, TSource>) => {
-        object: TConnector;
+    build: (connectorBuilder: ConnectorBuilder<TBaseClass, TSource>) => {
+        object: TConnectorClass;
     };
-    baseClass?: new (source: TSource, name?: string) => Connector<TSource>;
-}): (source: TSource, name?: string) => TConnector;
+    baseClass?: new (source: TSource, name?: string) => TBaseClass;
+}): (source: TSource, name?: string) => TConnectorClass;

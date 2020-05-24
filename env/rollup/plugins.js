@@ -7,8 +7,7 @@ const resolve  = require('rollup-plugin-node-resolve')
 const replace = require('@rollup/plugin-replace')
 const commonjs  = require('rollup-plugin-commonjs')
 const nycrc  = require('../../.nycrc.json')
-const {fileExtensions} = require('../common/helpers')
-
+const {fileExtensions, writeTextFile} = require('../common/helpers')
 const babel = require('./babel')
 
 const dedupe = importee => /^(@babel|core-js[^\\/]*|regenerator-runtime)([\\/]|$)/.test(importee)
@@ -66,7 +65,9 @@ module.exports = {
 			}),
 			plugins.commonjs(),
 			legacy && plugins.babel.browser(),
-			!dev && plugins.terser(),
+			!dev && plugins.terser({
+				module: false,
+			}),
 		]
 	},
 	watch({dev = false, legacy = true, coverage = false, getFileCodePlugins = []}) {
@@ -79,7 +80,9 @@ module.exports = {
 			plugins.commonjs(),
 			legacy && plugins.babel.browser(),
 			...getFileCodePlugins,
-			!dev && plugins.terser(),
+			!dev && plugins.terser({
+				module: false,
+			}),
 		]
 	},
 	libs({dev = false, legacy = true}) {
@@ -94,7 +97,9 @@ module.exports = {
 			legacy && plugins.babel.v8Trace({
 				// compact: true,
 			}),
-			// !dev && plugins.terser(),
+			// !dev && plugins.terser({
+			// 	module: false,
+			// }),
 		]
 	},
 }

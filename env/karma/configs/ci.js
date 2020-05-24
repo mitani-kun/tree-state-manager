@@ -1,7 +1,7 @@
 /* eslint-disable prefer-template,no-sync,no-process-env,object-property-newline */
 // Karma configuration
 const helpers = require('../helpers')
-const {fileExtensions} = require('../../common/helpers')
+const {fileExtensions, writeTextFileSync} = require('../../common/helpers')
 
 module.exports = function (config) {
 	helpers.configCommon(config)
@@ -24,7 +24,7 @@ module.exports = function (config) {
 		// list of files / patterns to load in the browser
 		files: [
 			helpers.servedPattern(require.resolve('chai/chai')),
-			helpers.servedPattern(helpers.writeTextFile('tmp/karma/chai.js', '"use strict"; var assert = chai.assert, expect = chai.expect, should = chai.should;')),
+			helpers.servedPattern(writeTextFileSync('tmp/karma/chai.js', '"use strict"; var assert = chai.assert, expect = chai.expect, should = chai.should;')),
 			helpers.concatJsFiles(
 				'tmp/karma/tests.js',
 				`src/test/tests/{common,browser}/**/*{${[...fileExtensions.js, ...fileExtensions.ts].join(',')}}`,
@@ -38,14 +38,14 @@ module.exports = function (config) {
 		// preprocess matching files before serving them to the browser
 		// available preprocessors: https://npmjs.org/browse/keyword/karma-preprocessor
 		preprocessors: {
-			'tmp/karma/tests.js': ['rollup']
+			'tmp/karma/tests.js': ['rollup', 'writeToFile']
 		},
 
 		rollupPreprocessor: {
 			plugins: helpers.rollup.plugins.karma({dev: false, legacy: true, coverage: true}),
 			output : {
 				format   : 'iife',
-				sourcemap: true // 'inline'
+				sourcemap: true // 'inline',
 			}
 		},
 

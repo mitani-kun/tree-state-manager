@@ -31,13 +31,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="69b2ee16-521b-4efd-b473-8e19e3df4d09" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/src/main/common/helpers/helpers.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/common/helpers/helpers.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/common/rx/depend/core/contracts.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/common/rx/depend/core/contracts.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/common/rx/depend/core/current-state.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/common/rx/depend/core/current-state.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/common/rx/object/properties/contracts.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/common/rx/object/properties/contracts.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/common/rx/object/properties/path/builder.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/common/rx/object/properties/path/builder.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/common/rx/object/properties/path/builder/contracts/common.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/common/rx/object/properties/path/builder/contracts/common.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/common/rx/object/properties/path/dependDeepSubscriber.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/common/rx/object/properties/path/dependDeepSubscriber.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/HISTORY.md" beforeDir="false" afterPath="$PROJECT_DIR$/HISTORY.md" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -89,7 +83,7 @@
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="auto.test.manager.delay" value="5000" />
     <property name="javascript.karma.karma_node_package_dir" value="" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/docs/depend" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/src/test/tests/common/main/rx/depend/dependent-func/base.ts" />
     <property name="node.js.detected.package.eslint" value="true" />
     <property name="node.js.detected.package.standard" value="true" />
     <property name="node.js.detected.package.tslint" value="true" />
@@ -104,30 +98,30 @@
     <property name="prettierjs.PrettierConfiguration.Package" value="L:\Work\_GIT\GitHub\NodeJs\modules\webrain\node_modules\prettier" />
     <property name="restartRequiresConfirmation" value="false" />
     <property name="run.code.analysis.last.selected.profile" value="pProject Default" />
-    <property name="settings.editor.selected.configurable" value="editor.preferences.smartKeys" />
+    <property name="settings.editor.selected.configurable" value="coverage" />
     <property name="ts.external.directory.path" value="L:\Work\_GIT\GitHub\NodeJs\modules\webrain\node_modules\typescript\lib" />
   </component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="L:\Work\_GIT\GitHub\NodeJs\modules\webrain\tmp\coverage\merge" />
+      <recent name="L:\Work\_GIT\GitHub\NodeJs\modules\webrain\src\test\performance\node" />
+      <recent name="L:\Work\_GIT\GitHub\NodeJs\modules\webrain\src\main\common\rx\object" />
       <recent name="L:\Work\_GIT\GitHub\NodeJs\modules\webrain\docs\depend" />
       <recent name="L:\Work\_GIT\GitHub\NodeJs\modules\webrain\src\test\tests\common\main\rx\object\properties\path" />
-      <recent name="L:\Work\_GIT\GitHub\NodeJs\modules\webrain\src\test\tests\common\main\rx\object\properties\path\builder" />
-      <recent name="L:\Work\_GIT\GitHub\NodeJs\modules\webrain\src\main\common\rx\object\properties\path\builder" />
-      <recent name="L:\Work\_GIT\GitHub\NodeJs\modules\webrain\src\test\tests\common\main\rx" />
     </key>
     <key name="es6.move.members.recent.items">
+      <recent name="L:\Work\_GIT\GitHub\NodeJs\modules\webrain\src\main\common\rx\depend\core\contracts.ts" />
+      <recent name="L:\Work\_GIT\GitHub\NodeJs\modules\webrain\src\main\common\helpers\typescript.ts" />
       <recent name="L:\Work\_GIT\GitHub\NodeJs\modules\webrain\src\main\common\rx\object\properties\helpers.ts" />
       <recent name="L:\Work\_GIT\GitHub\NodeJs\modules\webrain\src\main\common\rx\depend\core\helpers.ts" />
       <recent name="L:\Work\_GIT\GitHub\NodeJs\modules\webrain\src\test\tests\common\main\rx\depend\src\perceptron.ts" />
-      <recent name="L:\Work\_GIT\GitHub\NodeJs\modules\webrain\src\test\tests\common\main\rx\depend\src\_helpers.ts" />
-      <recent name="L:\Work\_GIT\GitHub\NodeJs\modules\webrain\src\main\common\helpers\helpers.ts" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="L:\Work\_GIT\GitHub\NodeJs\modules\webrain\src\test\tests\common\src" />
       <recent name="L:\Work\_GIT\GitHub\NodeJs\modules\webrain\docs\depend" />
       <recent name="L:\Work\_GIT\GitHub\NodeJs\modules\webrain\src\main\common\rx\depend" />
       <recent name="L:\Work\_GIT\GitHub\NodeJs\modules\webrain\src\main\common\rx\object\properties\path" />
       <recent name="L:\Work\_GIT\GitHub\NodeJs\modules\webrain\src\test\tests\common\main\rx\object\properties\path" />
-      <recent name="L:\Work\_GIT\GitHub\NodeJs\modules\webrain\src\main\common\rx" />
     </key>
   </component>
   <component name="RunManager" selected="Mocha.Watch">
@@ -157,6 +151,12 @@
       <EXTENSION ID="com.jetbrains.nodejs.run.NodeJSProfilingRunConfigurationExtension">
         <profiling allow-runtime-heap-snapshot="true" one-log-file="true" />
       </EXTENSION>
+      <method v="2" />
+    </configuration>
+    <configuration name="mocha" type="NodeJSConfigurationType" application-parameters="--opts ./env/mocha/configs/no-babel/mocha.opts &quot;./dist/js/test/tests/{node,common}/**/*.*&quot;" path-to-node="node" nameIsGenerated="true" node-parameters="--max-old-space-size=4096" path-to-js-file="mocha" working-dir="$PROJECT_DIR$">
+      <method v="2" />
+    </configuration>
+    <configuration name="tests.build.js" type="NodeJSConfigurationType" temporary="true" path-to-node="node" nameIsGenerated="true" node-parameters="--max-old-space-size=4096" path-to-js-file="$PROJECT_DIR$/tmp/karma/tests.build.js" working-dir="$PROJECT_DIR$">
       <method v="2" />
     </configuration>
     <configuration name="DeferredCalc" type="mocha-javascript-test-runner">
@@ -246,35 +246,19 @@
       <test-pattern>./src/test/tests/{common,node}/**/*.*</test-pattern>
       <method v="2" />
     </configuration>
-    <configuration name="common &gt; main &gt; rx &gt; deferred-calc &gt; DeferredCalc.init" type="mocha-javascript-test-runner" temporary="true" nameIsGenerated="true">
+    <configuration name="common &gt; main &gt; index.base" type="mocha-javascript-test-runner" temporary="true">
       <node-interpreter>node</node-interpreter>
-      <node-options>--max-old-space-size=4096</node-options>
+      <node-options>--max-old-space-size=4096 --allow-natives-syntax</node-options>
       <mocha-package>$PROJECT_DIR$/node_modules/mocha</mocha-package>
       <working-directory>$PROJECT_DIR$</working-directory>
       <pass-parent-env>true</pass-parent-env>
       <ui>bdd</ui>
-      <extra-mocha-options>--opts ./env/mocha/configs/babel/mocha.opts --watch</extra-mocha-options>
+      <extra-mocha-options>--opts ./env/mocha/configs/babel/mocha.opts</extra-mocha-options>
       <test-kind>TEST</test-kind>
-      <test-file>$PROJECT_DIR$/src/test/tests/common/main/rx/deferred-calc/DeferredCalc.ts</test-file>
+      <test-file>$PROJECT_DIR$/src/test/tests/common/main/index.ts</test-file>
       <test-names>
-        <name value="common &gt; main &gt; rx &gt; deferred-calc &gt; DeferredCalc" />
-        <name value="init" />
-      </test-names>
-      <method v="2" />
-    </configuration>
-    <configuration name="common &gt; main &gt; rx &gt; deferred-calc &gt; DeferredCalc.real timing" type="mocha-javascript-test-runner" temporary="true" nameIsGenerated="true">
-      <node-interpreter>node</node-interpreter>
-      <node-options>--max-old-space-size=4096</node-options>
-      <mocha-package>$PROJECT_DIR$/node_modules/mocha</mocha-package>
-      <working-directory>$PROJECT_DIR$</working-directory>
-      <pass-parent-env>true</pass-parent-env>
-      <ui>bdd</ui>
-      <extra-mocha-options>--opts ./env/mocha/configs/babel/mocha.opts --watch</extra-mocha-options>
-      <test-kind>TEST</test-kind>
-      <test-file>$PROJECT_DIR$/src/test/tests/common/main/rx/deferred-calc/DeferredCalc.ts</test-file>
-      <test-names>
-        <name value="common &gt; main &gt; rx &gt; deferred-calc &gt; DeferredCalc" />
-        <name value="real timing" />
+        <name value="node &gt; main &gt; index" />
+        <name value="base" />
       </test-names>
       <method v="2" />
     </configuration>
@@ -293,7 +277,7 @@
       </test-names>
       <method v="2" />
     </configuration>
-    <configuration name="common &gt; main &gt; rx &gt; depend &gt; dependent-func / base.lazy" type="mocha-javascript-test-runner" temporary="true" nameIsGenerated="true">
+    <configuration name="common &gt; main &gt; rx &gt; depend &gt; dependent-func / base.perceptron" type="mocha-javascript-test-runner" temporary="true" nameIsGenerated="true">
       <node-interpreter>node</node-interpreter>
       <node-options>--max-old-space-size=4096 --allow-natives-syntax</node-options>
       <mocha-package>$PROJECT_DIR$/node_modules/mocha</mocha-package>
@@ -305,22 +289,7 @@
       <test-file>$PROJECT_DIR$/src/test/tests/common/main/rx/depend/dependent-func/base.ts</test-file>
       <test-names>
         <name value="common &gt; main &gt; rx &gt; depend &gt; dependent-func / base" />
-        <name value="lazy" />
-      </test-names>
-      <method v="2" />
-    </configuration>
-    <configuration name="common &gt; main &gt; rx &gt; properties &gt; builder &gt; RuleBuilder" type="mocha-javascript-test-runner" temporary="true" nameIsGenerated="true">
-      <node-interpreter>node</node-interpreter>
-      <node-options>--max-old-space-size=4096 --allow-natives-syntax</node-options>
-      <mocha-package>$PROJECT_DIR$/node_modules/mocha</mocha-package>
-      <working-directory>$PROJECT_DIR$</working-directory>
-      <pass-parent-env>true</pass-parent-env>
-      <ui>bdd</ui>
-      <extra-mocha-options>--opts ./env/mocha/configs/babel/mocha.opts</extra-mocha-options>
-      <test-kind>SUITE</test-kind>
-      <test-file>$PROJECT_DIR$/src/test/tests/common/main/rx/object/properties/path/builder/RuleBuilder.ts</test-file>
-      <test-names>
-        <name value="common &gt; main &gt; rx &gt; properties &gt; builder &gt; RuleBuilder" />
+        <name value="perceptron" />
       </test-names>
       <method v="2" />
     </configuration>
@@ -415,6 +384,21 @@
       </test-names>
       <method v="2" />
     </configuration>
+    <configuration name="fastNow perf" type="mocha-javascript-test-runner" temporary="true" nameIsGenerated="true">
+      <node-interpreter>node</node-interpreter>
+      <node-options>--max-old-space-size=4096</node-options>
+      <mocha-package>$PROJECT_DIR$/node_modules/mocha</mocha-package>
+      <working-directory>$PROJECT_DIR$</working-directory>
+      <pass-parent-env>true</pass-parent-env>
+      <ui>bdd</ui>
+      <extra-mocha-options>--opts ./env/mocha/configs/babel/mocha.opts</extra-mocha-options>
+      <test-kind>SUITE</test-kind>
+      <test-file>$PROJECT_DIR$/src/test/performance/node/fastNow.ts</test-file>
+      <test-names>
+        <name value="fastNow perf" />
+      </test-names>
+      <method v="2" />
+    </configuration>
     <configuration name="node &gt; v8 &gt; parser" type="mocha-javascript-test-runner">
       <node-interpreter>node</node-interpreter>
       <node-options>--max-old-space-size=4096 --allow-natives-syntax</node-options>
@@ -428,7 +412,6 @@
       <method v="2" />
     </configuration>
     <list>
-      <item itemvalue="Karma.Coverage Karma" />
       <item itemvalue="Karma.Dev" />
       <item itemvalue="Karma.CI" />
       <item itemvalue="Karma.Coverage" />
@@ -449,21 +432,22 @@
       <item itemvalue="Mocha.dependent-func" />
       <item itemvalue="Mocha.dependent-func.perceptron perf (Compiled)" />
       <item itemvalue="Mocha.node &gt; v8 &gt; parser" />
+      <item itemvalue="Mocha.common &gt; main &gt; index.base" />
+      <item itemvalue="Mocha.fastNow perf" />
       <item itemvalue="Mocha.common &gt; main &gt; rx &gt; depend &gt; dependent-func / base" />
-      <item itemvalue="Mocha.common &gt; main &gt; rx &gt; depend &gt; dependent-func / base.lazy" />
-      <item itemvalue="Mocha.common &gt; main &gt; rx &gt; deferred-calc &gt; DeferredCalc.init" />
-      <item itemvalue="Mocha.common &gt; main &gt; rx &gt; deferred-calc &gt; DeferredCalc.real timing" />
+      <item itemvalue="Mocha.common &gt; main &gt; rx &gt; depend &gt; dependent-func / base.perceptron" />
+      <item itemvalue="Node.js.mocha" />
       <item itemvalue="Node.js.dependent-func.js" />
+      <item itemvalue="Node.js.tests.build.js" />
       <item itemvalue="npm.Coverage Mocha Report" />
-      <item itemvalue="Mocha.common &gt; main &gt; rx &gt; properties &gt; builder &gt; RuleBuilder" />
     </list>
     <recent_temporary>
       <list>
-        <item itemvalue="Mocha.common &gt; main &gt; rx &gt; properties &gt; builder &gt; RuleBuilder" />
-        <item itemvalue="Mocha.common &gt; main &gt; rx &gt; deferred-calc &gt; DeferredCalc.real timing" />
-        <item itemvalue="Mocha.common &gt; main &gt; rx &gt; deferred-calc &gt; DeferredCalc.init" />
-        <item itemvalue="Mocha.common &gt; main &gt; rx &gt; depend &gt; dependent-func / base.lazy" />
+        <item itemvalue="Node.js.tests.build.js" />
+        <item itemvalue="Mocha.common &gt; main &gt; rx &gt; depend &gt; dependent-func / base.perceptron" />
         <item itemvalue="Mocha.common &gt; main &gt; rx &gt; depend &gt; dependent-func / base" />
+        <item itemvalue="Mocha.fastNow perf" />
+        <item itemvalue="Mocha.common &gt; main &gt; index.base" />
       </list>
     </recent_temporary>
   </component>
@@ -498,231 +482,20 @@
       <workItem from="1588248569392" duration="29000" />
       <workItem from="1588305192970" duration="10281000" />
       <workItem from="1588344581732" duration="156000" />
-      <workItem from="1588402877237" duration="9000000" />
-    </task>
-    <task id="LOCAL-00445" summary="Path Builder: iterate-rules...">
-      <created>1587822560887</created>
-      <option name="number" value="00445" />
-      <option name="presentableId" value="LOCAL-00445" />
-      <option name="project" value="LOCAL" />
-      <updated>1587822560887</updated>
-    </task>
-    <task id="LOCAL-00446" summary="Path Builder: iterate-rules...">
-      <created>1587825389784</created>
-      <option name="number" value="00446" />
-      <option name="presentableId" value="LOCAL-00446" />
-      <option name="project" value="LOCAL" />
-      <updated>1587825389784</updated>
-    </task>
-    <task id="LOCAL-00447" summary="Path Builder: forEachRules completed and tested">
-      <created>1587874048853</created>
-      <option name="number" value="00447" />
-      <option name="presentableId" value="LOCAL-00447" />
-      <option name="project" value="LOCAL" />
-      <updated>1587874048856</updated>
-    </task>
-    <task id="LOCAL-00448" summary="Path Builder: dependDeepSubscribe completed and tested">
-      <created>1587884367063</created>
-      <option name="number" value="00448" />
-      <option name="presentableId" value="LOCAL-00448" />
-      <option name="project" value="LOCAL" />
-      <updated>1587884367063</updated>
-    </task>
-    <task id="LOCAL-00449" summary="TSLint fixes">
-      <created>1587885029695</created>
-      <option name="number" value="00449" />
-      <option name="presentableId" value="LOCAL-00449" />
-      <option name="project" value="LOCAL" />
-      <updated>1587885029695</updated>
-    </task>
-    <task id="LOCAL-00450" summary="depend: fix garbage collection. Tests OK.">
-      <created>1587902602178</created>
-      <option name="number" value="00450" />
-      <option name="presentableId" value="LOCAL-00450" />
-      <option name="project" value="LOCAL" />
-      <updated>1587902602178</updated>
-    </task>
-    <task id="LOCAL-00451" summary="depend: fix garbage collection. Tests OK.">
-      <created>1587903338244</created>
-      <option name="number" value="00451" />
-      <option name="presentableId" value="LOCAL-00451" />
-      <option name="project" value="LOCAL" />
-      <updated>1587903338244</updated>
-    </task>
-    <task id="LOCAL-00452" summary="depend: stress test all, 200 tests is OK.">
-      <created>1587906889849</created>
-      <option name="number" value="00452" />
-      <option name="presentableId" value="LOCAL-00452" />
-      <option name="project" value="LOCAL" />
-      <updated>1587906889849</updated>
-    </task>
-    <task id="LOCAL-00453" summary="Small fixes">
-      <created>1587913662668</created>
-      <option name="number" value="00453" />
-      <option name="presentableId" value="LOCAL-00453" />
-      <option name="project" value="LOCAL" />
-      <updated>1587913662668</updated>
-    </task>
-    <task id="LOCAL-00454" summary="Added depend helpers">
-      <created>1587989396598</created>
-      <option name="number" value="00454" />
-      <option name="presentableId" value="LOCAL-00454" />
-      <option name="project" value="LOCAL" />
-      <updated>1587989396598</updated>
-    </task>
-    <task id="LOCAL-00455" summary="Added depend helpers">
-      <created>1587989596762</created>
-      <option name="number" value="00455" />
-      <option name="presentableId" value="LOCAL-00455" />
-      <option name="project" value="LOCAL" />
-      <updated>1587989596762</updated>
-    </task>
-    <task id="LOCAL-00456" summary="Small changes. Tests OK.">
-      <created>1587996440580</created>
-      <option name="number" value="00456" />
-      <option name="presentableId" value="LOCAL-00456" />
-      <option name="project" value="LOCAL" />
-      <updated>1587996440580</updated>
-    </task>
-    <task id="LOCAL-00457" summary="Small changes. Tests OK.">
-      <created>1587997418091</created>
-      <option name="number" value="00457" />
-      <option name="presentableId" value="LOCAL-00457" />
-      <option name="project" value="LOCAL" />
-      <updated>1587997418091</updated>
-    </task>
-    <task id="LOCAL-00458" summary="depend: stress test all, 140 tests (1 hour) is OK.">
-      <created>1588000332152</created>
-      <option name="number" value="00458" />
-      <option name="presentableId" value="LOCAL-00458" />
-      <option name="project" value="LOCAL" />
-      <updated>1588000332153</updated>
-    </task>
-    <task id="LOCAL-00459" summary="Fix isIterator / isIterable critical bug">
-      <created>1588048907141</created>
-      <option name="number" value="00459" />
-      <option name="presentableId" value="LOCAL-00459" />
-      <option name="project" value="LOCAL" />
-      <updated>1588048907142</updated>
-    </task>
-    <task id="LOCAL-00460" summary="Fix isIterator / isIterable critical bug">
-      <created>1588052763065</created>
-      <option name="number" value="00460" />
-      <option name="presentableId" value="LOCAL-00460" />
-      <option name="project" value="LOCAL" />
-      <updated>1588052763065</updated>
-    </task>
-    <task id="LOCAL-00461" summary="Fix NaN === NaN critical bug. Check _resolveAsync infinity loop">
-      <created>1588057124171</created>
-      <option name="number" value="00461" />
-      <option name="presentableId" value="LOCAL-00461" />
-      <option name="project" value="LOCAL" />
-      <updated>1588057124171</updated>
-    </task>
-    <task id="LOCAL-00462" summary="Refactoring: add webrainEquals() helper">
-      <created>1588058396986</created>
-      <option name="number" value="00462" />
-      <option name="presentableId" value="LOCAL-00462" />
-      <option name="project" value="LOCAL" />
-      <updated>1588058396986</updated>
-    </task>
-    <task id="LOCAL-00463" summary="Refactoring completed. Tests OK.">
-      <created>1588059220308</created>
-      <option name="number" value="00463" />
-      <option name="presentableId" value="LOCAL-00463" />
-      <option name="project" value="LOCAL" />
-      <updated>1588059220309</updated>
-    </task>
-    <task id="LOCAL-00464" summary="depend: stress test all, 140 tests (1 hour) is OK.">
-      <created>1588062953244</created>
-      <option name="number" value="00464" />
-      <option name="presentableId" value="LOCAL-00464" />
-      <option name="project" value="LOCAL" />
-      <updated>1588062953244</updated>
-    </task>
-    <task id="LOCAL-00465" summary="Small changes.">
-      <created>1588165037694</created>
-      <option name="number" value="00465" />
-      <option name="presentableId" value="LOCAL-00465" />
-      <option name="project" value="LOCAL" />
-      <updated>1588165037695</updated>
-    </task>
-    <task id="LOCAL-00466" summary="Small optimization. Tests OK.">
-      <created>1588170028001</created>
-      <option name="number" value="00466" />
-      <option name="presentableId" value="LOCAL-00466" />
-      <option name="project" value="LOCAL" />
-      <updated>1588170028001</updated>
-    </task>
-    <task id="LOCAL-00467" summary="Fix Lazy, now it will throw on error. Tests OK.">
-      <created>1588179824894</created>
-      <option name="number" value="00467" />
-      <option name="presentableId" value="LOCAL-00467" />
-      <option name="project" value="LOCAL" />
-      <updated>1588179824894</updated>
-    </task>
-    <task id="LOCAL-00468" summary="depend: Fix error behavior. Tests OK.">
-      <created>1588185825994</created>
-      <option name="number" value="00468" />
-      <option name="presentableId" value="LOCAL-00468" />
-      <option name="project" value="LOCAL" />
-      <updated>1588185825994</updated>
-    </task>
-    <task id="LOCAL-00469" summary="Fix stress test. Tests OK.">
-      <created>1588226418130</created>
-      <option name="number" value="00469" />
-      <option name="presentableId" value="LOCAL-00469" />
-      <option name="project" value="LOCAL" />
-      <updated>1588226418130</updated>
-    </task>
-    <task id="LOCAL-00470" summary="depend: stress test all, 1 hour is OK.">
-      <created>1588229442841</created>
-      <option name="number" value="00470" />
-      <option name="presentableId" value="LOCAL-00470" />
-      <option name="project" value="LOCAL" />
-      <updated>1588229442841</updated>
-    </task>
-    <task id="LOCAL-00471" summary="DeferredCalc refactoring... Tests OK.">
-      <created>1588309895462</created>
-      <option name="number" value="00471" />
-      <option name="presentableId" value="LOCAL-00471" />
-      <option name="project" value="LOCAL" />
-      <updated>1588309895462</updated>
-    </task>
-    <task id="LOCAL-00472" summary="DeferredCalc refactoring... Tests OK.">
-      <created>1588310288383</created>
-      <option name="number" value="00472" />
-      <option name="presentableId" value="LOCAL-00472" />
-      <option name="project" value="LOCAL" />
-      <updated>1588310288383</updated>
-    </task>
-    <task id="LOCAL-00473" summary="DeferredCalc refactoring completed. Tests OK.">
-      <created>1588310689281</created>
-      <option name="number" value="00473" />
-      <option name="presentableId" value="LOCAL-00473" />
-      <option name="project" value="LOCAL" />
-      <updated>1588310689281</updated>
-    </task>
-    <task id="LOCAL-00474" summary="Fix depend deferred. Tests OK.">
-      <created>1588311787541</created>
-      <option name="number" value="00474" />
-      <option name="presentableId" value="LOCAL-00474" />
-      <option name="project" value="LOCAL" />
-      <updated>1588311787541</updated>
-    </task>
-    <task id="LOCAL-00475" summary="depend: stress test all, 1 hour is OK.">
-      <created>1588315079326</created>
-      <option name="number" value="00475" />
-      <option name="presentableId" value="LOCAL-00475" />
-      <option name="project" value="LOCAL" />
-      <updated>1588315079326</updated>
-    </task>
-    <task id="LOCAL-00476" summary="Replace console.log -&gt; console.debug">
-      <created>1588344676984</created>
-      <option name="number" value="00476" />
-      <option name="presentableId" value="LOCAL-00476" />
-      <option name="project" value="LOCAL" />
-      <updated>1588344676984</updated>
+      <workItem from="1588402877237" duration="9839000" />
+      <workItem from="1588741312274" duration="13785000" />
+      <workItem from="1589362024966" duration="1898000" />
+      <workItem from="1589619587457" duration="346000" />
+      <workItem from="1589620097022" duration="24000" />
+      <workItem from="1589967569464" duration="2705000" />
+      <workItem from="1590061937729" duration="9110000" />
+      <workItem from="1590133610409" duration="701000" />
+      <workItem from="1590135086386" duration="2390000" />
+      <workItem from="1590149294582" duration="15706000" />
+      <workItem from="1590207827975" duration="9740000" />
+      <workItem from="1590217587334" duration="35272000" />
+      <workItem from="1590299663864" duration="2207000" />
+      <workItem from="1590301884117" duration="686000" />
     </task>
     <task id="LOCAL-00477" summary="webrain v1">
       <created>1588403082873</created>
@@ -843,7 +616,231 @@
       <option name="project" value="LOCAL" />
       <updated>1588413404087</updated>
     </task>
-    <option name="localTasksCounter" value="494" />
+    <task id="LOCAL-00494" summary="Prepare v2: deleted unused code. Tests OK.">
+      <created>1588414161915</created>
+      <option name="number" value="00494" />
+      <option name="presentableId" value="LOCAL-00494" />
+      <option name="project" value="LOCAL" />
+      <updated>1588414161915</updated>
+    </task>
+    <task id="LOCAL-00495" summary="Develop">
+      <created>1588870803117</created>
+      <option name="number" value="00495" />
+      <option name="presentableId" value="LOCAL-00495" />
+      <option name="project" value="LOCAL" />
+      <updated>1588870803117</updated>
+    </task>
+    <task id="LOCAL-00496" summary="Replace bad supported Int32Array.slice(0, count) to fori">
+      <created>1588915472263</created>
+      <option name="number" value="00496" />
+      <option name="presentableId" value="LOCAL-00496" />
+      <option name="project" value="LOCAL" />
+      <updated>1588915472263</updated>
+    </task>
+    <task id="LOCAL-00497" summary="Fix array merger. Tests OK.">
+      <created>1589363920421</created>
+      <option name="number" value="00497" />
+      <option name="presentableId" value="LOCAL-00497" />
+      <option name="project" value="LOCAL" />
+      <updated>1589363920421</updated>
+    </task>
+    <task id="LOCAL-00498" summary="Added webrainOptions.callState.logCaughtErrors">
+      <created>1589972404310</created>
+      <option name="number" value="00498" />
+      <option name="presentableId" value="LOCAL-00498" />
+      <option name="project" value="LOCAL" />
+      <updated>1589972404310</updated>
+    </task>
+    <task id="LOCAL-00499" summary="Fix Random">
+      <created>1589972414976</created>
+      <option name="number" value="00499" />
+      <option name="presentableId" value="LOCAL-00499" />
+      <option name="project" value="LOCAL" />
+      <updated>1589972414976</updated>
+    </task>
+    <task id="LOCAL-00500" summary="Prepare release">
+      <created>1590068852871</created>
+      <option name="number" value="00500" />
+      <option name="presentableId" value="LOCAL-00500" />
+      <option name="project" value="LOCAL" />
+      <updated>1590068852871</updated>
+    </task>
+    <task id="LOCAL-00501" summary="Prepare release">
+      <created>1590158022622</created>
+      <option name="number" value="00501" />
+      <option name="presentableId" value="LOCAL-00501" />
+      <option name="project" value="LOCAL" />
+      <updated>1590158022623</updated>
+    </task>
+    <task id="LOCAL-00502" summary="Stop timers after all tests">
+      <created>1590158050168</created>
+      <option name="number" value="00502" />
+      <option name="presentableId" value="LOCAL-00502" />
+      <option name="project" value="LOCAL" />
+      <updated>1590158050168</updated>
+    </task>
+    <task id="LOCAL-00503" summary="Fix Mocha">
+      <created>1590162596455</created>
+      <option name="number" value="00503" />
+      <option name="presentableId" value="LOCAL-00503" />
+      <option name="project" value="LOCAL" />
+      <updated>1590162596455</updated>
+    </task>
+    <task id="LOCAL-00504" summary="Auto stop timers">
+      <created>1590209894542</created>
+      <option name="number" value="00504" />
+      <option name="presentableId" value="LOCAL-00504" />
+      <option name="project" value="LOCAL" />
+      <updated>1590209894542</updated>
+    </task>
+    <task id="LOCAL-00505" summary="Deleted: Stop timers after all tests">
+      <created>1590210003546</created>
+      <option name="number" value="00505" />
+      <option name="presentableId" value="LOCAL-00505" />
+      <option name="project" value="LOCAL" />
+      <updated>1590210003546</updated>
+    </task>
+    <task id="LOCAL-00506" summary="Deleted: Stop timers after all tests">
+      <created>1590210029515</created>
+      <option name="number" value="00506" />
+      <option name="presentableId" value="LOCAL-00506" />
+      <option name="project" value="LOCAL" />
+      <updated>1590210029515</updated>
+    </task>
+    <task id="LOCAL-00507" summary="Prepare release">
+      <created>1590210169925</created>
+      <option name="number" value="00507" />
+      <option name="presentableId" value="LOCAL-00507" />
+      <option name="project" value="LOCAL" />
+      <updated>1590210169925</updated>
+    </task>
+    <task id="LOCAL-00508" summary="Improve karma rollup preprocessor">
+      <created>1590213154765</created>
+      <option name="number" value="00508" />
+      <option name="presentableId" value="LOCAL-00508" />
+      <option name="project" value="LOCAL" />
+      <updated>1590213154765</updated>
+    </task>
+    <task id="LOCAL-00509" summary="Rollback karma rollup preprocessor">
+      <created>1590213370115</created>
+      <option name="number" value="00509" />
+      <option name="presentableId" value="LOCAL-00509" />
+      <option name="project" value="LOCAL" />
+      <updated>1590213370115</updated>
+    </task>
+    <task id="LOCAL-00510" summary="Improve karma rollup preprocessor">
+      <created>1590216955781</created>
+      <option name="number" value="00510" />
+      <option name="presentableId" value="LOCAL-00510" />
+      <option name="project" value="LOCAL" />
+      <updated>1590216955781</updated>
+    </task>
+    <task id="LOCAL-00511" summary="Improve karma rollup preprocessor">
+      <created>1590218428999</created>
+      <option name="number" value="00511" />
+      <option name="presentableId" value="LOCAL-00511" />
+      <option name="project" value="LOCAL" />
+      <updated>1590218429000</updated>
+    </task>
+    <task id="LOCAL-00512" summary="Prepare release">
+      <created>1590218514641</created>
+      <option name="number" value="00512" />
+      <option name="presentableId" value="LOCAL-00512" />
+      <option name="project" value="LOCAL" />
+      <updated>1590218514641</updated>
+    </task>
+    <task id="LOCAL-00513" summary="karma: stop IE support">
+      <created>1590227895595</created>
+      <option name="number" value="00513" />
+      <option name="presentableId" value="LOCAL-00513" />
+      <option name="project" value="LOCAL" />
+      <updated>1590227895596</updated>
+    </task>
+    <task id="LOCAL-00514" summary="Fix coverage">
+      <created>1590239468803</created>
+      <option name="number" value="00514" />
+      <option name="presentableId" value="LOCAL-00514" />
+      <option name="project" value="LOCAL" />
+      <updated>1590239468803</updated>
+    </task>
+    <task id="LOCAL-00515" summary="Prepare release">
+      <created>1590239499160</created>
+      <option name="number" value="00515" />
+      <option name="presentableId" value="LOCAL-00515" />
+      <option name="project" value="LOCAL" />
+      <updated>1590239499160</updated>
+    </task>
+    <task id="LOCAL-00516" summary="precommit is OK">
+      <created>1590243801241</created>
+      <option name="number" value="00516" />
+      <option name="presentableId" value="LOCAL-00516" />
+      <option name="project" value="LOCAL" />
+      <updated>1590243801241</updated>
+    </task>
+    <task id="LOCAL-00517" summary="Fix travis tests">
+      <created>1590245924311</created>
+      <option name="number" value="00517" />
+      <option name="presentableId" value="LOCAL-00517" />
+      <option name="project" value="LOCAL" />
+      <updated>1590245924311</updated>
+    </task>
+    <task id="LOCAL-00518" summary="Fix travis tests">
+      <created>1590246269130</created>
+      <option name="number" value="00518" />
+      <option name="presentableId" value="LOCAL-00518" />
+      <option name="project" value="LOCAL" />
+      <updated>1590246269130</updated>
+    </task>
+    <task id="LOCAL-00519" summary="Fix travis tests">
+      <created>1590253174567</created>
+      <option name="number" value="00519" />
+      <option name="presentableId" value="LOCAL-00519" />
+      <option name="project" value="LOCAL" />
+      <updated>1590253174567</updated>
+    </task>
+    <task id="LOCAL-00520" summary="Fix travis tests">
+      <created>1590295746204</created>
+      <option name="number" value="00520" />
+      <option name="presentableId" value="LOCAL-00520" />
+      <option name="project" value="LOCAL" />
+      <updated>1590295746205</updated>
+    </task>
+    <task id="LOCAL-00521" summary="precommit is OK. travis is OK.">
+      <created>1590296472547</created>
+      <option name="number" value="00521" />
+      <option name="presentableId" value="LOCAL-00521" />
+      <option name="project" value="LOCAL" />
+      <updated>1590296472548</updated>
+    </task>
+    <task id="LOCAL-00522" summary="Rename external interface refactoring.">
+      <created>1590300227985</created>
+      <option name="number" value="00522" />
+      <option name="presentableId" value="LOCAL-00522" />
+      <option name="project" value="LOCAL" />
+      <updated>1590300227986</updated>
+    </task>
+    <task id="LOCAL-00523" summary="Rename external interface refactoring.">
+      <created>1590300270865</created>
+      <option name="number" value="00523" />
+      <option name="presentableId" value="LOCAL-00523" />
+      <option name="project" value="LOCAL" />
+      <updated>1590300270865</updated>
+    </task>
+    <task id="LOCAL-00524" summary="precommit is OK">
+      <created>1590301122191</created>
+      <option name="number" value="00524" />
+      <option name="presentableId" value="LOCAL-00524" />
+      <option name="project" value="LOCAL" />
+      <updated>1590301122191</updated>
+    </task>
+    <task id="LOCAL-00525" summary="v1.0.0a">
+      <created>1590302366573</created>
+      <option name="number" value="00525" />
+      <option name="presentableId" value="LOCAL-00525" />
+      <option name="project" value="LOCAL" />
+      <updated>1590302366573</updated>
+    </task>
+    <option name="localTasksCounter" value="526" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -904,42 +901,50 @@
   <component name="VcsManagerConfiguration">
     <option name="CHECK_CODE_SMELLS_BEFORE_PROJECT_COMMIT" value="false" />
     <option name="CHECK_NEW_TODO" value="false" />
-    <MESSAGE value="Refactoring completed. Tests OK." />
-    <MESSAGE value="depend: stress test all, 140 tests (1 hour) is OK." />
-    <MESSAGE value="Small changes." />
-    <MESSAGE value="Small optimization. Tests OK." />
-    <MESSAGE value="Fix Lazy, now it will throw on error. Tests OK." />
-    <MESSAGE value="depend: Fix error behavior. Tests OK." />
-    <MESSAGE value="Fix stress test. Tests OK." />
-    <MESSAGE value="DeferredCalc refactoring... Tests OK." />
-    <MESSAGE value="DeferredCalc refactoring completed. Tests OK." />
-    <MESSAGE value="Fix depend deferred. Tests OK." />
-    <MESSAGE value="depend: stress test all, 1 hour is OK." />
-    <MESSAGE value="Replace console.log -&gt; console.debug" />
-    <MESSAGE value="webrain v1" />
-    <MESSAGE value="Prepare v2: delete _trash" />
-    <MESSAGE value="Prepare v2: deleted old calc / connect properties. Tests OK." />
-    <MESSAGE value="Prepare v2: deleted deep-subscriber. Tests OK." />
-    <MESSAGE value="Prepare v2: deleting unnecessary lists... Tests OK." />
-    <MESSAGE value="Prepare v2: deleted unnecessary lists. Tests OK." />
-    <MESSAGE value="Prepare v2: deleted unnecessary autoConnect. Tests OK." />
-    <MESSAGE value="Prepare v2... Tests OK." />
     <MESSAGE value="Prepare v2. Deleted commented files. Lint fixes. Tests OK." />
     <MESSAGE value="Prepare v2. Deleted unused dependencies. Tests OK." />
     <MESSAGE value="Prepare v2. Deleted getTupleId/getTupleIdMap" />
     <MESSAGE value="Prepare v2: deleted unnecessary TimeLimits. Tests OK." />
     <MESSAGE value="Prepare v2: deleted unnecessary BinaryTree. Tests OK." />
-    <option name="LAST_COMMIT_MESSAGE" value="Prepare v2: deleted unnecessary BinaryTree. Tests OK." />
+    <MESSAGE value="Prepare v2: deleted unused code. Tests OK." />
+    <MESSAGE value="Develop" />
+    <MESSAGE value="Replace bad supported Int32Array.slice(0, count) to fori" />
+    <MESSAGE value="Fix array merger. Tests OK." />
+    <MESSAGE value="Added webrainOptions.callState.logCaughtErrors" />
+    <MESSAGE value="Fix Random" />
+    <MESSAGE value="Stop timers after all tests" />
+    <MESSAGE value="Fix Mocha" />
+    <MESSAGE value="Auto stop timers" />
+    <MESSAGE value="Deleted: Stop timers after all tests" />
+    <MESSAGE value="Rollback karma rollup preprocessor" />
+    <MESSAGE value="Improve karma rollup preprocessor" />
+    <MESSAGE value="karma: stop IE support" />
+    <MESSAGE value="Fix coverage" />
+    <MESSAGE value="Prepare release" />
+    <MESSAGE value="Fix travis tests" />
+    <MESSAGE value="precommit is OK. travis is OK." />
+    <MESSAGE value="Rename external interface refactoring." />
+    <MESSAGE value="precommit is OK" />
+    <MESSAGE value="v1.0.0a" />
+    <option name="LAST_COMMIT_MESSAGE" value="v1.0.0a" />
   </component>
   <component name="WindowStateProjectService">
-    <state x="38" y="39" width="1718" height="786" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1588047767217">
+    <state x="617" y="103" key="#ESLint" timestamp="1590218488709">
       <screen x="0" y="0" width="1920" height="882" />
     </state>
-    <state x="38" y="39" width="1718" height="786" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.0.1920.882@0.0.1920.882" timestamp="1588047767217" />
+    <state x="617" y="103" key="#ESLint/0.0.1920.882@0.0.1920.882" timestamp="1590218488709" />
+    <state x="38" y="39" width="1718" height="786" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1590297800600">
+      <screen x="0" y="0" width="1920" height="882" />
+    </state>
+    <state x="38" y="39" width="1718" height="786" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.0.1920.882@0.0.1920.882" timestamp="1590297800600" />
     <state x="91" y="91" width="1738" height="700" key="#com.intellij.execution.junit2.states.ComparisonFailureState$DiffDialog" timestamp="1588308999883">
       <screen x="0" y="0" width="1920" height="882" />
     </state>
     <state x="91" y="91" width="1738" height="700" key="#com.intellij.execution.junit2.states.ComparisonFailureState$DiffDialog/0.0.1920.882@0.0.1920.882" timestamp="1588308999883" />
+    <state x="680" y="218" key="#com.intellij.fileTypes.FileTypeChooser" timestamp="1590233722639">
+      <screen x="0" y="0" width="1920" height="882" />
+    </state>
+    <state x="680" y="218" key="#com.intellij.fileTypes.FileTypeChooser/0.0.1920.882@0.0.1920.882" timestamp="1590233722639" />
     <state x="717" y="85" key="#com.intellij.ide.util.MemberChooser" timestamp="1587806074143">
       <screen x="0" y="0" width="1920" height="882" />
     </state>
@@ -948,110 +953,134 @@
       <screen x="0" y="0" width="1920" height="882" />
     </state>
     <state x="623" y="124" key="#com.intellij.refactoring.safeDelete.UnsafeUsagesDialog/0.0.1920.882@0.0.1920.882" timestamp="1588413339123" />
+    <state x="608" y="31" key="#mocha" timestamp="1590162078137">
+      <screen x="0" y="0" width="1920" height="882" />
+    </state>
+    <state x="608" y="31" key="#mocha/0.0.1920.882@0.0.1920.882" timestamp="1590162078137" />
     <state x="651" y="254" key="ANALYSIS_DLG_com.intellij.analysis.BaseAnalysisAction$1" timestamp="1588413930131">
       <screen x="0" y="0" width="1920" height="882" />
     </state>
     <state x="651" y="254" key="ANALYSIS_DLG_com.intellij.analysis.BaseAnalysisAction$1/0.0.1920.882@0.0.1920.882" timestamp="1588413930131" />
-    <state x="-2" y="0" width="1918" height="882" key="CommitChangelistDialog2" timestamp="1588413403056">
+    <state x="-2" y="0" width="1918" height="882" key="CommitChangelistDialog2" timestamp="1590302365687">
       <screen x="0" y="0" width="1920" height="882" />
     </state>
-    <state x="-2" y="0" width="1918" height="882" key="CommitChangelistDialog2/0.0.1920.882@0.0.1920.882" timestamp="1588413403056" />
-    <state width="884" height="550" key="DebuggerActiveHint" timestamp="1588307652026">
+    <state x="-2" y="0" width="1918" height="882" key="CommitChangelistDialog2/0.0.1920.882@0.0.1920.882" timestamp="1590302365687" />
+    <state width="884" height="550" key="DebuggerActiveHint" timestamp="1590162335145">
       <screen x="0" y="0" width="1920" height="882" />
     </state>
-    <state width="884" height="550" key="DebuggerActiveHint/0.0.1920.882@0.0.1920.882" timestamp="1588307652026" />
-    <state x="0" y="4" width="1920" height="875" key="DiffContextDialog" timestamp="1588405534970">
+    <state width="884" height="550" key="DebuggerActiveHint/0.0.1920.882@0.0.1920.882" timestamp="1590162335145" />
+    <state x="0" y="4" width="1920" height="875" key="DiffContextDialog" timestamp="1590239426525">
       <screen x="0" y="0" width="1920" height="882" />
     </state>
-    <state x="0" y="4" width="1920" height="875" key="DiffContextDialog/0.0.1920.882@0.0.1920.882" timestamp="1588405534970" />
-    <state x="1059" y="106" key="FileChooserDialogImpl" timestamp="1587984144460">
+    <state x="0" y="4" width="1920" height="875" key="DiffContextDialog/0.0.1920.882@0.0.1920.882" timestamp="1590239426525" />
+    <state x="1059" y="106" key="FileChooserDialogImpl" timestamp="1590245638441">
       <screen x="0" y="0" width="1920" height="882" />
     </state>
-    <state x="1059" y="106" key="FileChooserDialogImpl/0.0.1920.882@0.0.1920.882" timestamp="1587984144460" />
-    <state width="601" height="192" key="GridCell.Tab.0.bottom" timestamp="1588414142196">
+    <state x="1059" y="106" key="FileChooserDialogImpl/0.0.1920.882@0.0.1920.882" timestamp="1590245638441" />
+    <state width="531" height="192" key="GridCell.Tab.0.bottom" timestamp="1590301876853">
       <screen x="0" y="0" width="1920" height="882" />
     </state>
-    <state width="601" height="192" key="GridCell.Tab.0.bottom/0.0.1920.882@0.0.1920.882" timestamp="1588414142196" />
-    <state width="601" height="192" key="GridCell.Tab.0.center" timestamp="1588414142196">
+    <state width="531" height="192" key="GridCell.Tab.0.bottom/0.0.1920.882@0.0.1920.882" timestamp="1590301876853" />
+    <state width="531" height="192" key="GridCell.Tab.0.center" timestamp="1590301876853">
       <screen x="0" y="0" width="1920" height="882" />
     </state>
-    <state width="601" height="192" key="GridCell.Tab.0.center/0.0.1920.882@0.0.1920.882" timestamp="1588414142196" />
-    <state width="601" height="192" key="GridCell.Tab.0.left" timestamp="1588414142196">
+    <state width="531" height="192" key="GridCell.Tab.0.center/0.0.1920.882@0.0.1920.882" timestamp="1590301876853" />
+    <state width="531" height="192" key="GridCell.Tab.0.left" timestamp="1590301876853">
       <screen x="0" y="0" width="1920" height="882" />
     </state>
-    <state width="601" height="192" key="GridCell.Tab.0.left/0.0.1920.882@0.0.1920.882" timestamp="1588414142196" />
-    <state width="601" height="192" key="GridCell.Tab.0.right" timestamp="1588414142196">
+    <state width="531" height="192" key="GridCell.Tab.0.left/0.0.1920.882@0.0.1920.882" timestamp="1590301876853" />
+    <state width="531" height="192" key="GridCell.Tab.0.right" timestamp="1590301876853">
       <screen x="0" y="0" width="1920" height="882" />
     </state>
-    <state width="601" height="192" key="GridCell.Tab.0.right/0.0.1920.882@0.0.1920.882" timestamp="1588414142196" />
-    <state width="719" height="500" key="GridCell.Tab.1.bottom" timestamp="1588330186422">
+    <state width="531" height="192" key="GridCell.Tab.0.right/0.0.1920.882@0.0.1920.882" timestamp="1590301876853" />
+    <state width="574" height="452" key="GridCell.Tab.1.bottom" timestamp="1590299596166">
       <screen x="0" y="0" width="1920" height="882" />
     </state>
-    <state width="719" height="500" key="GridCell.Tab.1.bottom/0.0.1920.882@0.0.1920.882" timestamp="1588330186422" />
-    <state width="719" height="500" key="GridCell.Tab.1.center" timestamp="1588330186421">
+    <state width="574" height="452" key="GridCell.Tab.1.bottom/0.0.1920.882@0.0.1920.882" timestamp="1590299596166" />
+    <state width="574" height="452" key="GridCell.Tab.1.center" timestamp="1590299596166">
       <screen x="0" y="0" width="1920" height="882" />
     </state>
-    <state width="719" height="500" key="GridCell.Tab.1.center/0.0.1920.882@0.0.1920.882" timestamp="1588330186421" />
-    <state width="719" height="500" key="GridCell.Tab.1.left" timestamp="1588330186421">
+    <state width="574" height="452" key="GridCell.Tab.1.center/0.0.1920.882@0.0.1920.882" timestamp="1590299596166" />
+    <state width="574" height="452" key="GridCell.Tab.1.left" timestamp="1590299596166">
       <screen x="0" y="0" width="1920" height="882" />
     </state>
-    <state width="719" height="500" key="GridCell.Tab.1.left/0.0.1920.882@0.0.1920.882" timestamp="1588330186421" />
-    <state width="719" height="500" key="GridCell.Tab.1.right" timestamp="1588330186421">
+    <state width="574" height="452" key="GridCell.Tab.1.left/0.0.1920.882@0.0.1920.882" timestamp="1590299596166" />
+    <state width="574" height="452" key="GridCell.Tab.1.right" timestamp="1590299596166">
       <screen x="0" y="0" width="1920" height="882" />
     </state>
-    <state width="719" height="500" key="GridCell.Tab.1.right/0.0.1920.882@0.0.1920.882" timestamp="1588330186421" />
-    <state width="719" height="500" key="GridCell.Tab.2.bottom" timestamp="1588330186423">
+    <state width="574" height="452" key="GridCell.Tab.1.right/0.0.1920.882@0.0.1920.882" timestamp="1590299596166" />
+    <state width="574" height="452" key="GridCell.Tab.2.bottom" timestamp="1590299596167">
       <screen x="0" y="0" width="1920" height="882" />
     </state>
-    <state width="719" height="500" key="GridCell.Tab.2.bottom/0.0.1920.882@0.0.1920.882" timestamp="1588330186423" />
-    <state width="719" height="500" key="GridCell.Tab.2.center" timestamp="1588330186422">
+    <state width="574" height="452" key="GridCell.Tab.2.bottom/0.0.1920.882@0.0.1920.882" timestamp="1590299596167" />
+    <state width="574" height="452" key="GridCell.Tab.2.center" timestamp="1590299596166">
       <screen x="0" y="0" width="1920" height="882" />
     </state>
-    <state width="719" height="500" key="GridCell.Tab.2.center/0.0.1920.882@0.0.1920.882" timestamp="1588330186422" />
-    <state width="719" height="500" key="GridCell.Tab.2.left" timestamp="1588330186422">
+    <state width="574" height="452" key="GridCell.Tab.2.center/0.0.1920.882@0.0.1920.882" timestamp="1590299596166" />
+    <state width="574" height="452" key="GridCell.Tab.2.left" timestamp="1590299596166">
       <screen x="0" y="0" width="1920" height="882" />
     </state>
-    <state width="719" height="500" key="GridCell.Tab.2.left/0.0.1920.882@0.0.1920.882" timestamp="1588330186422" />
-    <state width="719" height="500" key="GridCell.Tab.2.right" timestamp="1588330186423">
+    <state width="574" height="452" key="GridCell.Tab.2.left/0.0.1920.882@0.0.1920.882" timestamp="1590299596166" />
+    <state width="574" height="452" key="GridCell.Tab.2.right" timestamp="1590299596167">
       <screen x="0" y="0" width="1920" height="882" />
     </state>
-    <state width="719" height="500" key="GridCell.Tab.2.right/0.0.1920.882@0.0.1920.882" timestamp="1588330186423" />
-    <state width="719" height="500" key="GridCell.Tab.3.bottom" timestamp="1588330186423">
+    <state width="574" height="452" key="GridCell.Tab.2.right/0.0.1920.882@0.0.1920.882" timestamp="1590299596167" />
+    <state width="574" height="452" key="GridCell.Tab.3.bottom" timestamp="1590299596167">
       <screen x="0" y="0" width="1920" height="882" />
     </state>
-    <state width="719" height="500" key="GridCell.Tab.3.bottom/0.0.1920.882@0.0.1920.882" timestamp="1588330186423" />
-    <state width="719" height="500" key="GridCell.Tab.3.center" timestamp="1588330186423">
+    <state width="574" height="452" key="GridCell.Tab.3.bottom/0.0.1920.882@0.0.1920.882" timestamp="1590299596167" />
+    <state width="574" height="452" key="GridCell.Tab.3.center" timestamp="1590299596167">
       <screen x="0" y="0" width="1920" height="882" />
     </state>
-    <state width="719" height="500" key="GridCell.Tab.3.center/0.0.1920.882@0.0.1920.882" timestamp="1588330186423" />
-    <state width="719" height="500" key="GridCell.Tab.3.left" timestamp="1588330186423">
+    <state width="574" height="452" key="GridCell.Tab.3.center/0.0.1920.882@0.0.1920.882" timestamp="1590299596167" />
+    <state width="574" height="452" key="GridCell.Tab.3.left" timestamp="1590299596167">
       <screen x="0" y="0" width="1920" height="882" />
     </state>
-    <state width="719" height="500" key="GridCell.Tab.3.left/0.0.1920.882@0.0.1920.882" timestamp="1588330186423" />
-    <state width="719" height="500" key="GridCell.Tab.3.right" timestamp="1588330186423">
+    <state width="574" height="452" key="GridCell.Tab.3.left/0.0.1920.882@0.0.1920.882" timestamp="1590299596167" />
+    <state width="574" height="452" key="GridCell.Tab.3.right" timestamp="1590299596167">
       <screen x="0" y="0" width="1920" height="882" />
     </state>
-    <state width="719" height="500" key="GridCell.Tab.3.right/0.0.1920.882@0.0.1920.882" timestamp="1588330186423" />
+    <state width="574" height="452" key="GridCell.Tab.3.right/0.0.1920.882@0.0.1920.882" timestamp="1590299596167" />
+    <state width="525" height="398" key="GridCell.Tab.4.bottom" timestamp="1590213679498">
+      <screen x="0" y="0" width="1920" height="882" />
+    </state>
+    <state width="525" height="398" key="GridCell.Tab.4.bottom/0.0.1920.882@0.0.1920.882" timestamp="1590213679498" />
+    <state width="525" height="398" key="GridCell.Tab.4.center" timestamp="1590213679497">
+      <screen x="0" y="0" width="1920" height="882" />
+    </state>
+    <state width="525" height="398" key="GridCell.Tab.4.center/0.0.1920.882@0.0.1920.882" timestamp="1590213679497" />
+    <state width="525" height="398" key="GridCell.Tab.4.left" timestamp="1590213679497">
+      <screen x="0" y="0" width="1920" height="882" />
+    </state>
+    <state width="525" height="398" key="GridCell.Tab.4.left/0.0.1920.882@0.0.1920.882" timestamp="1590213679497" />
+    <state width="525" height="398" key="GridCell.Tab.4.right" timestamp="1590213679497">
+      <screen x="0" y="0" width="1920" height="882" />
+    </state>
+    <state width="525" height="398" key="GridCell.Tab.4.right/0.0.1920.882@0.0.1920.882" timestamp="1590213679497" />
     <state x="693" y="68" key="RollbackChangesDialog" timestamp="1588413158271">
       <screen x="0" y="0" width="1920" height="882" />
     </state>
     <state x="693" y="68" key="RollbackChangesDialog/0.0.1920.882@0.0.1920.882" timestamp="1588413158271" />
-    <state x="343" y="0" key="SettingsEditor" timestamp="1587292504383">
+    <state x="343" y="0" key="SettingsEditor" timestamp="1590235116744">
       <screen x="0" y="0" width="1920" height="882" />
     </state>
-    <state x="343" y="0" key="SettingsEditor/0.0.1920.882@0.0.1920.882" timestamp="1587292504383" />
-    <state width="969" height="450" key="XDebugger.FullValuePopup" timestamp="1587792310914">
+    <state x="343" y="0" key="SettingsEditor/0.0.1920.882@0.0.1920.882" timestamp="1590235116744" />
+    <state x="451" y="106" key="Vcs.Push.Dialog.v2" timestamp="1590301925511">
       <screen x="0" y="0" width="1920" height="882" />
     </state>
-    <state width="969" height="450" key="XDebugger.FullValuePopup/0.0.1920.882@0.0.1920.882" timestamp="1587792310914" />
+    <state x="451" y="106" key="Vcs.Push.Dialog.v2/0.0.1920.882@0.0.1920.882" timestamp="1590301925511" />
+    <state width="969" height="450" key="XDebugger.FullValuePopup" timestamp="1590162225930">
+      <screen x="0" y="0" width="1920" height="882" />
+    </state>
+    <state width="969" height="450" key="XDebugger.FullValuePopup/0.0.1920.882@0.0.1920.882" timestamp="1590162225930" />
     <state x="121" y="111" key="com.intellij.xdebugger.impl.breakpoints.ui.BreakpointsDialogFactory$2" timestamp="1587884348340">
       <screen x="0" y="0" width="1920" height="882" />
     </state>
     <state x="121" y="111" key="com.intellij.xdebugger.impl.breakpoints.ui.BreakpointsDialogFactory$2/0.0.1920.882@0.0.1920.882" timestamp="1587884348340" />
-    <state x="2" y="1" width="1908" height="878" key="find.popup" timestamp="1588413137170">
+    <state x="2" y="1" width="1908" height="878" key="find.popup" timestamp="1590301034854">
       <screen x="0" y="0" width="1920" height="882" />
     </state>
-    <state x="2" y="1" width="1908" height="878" key="find.popup/0.0.1920.882@0.0.1920.882" timestamp="1588413137170" />
+    <state x="2" y="1" width="1908" height="878" key="find.popup/0.0.1920.882@0.0.1920.882" timestamp="1590301034854" />
     <state x="732" y="169" key="refactoring.ChangeSignatureDialog" timestamp="1587872020169">
       <screen x="0" y="0" width="1920" height="882" />
     </state>
@@ -1070,7 +1099,7 @@
       <breakpoints>
         <line-breakpoint enabled="true" type="javascript">
           <url>file://$PROJECT_DIR$/src/main/common/rx/depend/core/depend.ts</url>
-          <line>114</line>
+          <line>115</line>
           <option name="timeStamp" value="1086" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="javascript">
@@ -1134,19 +1163,99 @@
           <option name="timeStamp" value="1557" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="javascript">
-          <url>file://$PROJECT_DIR$/src/main/common/rx/object/properties/path/dependDeepSubscriber.ts</url>
+          <url>file://$PROJECT_DIR$/src/main/common/rx/object/properties/path/deepSubscriber.ts</url>
           <line>45</line>
           <option name="timeStamp" value="1583" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="javascript">
-          <url>file://$PROJECT_DIR$/src/main/common/rx/object/properties/path/dependDeepSubscriber.ts</url>
+          <url>file://$PROJECT_DIR$/src/main/common/rx/object/properties/path/deepSubscriber.ts</url>
           <line>38</line>
           <option name="timeStamp" value="1589" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="javascript">
-          <url>file://$PROJECT_DIR$/src/main/common/rx/object/properties/path/dependDeepSubscriber.ts</url>
+          <url>file://$PROJECT_DIR$/src/main/common/rx/object/properties/path/deepSubscriber.ts</url>
           <line>61</line>
           <option name="timeStamp" value="1590" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="javascript">
+          <url>file://$PROJECT_DIR$/src/main/common/extensions/merge/mergers.ts</url>
+          <line>1072</line>
+          <option name="timeStamp" value="1592" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="javascript">
+          <url>file://$PROJECT_DIR$/src/test/tests/common/main/index.ts</url>
+          <line>6</line>
+          <option name="timeStamp" value="1600" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="javascript">
+          <url>file://$PROJECT_DIR$/src/test/tests/common/src/stop-timers-after-all.ts</url>
+          <line>2</line>
+          <option name="timeStamp" value="1606" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="javascript">
+          <url>file://$PROJECT_DIR$/src/test/tests/common/src/stop-timers-after-all.ts</url>
+          <line>8</line>
+          <option name="timeStamp" value="1608" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="javascript">
+          <url>file://$PROJECT_DIR$/src/test/tests/common/src/stop-timers-after-all.ts</url>
+          <line>20</line>
+          <option name="timeStamp" value="1609" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="javascript">
+          <url>file://$PROJECT_DIR$/src/test/tests/common/src/stop-timers-after-all.ts</url>
+          <line>29</line>
+          <option name="timeStamp" value="1610" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="javascript">
+          <url>file://$PROJECT_DIR$/env/mocha/configs/no-babel/register.js</url>
+          <line>14</line>
+          <option name="timeStamp" value="1611" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="javascript">
+          <url>file://$PROJECT_DIR$/dist/js/main/common/test/unhandledErrors.js</url>
+          <line>64</line>
+          <option name="timeStamp" value="1612" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="javascript">
+          <url>file://$PROJECT_DIR$/dist/js/main/common/test/unhandledErrors.js</url>
+          <line>56</line>
+          <option name="timeStamp" value="1613" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="javascript">
+          <url>file://$PROJECT_DIR$/src/main/common/rx/depend/core/CallState.ts</url>
+          <line>1854</line>
+          <option name="timeStamp" value="1627" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="javascript">
+          <url>file://$PROJECT_DIR$/node_modules/karma-rollup-preprocessor/lib/index.js</url>
+          <line>72</line>
+          <option name="timeStamp" value="1629" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="javascript">
+          <url>file://$PROJECT_DIR$/node_modules/karma-rollup-preprocessor/lib/index.js</url>
+          <line>110</line>
+          <option name="timeStamp" value="1632" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="javascript">
+          <url>file://$PROJECT_DIR$/node_modules/@metahub/karma-rollup-preprocessor/lib/index.js</url>
+          <line>14</line>
+          <option name="timeStamp" value="1635" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="javascript">
+          <url>file://$PROJECT_DIR$/node_modules/@metahub/karma-rollup-preprocessor/lib/index.js</url>
+          <line>26</line>
+          <option name="timeStamp" value="1636" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="javascript">
+          <url>file://$PROJECT_DIR$/src/test/tests/common/main/rx/object/properties/path/builder.ts</url>
+          <line>88</line>
+          <option name="timeStamp" value="1637" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="javascript">
+          <url>file://$PROJECT_DIR$/src/test/tests/common/main/rx/depend/src/stress-test.ts</url>
+          <line>126</line>
+          <option name="timeStamp" value="1638" />
         </line-breakpoint>
       </breakpoints>
       <breakpoints-dialog>
@@ -1159,36 +1268,9 @@
     </breakpoint-manager>
     <watches-manager>
       <configuration name="mocha-javascript-test-runner">
-        <watch expression="dependencies" language="TypeScript" />
-        <watch expression="dependencies.map(o =&gt; o.getCallState())" language="TypeScript" />
-        <watch expression="dependencies.map(o =&gt; o.getCallState().statusString)" language="TypeScript" />
-        <watch expression="dependencies.map(_getCallState).map(o =&gt; o.statusString)" language="TypeScript" />
-        <watch expression="dependencies.map(_getCallState).map(o =&gt; o.value)" language="TypeScript" />
-        <watch expression="state.statusString" language="TypeScript" />
-        <watch expression="_unsubscribers.filter(o =&gt; o).map(o =&gt; o.state.data.call.id)" language="TypeScript" />
-        <watch expression="this._unsubscribers.filter(o =&gt; o).map(o =&gt; o.state.value)" language="TypeScript" />
-        <watch expression="dependencies.map(o =&gt; o.id)" language="TypeScript" />
-        <watch expression="this.data.call.id" language="TypeScript" />
-        <watch expression="state.data.call.id" language="TypeScript" />
-        <watch expression="dependencyState.data.call.id" language="TypeScript" />
-        <watch expression="statusToString(prevStatus)" language="TypeScript" />
-        <watch expression="statusToString(status)" language="TypeScript" />
-        <watch expression="statusToString(this.status)" language="TypeScript" />
-        <watch expression="statusToString(statusBefore)" language="TypeScript" />
-        <watch expression="_subscribersFirst === _subscribersCalculatingLazy" language="TypeScript" />
-        <watch expression="_subscribersFirst === _subscribersCalculating" language="TypeScript" />
-        <watch expression="_getCallState(dependency)" language="TypeScript" />
-        <watch expression="this._data.call.id" language="TypeScript" />
-        <watch expression="getCurrentState()" language="TypeScript" />
-        <watch expression="call.getCallState()" language="TypeScript" />
-        <watch expression="isRecalc(status) &#9;&#9;&#9;&amp;&amp; (prevStatus &amp; Flag_Calculating) === 0 &#9;&#9;&#9;&amp;&amp; (this.status &amp; Flag_Invalidating) === 0 &#9;&#9;&#9;&amp;&amp; this._unsubscribersLength !== 0" language="TypeScript" />
-        <watch expression="_onfulfilled.map(o =&gt; o + '')" language="TypeScript" />
-        <watch expression="_onfulfilled[0]['[[Scopes]]']" language="TypeScript" />
-        <watch expression="link.value" />
-        <watch expression="JSON.stringify(rule1, null, 4)" language="TypeScript" />
-        <watch expression="'c' in object" language="TypeScript" />
-        <watch expression="propertyName in object" language="TypeScript" />
-        <watch expression="callState._lastAccessTime" language="TypeScript" />
+        <watch expression="base" language="TypeScript" />
+        <watch expression="older" language="TypeScript" />
+        <watch expression="newer" language="TypeScript" />
       </configuration>
     </watches-manager>
   </component>

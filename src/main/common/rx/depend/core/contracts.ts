@@ -1,8 +1,9 @@
+/* tslint:disable:no-circular-imports */
 import {IThenable, ThenableOrValue} from '../../../async/async'
+import {Func} from '../../../helpers/typescript'
 import {ISubscriber, IUnsubscribe} from '../../subjects/observable'
-import {TFuncCall} from './CallState'
+import {CallState} from './CallState'
 
-export type Func<TThis, TArgs extends any[], TValue = void> = (this: TThis, ...args: TArgs) => TValue
 export type TCall<TArgs extends any[]> = <TThis, TValue>(_this: TThis, func: Func<TThis, TArgs, TValue>) => TValue
 
 export interface ILinkItem<T> {
@@ -54,6 +55,14 @@ export interface IDeferredOptions {
 }
 
 export type ICallStateAny = ICallState<any, any, any>
+export type TCallStateAny = CallState<any, any, any>
+export type TFuncCall<TThisOuter,
+	TArgs extends any[],
+	TResultInner,
+	> = (
+	state: CallState<TThisOuter, TArgs, TResultInner>,
+) => TResultInner
+
 export interface ICallState<
 	TThisOuter,
 	TArgs extends any[],

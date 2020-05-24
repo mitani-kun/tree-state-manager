@@ -1,10 +1,11 @@
 import {isThenable} from '../../async/async'
 import {ThenableSync} from '../../async/ThenableSync'
+import {Func} from '../../helpers/typescript'
 import {webrainOptions} from '../../helpers/webrainOptions'
 import {createConnector} from '../object/properties/helpers'
 import {IUnsubscribe} from '../subjects/observable'
 import {dependBindThis, getOrCreateCallState, subscribeCallState} from './core/CallState'
-import {CallStatusShort, Func, TInnerValue} from './core/contracts'
+import {CallStatusShort, TInnerValue} from './core/contracts'
 import {dependX} from './core/depend'
 
 function simpleCondition(value) {
@@ -85,10 +86,18 @@ export function autoCalc<
 	TResultInner,
 >(
 	func: Func<TThisOuter, TArgs, TResultInner>,
+	dontLogErrors?: boolean,
 ): Func<TThisOuter, TArgs, IUnsubscribe> {
 	return function() {
 		return subscribeCallState(
 			getOrCreateCallState(func).apply(this, arguments),
+			dontLogErrors
+				? null
+				: state => {
+					if (state.statusShort === CallStatusShort.CalculatedError) {
+						console.error(state.error)
+					}
+				},
 		)
 	}
 }
@@ -100,6 +109,7 @@ export function autoCalcConnect<
 	object: TObject,
 	connectorFactory: (source: TObject, name?: string) => TConnector,
 	func: Func<TConnector, [], any>,
+	dontLogErrors?: boolean,
 ) {
 	return autoCalc(dependBindThis(
 		createConnector(
@@ -107,7 +117,7 @@ export function autoCalcConnect<
 			connectorFactory,
 		),
 		func,
-	))
+	), dontLogErrors)
 }
 
 export function dependWrapThis<

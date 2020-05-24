@@ -6,6 +6,7 @@ const path = require('path')
 const fs = require('fs')
 const thisPackage = require('../../package')
 const rollupPlugins  = require('../rollup/plugins.js')
+const {writeTextFile, writeTextFileSync} = require('../common/helpers')
 
 module.exports.rollup = {
 	plugins: rollupPlugins
@@ -28,19 +29,6 @@ function concatArrays(...arrays) {
 	return items
 }
 
-module.exports.writeTextFile = writeTextFile
-function writeTextFile(outFilePath, text) {
-	const dir = path.dirname(outFilePath)
-
-	if (!fs.existsSync(dir)) {
-		fs.mkdirSync(dir, {recursive: true})
-	}
-
-	fs.writeFileSync(outFilePath, text)
-
-	return outFilePath
-}
-
 module.exports.concatJsFiles = function concatJsFiles(outFilePath, ...globbyPatterns) {
 	const dir = path.dirname(outFilePath)
 
@@ -54,7 +42,7 @@ module.exports.concatJsFiles = function concatJsFiles(outFilePath, ...globbyPatt
 			+ "'")
 		.join('\n') + '\n'
 
-	return writeTextFile(outFilePath, code)
+	return writeTextFileSync(outFilePath, code)
 }
 
 module.exports.servedPattern = servedPattern
@@ -90,7 +78,7 @@ module.exports.configCommon = function (config) {
 		unshiftFiles: [
 			...[
 				// Check if polyfill load first and fix Uint8Array bug
-				servedPattern(writeTextFile(
+				servedPattern(writeTextFileSync(
 					'tmp/karma/polyfill-before.js',
 					"'use strict'; \n"
 					+ '(function () {\n'
@@ -114,7 +102,7 @@ module.exports.configCommon = function (config) {
 				// Load polyfill
 				// servedPattern(require.resolve('../../static/polyfill')),
 				// servedPattern(require.resolve('@babel/polyfill/dist/polyfill')), // For IE / PhantomJS
-				servedPattern(writeTextFile(
+				servedPattern(writeTextFileSync(
 					'tmp/karma/polyfill-after.js',
 					"console.log('karma polyfill activated!');"
 				))
@@ -133,7 +121,7 @@ module.exports.configCommon = function (config) {
 			'karma-safaritechpreview-launcher',
 			'karma-opera-launcher',
 			'karma-edge-launcher',
-			'karma-ie-launcher',
+			// 'karma-ie-launcher',
 			'karma-phantomjs-launcher',
 			'karma-electron',
 
@@ -142,11 +130,42 @@ module.exports.configCommon = function (config) {
 			'karma-coverage',
 			require('./modules/karma-express'),
 			require('./modules/karma-custom-launcher'),
-			require('./modules/karma-unshift-files')
+			require('./modules/karma-unshift-files'),
+
+			{
+				'preprocessor:writeToFile': [
+					'factory',
+					(factory => {
+						factory.$inject = ['args', 'config', 'emitter', 'logger']
+						return factory
+					})((preconfig, _config, emitter, logger) => {
+						const log = logger.create('preprocessor.rollup')
+
+						return async (original, file, done) => {
+							const {originalPath} = file
+							const location = path.relative(_config.basePath, originalPath)
+
+							try {
+								const parsed = path.parse(originalPath)
+								const fileOutput = path.join(parsed.dir, parsed.name + '.build' + parsed.ext)
+								await writeTextFile(fileOutput, original)
+								return done(null, original)
+							} catch (error) {
+								log.error('Failed to process ./%s\n\n%s\n', location, error.stack)
+								return done(error, null)
+							}
+						}
+					}),
+				],
+			}
 		],
 
 		// optionally, configure the reporter
 		coverageReporter: {
+			// Prevent to disable coverage by IntelliJ
+			// see: https://github.com/karma-runner/karma-coverage/issues/183#issuecomment-167880660
+			instrumenter: null,
+
 			type: 'json',
 			dir : 'tmp/coverage/karma/json',
 			// subDir: () => 'browser'
@@ -290,7 +309,10 @@ function configDetectBrowsers(config) {
 			postDetection(availableBrowsers) {
 				const useBrowsers = {
 					E2E_ChromeLatest  : /Chrome/,
-					E2E_ChromiumLatest: /Chromium/
+					E2E_ChromiumLatest: /Chromium/,
+
+					// Exclude:
+					'': /\bIE\d*\b/,
 				}
 
 				return availableBrowsers
@@ -304,6 +326,7 @@ function configDetectBrowsers(config) {
 
 						return availableBrowser
 					})
+					.filter(o => o)
 					.concat('Electron')
 			}
 		},
@@ -404,27 +427,27 @@ module.exports.configBrowserStack = function (config, desktop = true, mobile = f
 			os             : 'OS X',
 			os_version     : 'Sierra',
 		},
-		IE11: {
-			base           : 'BrowserStack',
-			browser        : 'IE',
-			browser_version: '11',
-			os             : 'Windows',
-			os_version     : '10',
-		},
-		IE10: {
-			base           : 'BrowserStack',
-			browser        : 'IE',
-			browser_version: '10',
-			os             : 'Windows',
-			os_version     : '8',
-		},
-		IE9: {
-			base           : 'BrowserStack',
-			browser        : 'IE',
-			browser_version: '9',
-			os             : 'Windows',
-			os_version     : '7',
-		},
+		// IE11: {
+		// 	base           : 'BrowserStack',
+		// 	browser        : 'IE',
+		// 	browser_version: '11',
+		// 	os             : 'Windows',
+		// 	os_version     : '10',
+		// },
+		// IE10: {
+		// 	base           : 'BrowserStack',
+		// 	browser        : 'IE',
+		// 	browser_version: '10',
+		// 	os             : 'Windows',
+		// 	os_version     : '8',
+		// },
+		// IE9: {
+		// 	base           : 'BrowserStack',
+		// 	browser        : 'IE',
+		// 	browser_version: '9',
+		// 	os             : 'Windows',
+		// 	os_version     : '7',
+		// },
 		Edge: {
 			base           : 'BrowserStack',
 			browser        : 'Edge',

@@ -6,7 +6,7 @@ import {stressTest} from '../src/stress-test'
 
 declare const beforeEach: any
 
-describe('common > main > rx > depend > dependent-func / stress', function() {
+describe('common > main > rx > depend > stress', function() {
 	this.timeout(60 * 60 * 1000)
 
 	beforeEach(function() {
@@ -18,7 +18,7 @@ describe('common > main > rx > depend > dependent-func / stress', function() {
 
 	it('all', async function() {
 		await stressTest({
-			// seed: 624649026,
+			// seed: 649781656,
 			testsCount: 10,
 			iterationsPerCall: 500,
 			maxLevelsCount: [1, 10],
